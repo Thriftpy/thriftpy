@@ -60,89 +60,6 @@ class TProcessor(object):
         pass
 
 
-class TException(Exception):
-    """Base class for all thrift exceptions."""
-
-    def __init__(self, message=None):
-        Exception.__init__(self, message)
-        self.message = message
-
-    @property
-    def message(self):
-        return self._message
-
-    @message.setter
-    def message(self, message):
-        self._message = message
-
-
-class TApplicationException(TException):
-    """Application level thrift exceptions."""
-
-    UNKNOWN = 0
-    UNKNOWN_METHOD = 1
-    INVALID_MESSAGE_TYPE = 2
-    WRONG_METHOD_NAME = 3
-    BAD_SEQUENCE_ID = 4
-    MISSING_RESULT = 5
-    INTERNAL_ERROR = 6
-    PROTOCOL_ERROR = 7
-
-    def __init__(self, type=UNKNOWN, message=None):
-        TException.__init__(self, message)
-        self.type = type
-
-    def __str__(self):
-        if self.message:
-            return self.message
-        elif self.type == self.UNKNOWN_METHOD:
-            return 'Unknown method'
-        elif self.type == self.INVALID_MESSAGE_TYPE:
-            return 'Invalid message type'
-        elif self.type == self.WRONG_METHOD_NAME:
-            return 'Wrong method name'
-        elif self.type == self.BAD_SEQUENCE_ID:
-            return 'Bad sequence ID'
-        elif self.type == self.MISSING_RESULT:
-            return 'Missing result'
-        else:
-            return 'Default (unknown) TApplicationException'
-
-    def read(self, iprot):
-        iprot.readStructBegin()
-        while True:
-            (fname, ftype, fid) = iprot.readFieldBegin()
-            if ftype == TType.STOP:
-                break
-            if fid == 1:
-                if ftype == TType.STRING:
-                    self.message = iprot.readString()
-                else:
-                    iprot.skip(ftype)
-            elif fid == 2:
-                if ftype == TType.I32:
-                    self.type = iprot.readI32()
-                else:
-                    iprot.skip(ftype)
-            else:
-                iprot.skip(ftype)
-            iprot.readFieldEnd()
-        iprot.readStructEnd()
-
-    def write(self, oprot):
-        oprot.writeStructBegin('TApplicationException')
-        if self.message is not None:
-            oprot.writeFieldBegin('message', TType.STRING, 1)
-            oprot.writeString(self.message)
-            oprot.writeFieldEnd()
-        if self.type is not None:
-            oprot.writeFieldBegin('type', TType.I32, 2)
-            oprot.writeI32(self.type)
-            oprot.writeFieldEnd()
-        oprot.writeFieldStop()
-        oprot.writeStructEnd()
-
-
 class Payload(object):
     thrift_spec = {}
 
@@ -195,3 +112,50 @@ class Payload(object):
 
     def __ne__(self, other):
         return not (self == other)
+
+
+class TException(Exception):
+    """Base class for all thrift exceptions."""
+
+    @property
+    def message(self):
+        return str(self)
+
+
+class TApplicationException(TException, Payload):
+    """Application level thrift exceptions."""
+
+    thrift_spec = {
+        1: (TType.STRING, 'message', None, None),
+        2: (TType.I32, 'type', None, None),
+    }
+
+    UNKNOWN = 0
+    UNKNOWN_METHOD = 1
+    INVALID_MESSAGE_TYPE = 2
+    WRONG_METHOD_NAME = 3
+    BAD_SEQUENCE_ID = 4
+    MISSING_RESULT = 5
+    INTERNAL_ERROR = 6
+    PROTOCOL_ERROR = 7
+
+    def __init__(self, message=None, type=UNKNOWN):
+        super(TApplicationException, self).__init__(message)
+        self.type = type
+
+    def __str__(self):
+        if self.message:
+            return self.message
+
+        if self.type == self.UNKNOWN_METHOD:
+            return 'Unknown method'
+        elif self.type == self.INVALID_MESSAGE_TYPE:
+            return 'Invalid message type'
+        elif self.type == self.WRONG_METHOD_NAME:
+            return 'Wrong method name'
+        elif self.type == self.BAD_SEQUENCE_ID:
+            return 'Bad sequence ID'
+        elif self.type == self.MISSING_RESULT:
+            return 'Missing result'
+        else:
+            return 'Default (unknown) TApplicationException'
