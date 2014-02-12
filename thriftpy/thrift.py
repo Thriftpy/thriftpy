@@ -60,7 +60,7 @@ class TProcessor(object):
         pass
 
 
-class Payload(object):
+class TPayload(object):
     thrift_spec = {}
 
     def read(self, iprot):
@@ -122,7 +122,7 @@ class TException(Exception):
         return str(self)
 
 
-class TApplicationException(TException, Payload):
+class TApplicationException(TException, TPayload):
     """Application level thrift exceptions."""
 
     thrift_spec = {
