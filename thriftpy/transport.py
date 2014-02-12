@@ -38,6 +38,46 @@ class TTransportException(TException):
         self.type = type
 
 
+class TMemoryBuffer(TTransportBase):
+    """Wraps a BytesIO object as a TTransport.
+
+    NOTE: Unlike the C++ version of this class, you cannot write to it
+                then immediately read from it.    If you want to read from a
+                TMemoryBuffer, you must either pass a string to the
+                constructor.
+    TODO(dreiss): Make this work like the C++ version.
+    """
+
+    def __init__(self, value=None):
+        """value -- a value to read from for stringio
+
+        If value is set, this will be a transport for reading,
+        otherwise, it is for writing
+        """
+        self._buffer = BytesIO(value) if value is not None else BytesIO()
+
+    def isOpen(self):
+        return not self._buffer.closed
+
+    def open(self):
+        pass
+
+    def close(self):
+        self._buffer.close()
+
+    def read(self, sz):
+        return self._buffer.read(sz)
+
+    def write(self, buf):
+        self._buffer.write(buf)
+
+    def flush(self):
+        pass
+
+    def getvalue(self):
+        return self._buffer.getvalue()
+
+
 class TBufferedTransport(TTransportBase):
     """Class that wraps another transport and buffers its I/O.
 
@@ -78,23 +118,6 @@ class TBufferedTransport(TTransportBase):
         self.__wbuf = BytesIO()
         self.__trans.write(out)
         self.__trans.flush()
-
-    @property
-    def cstringio_buf(self):
-        return self.__rbuf
-
-    def cstringio_refill(self, partialread, reqlen):
-        retstring = partialread
-        if reqlen < self.__rbuf_size:
-            # try to make a read of as much as we can.
-            retstring += self.__trans.read(self.__rbuf_size)
-
-        # but make sure we do read reqlen bytes.
-        if len(retstring) < reqlen:
-            retstring += self.__trans.readAll(reqlen - len(retstring))
-
-        self.__rbuf = BytesIO(retstring)
-        return self.__rbuf
 
 
 class TSocketBase(TTransportBase):
