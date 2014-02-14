@@ -118,10 +118,10 @@ class TClientMeta(type):
     def __init__(cls, name, bases, nmspc):
         super(TClientMeta, cls).__init__(name, bases, nmspc)
 
-        for method in cls.args_map:
+        for method in cls.thrift_services:
             def _send_req(self, *args, method=method):
                 method_args = [item[1][1] for item in sorted(
-                    cls.args_map[method].thrift_spec.items())]
+                    getattr(cls, method + "_args").thrift_spec.items())]
                 kwargs = dict(zip(method_args, args))
                 return self._send(method, **kwargs)
             setattr(cls, "send_" + method, _send_req)
@@ -137,8 +137,7 @@ class TClientMeta(type):
 
 
 class TClient(object, metaclass=TClientMeta):
-    args_map = {}
-    result_map = {}
+    thrift_services = []
 
     def __init__(self, iprot, oprot=None):
         self._iprot = self._oprot = iprot
@@ -148,7 +147,7 @@ class TClient(object, metaclass=TClientMeta):
 
     def _send(self, api, **kwargs):
         self._oprot.writeMessageBegin(api, TMessageType.CALL, self._seqid)
-        args = self.args_map[api]()
+        args = getattr(self, api + "_args")()
         for k, v in kwargs.items():
             setattr(args, k, v)
         args.write(self._oprot)
@@ -162,7 +161,7 @@ class TClient(object, metaclass=TClientMeta):
             x.read(self._iprot)
             self._iprot.readMessageEnd()
             raise x
-        result = self.result_map[api]()
+        result = getattr(self, api + "_result")()
         result.read(self._iprot)
         self._iprot.readMessageEnd()
         if result.success is not None:
