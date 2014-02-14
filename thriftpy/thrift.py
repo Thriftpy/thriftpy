@@ -114,6 +114,63 @@ class TPayload(object):
         return not (self == other)
 
 
+class TClientMeta(type):
+    def __init__(cls, name, bases, nmspc):
+        super(TClientMeta, cls).__init__(name, bases, nmspc)
+
+        for method in cls.args_map:
+            def _send_req(self, *args, method=method):
+                method_args = [item[1][1] for item in sorted(
+                    cls.args_map[method].thrift_spec.items())]
+                kwargs = dict(zip(method_args, args))
+                return self._send(method, **kwargs)
+            setattr(cls, "send_" + method, _send_req)
+
+            def _recv_req(self, method=method):
+                return self._recv(method)
+            setattr(cls, "recv_" + method, _recv_req)
+
+            def _req(self, *args, method=method):
+                getattr(self, "send_" + method)(*args)
+                return getattr(self, "recv_" + method)()
+            setattr(cls, method, _req)
+
+
+class TClient(object, metaclass=TClientMeta):
+    args_map = {}
+    result_map = {}
+
+    def __init__(self, iprot, oprot=None):
+        self._iprot = self._oprot = iprot
+        if oprot is not None:
+            self._oprot = oprot
+        self._seqid = 0
+
+    def _send(self, api, **kwargs):
+        self._oprot.writeMessageBegin(api, TMessageType.CALL, self._seqid)
+        args = self.args_map[api]()
+        for k, v in kwargs.items():
+            setattr(args, k, v)
+        args.write(self._oprot)
+        self._oprot.writeMessageEnd()
+        self._oprot.trans.flush()
+
+    def _recv(self, api):
+        fname, mtype, rseqid = self._iprot.readMessageBegin()
+        if mtype == TMessageType.EXCEPTION:
+            x = TApplicationException()
+            x.read(self._iprot)
+            self._iprot.readMessageEnd()
+            raise x
+        result = self.result_map[api]()
+        result.read(self._iprot)
+        self._iprot.readMessageEnd()
+        if result.success is not None:
+            return result.success
+        raise TApplicationException(TApplicationException.MISSING_RESULT,
+                                    "{} failed: unknown result".format(api))
+
+
 class TException(Exception):
     """Base class for all thrift exceptions."""
 
