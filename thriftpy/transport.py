@@ -1,4 +1,5 @@
 import errno
+import os
 import socket
 import sys
 
@@ -120,6 +121,11 @@ class TBufferedTransport(TTransportBase):
         self.__trans.flush()
 
 
+class TBufferedTransportFactory(object):
+    def getTransport(self, trans):
+        return TBufferedTransport(trans)
+
+
 class TSocketBase(TTransportBase):
     def _resolveAddr(self):
         if self._unix_socket is not None:
@@ -231,3 +237,47 @@ class TSocket(TSocketBase):
 
     def flush(self):
         pass
+
+
+class TServerSocket(TSocketBase):
+    """Socket implementation of TServerTransport base."""
+
+    def __init__(self, host=None, port=9090, unix_socket=None,
+                 socket_family=socket.AF_UNSPEC):
+        self.host = host
+        self.port = port
+        self._unix_socket = unix_socket
+        self._socket_family = socket_family
+        self.handle = None
+
+    def listen(self):
+        res0 = self._resolveAddr()
+        socket_family = self._socket_family == socket.AF_UNSPEC and (
+            socket.AF_INET6 or self._socket_family)
+        for res in res0:
+            if res[0] is socket_family or res is res0[-1]:
+                break
+
+        # We need remove the old unix socket if the file exists and
+        # nobody is listening on it.
+        if self._unix_socket:
+            tmp = socket.socket(res[0], res[1])
+            try:
+                tmp.connect(res[4])
+            except socket.error as err:
+                eno, message = err.args
+                if eno == errno.ECONNREFUSED:
+                    os.unlink(res[4])
+
+        self.handle = socket.socket(res[0], res[1])
+        self.handle.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if hasattr(self.handle, 'settimeout'):
+            self.handle.settimeout(None)
+        self.handle.bind(res[4])
+        self.handle.listen(128)
+
+    def accept(self):
+        client, addr = self.handle.accept()
+        result = TSocket()
+        result.setHandle(client)
+        return result

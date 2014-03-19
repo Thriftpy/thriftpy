@@ -53,15 +53,13 @@ class TMessageType(object):
     ONEWAY = 4
 
 
-class TProcessor(object):
-    """Base class for procsessor, which works on two streams."""
-
-    def process(iprot, oprot):
-        pass
-
-
 class TPayload(object):
     thrift_spec = {}
+
+    def __init__(self, **kwargs):
+        for _, v in self.thrift_spec.items():
+            k = v[1]
+            setattr(self, k, kwargs.get(k, None))
 
     def read(self, iprot):
         iprot.readStructBegin()
@@ -168,6 +166,37 @@ class TClient(object, metaclass=TClientMeta):
             return result.success
         raise TApplicationException(TApplicationException.MISSING_RESULT,
                                     "{} failed: unknown result".format(api))
+
+
+class TProcessor(object):
+    """Base class for procsessor, which works on two streams."""
+
+    thrift_services = []
+
+    def __init__(self, handler):
+        self._handler = handler
+
+    def process(self, iprot, oprot):
+        api, type, seqid = iprot.readMessageBegin()
+        if api not in self.thrift_services:
+            iprot.skip(TType.STRUCT)
+            iprot.readMessageEnd()
+            x = TApplicationException(TApplicationException.UNKNOWN_METHOD)
+            oprot.writeMessageBegin(api, TMessageType.EXCEPTION, seqid)
+            x.write(oprot)
+            oprot.writeMessageEnd()
+            oprot.trans.flush()
+
+        else:
+            args = getattr(self, api + "_args")()
+            args.read(iprot)
+            iprot.readMessageEnd()
+            result = getattr(self, api + "_result")()
+            result.success = getattr(self._handler, api)(**args.__dict__)
+            oprot.writeMessageBegin(api, TMessageType.REPLY, seqid)
+            result.write(oprot)
+            oprot.writeMessageEnd()
+            oprot.trans.flush()
 
 
 class TException(Exception):
