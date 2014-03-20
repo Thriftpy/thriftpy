@@ -164,8 +164,7 @@ class TClient(object, metaclass=TClientMeta):
         self._iprot.readMessageEnd()
         if result.success is not None:
             return result.success
-        raise TApplicationException(TApplicationException.MISSING_RESULT,
-                                    "{} failed: unknown result".format(api))
+        raise TApplicationException(TApplicationException.MISSING_RESULT)
 
 
 class TProcessor(object):
@@ -202,9 +201,8 @@ class TProcessor(object):
 class TException(Exception):
     """Base class for all thrift exceptions."""
 
-    @property
-    def message(self):
-        return str(self)
+    def __init__(self, message):
+        self.message = message
 
 
 class TApplicationException(TException, TPayload):
@@ -224,7 +222,7 @@ class TApplicationException(TException, TPayload):
     INTERNAL_ERROR = 6
     PROTOCOL_ERROR = 7
 
-    def __init__(self, message=None, type=UNKNOWN):
+    def __init__(self, type=UNKNOWN, message=None):
         super(TApplicationException, self).__init__(message)
         self.type = type
 
