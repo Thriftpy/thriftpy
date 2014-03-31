@@ -60,3 +60,7 @@ category = pa.Literal("required") | pa.Literal("optional")
 struct_field = pa.Group(integer("id") + COLON + category + ttype("ttype") + identifier("name") + pa.Optional(COMMA))
 struct_fields = pa.Group(pa.OneOrMore(struct_field))
 struct = _struct + identifier("struct") + LBRACE + struct_fields("fields") + RBRACE
+
+
+# entry
+thrift = pa.OneOrMore(Group(const | enum | struct))
