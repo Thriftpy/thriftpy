@@ -27,22 +27,24 @@ service ExampleService {
 # constants
 LBRACE, RBRACE, LBRACKET, RBRACKET, COLON, SEMI, COMMA, EQ = map(pa.Suppress, "{}():;,=")
 
+
 # keywords
-_const = pa.Suppress("const")
-_enum = pa.Suppress("enum")
-_struct = pa.Suppress("struct")
-_service = pa.Suppress("service")
+_const = pa.Keyword("const")
+_enum = pa.Keyword("enum")
+_struct = pa.Keyword("struct")
+_service = pa.Keyword("service")
 
 
 # ttypes
-bool_ = pa.Suppress("bool")
-byte_ = pa.Suppress("byte")
-i16_ = pa.Suppress("i16")
-i32_ = pa.Suppress("i32")
-i64_ = pa.Suppress("i64")
-double_ = pa.Suppress("double")
-string_ = pa.Suppress("string")
+bool_ = pa.Keyword("bool")
+byte_ = pa.Keyword("byte")
+i16_ = pa.Keyword("i16")
+i32_ = pa.Keyword("i32")
+i64_ = pa.Keyword("i64")
+double_ = pa.Keyword("double")
+string_ = pa.Keyword("string")
 ttype = bool_ | byte_ | i16_ | i32_ | i64_ | double_ | string_
+
 
 # general tokens
 identifier = pa.Word(pa.alphas)
@@ -73,7 +75,7 @@ structs = pa.Group(pa.OneOrMore(struct))("structs")
 # service parser
 api_param = pa.Group(integer("id") + COLON + ttype("ttype") + identifier("name"))
 api_params = pa.Group(pa.Optional(api_param) + pa.ZeroOrMore(COMMA + api_param))("params")
-service_api = pa.Group(ttype + identifier("api") + LBRACKET + api_params + RBRACKET + SEMI)
+service_api = pa.Group(ttype("ttype") + identifier("api") + LBRACKET + api_params + RBRACKET + SEMI)
 service_apis = pa.Group(pa.OneOrMore(service_api))("apis")
 service = pa.Group(_service + identifier("service") + LBRACE + service_apis + RBRACE)
 services = pa.Group(pa.OneOrMore(service))("services")
