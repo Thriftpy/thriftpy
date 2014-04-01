@@ -14,3 +14,8 @@ def deserialize(thrift_object, buf):
     protocol = TBinaryProtocol(transport)
     thrift_object.read(protocol)
     return thrift_object
+
+
+class AttributeDict(dict):
+    __getattr__ = dict.__getitem__
+    __setattr__ = dict.__setitem__

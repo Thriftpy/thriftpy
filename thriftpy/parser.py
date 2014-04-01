@@ -4,6 +4,7 @@ import pyparsing as pa
 
 
 from thriftpy.thrift import TType, TPayload
+from thriftpy.utils import AttributeDict
 
 
 example = """
@@ -88,19 +89,19 @@ def parse(schema):
 def load(schema):
     result = parse(schema)
 
-    thrift_objs = collections.defaultdict(dict)
+    thrift_schema = AttributeDict()
     _ttype = lambda t: getattr(TType, t.upper())
 
     # load consts
     for const in result.consts:
-        thrift_objs["consts"][const.name] = const.value
+        setattr(thrift_schema, const.name, const.value)
 
     # load enums
     for enum in result.enums:
         enum_cls = type(enum.name, (object, ), {})
         for m in enum.members:
             setattr(enum_cls, m.name, m.value)
-        thrift_objs["enums"][enum.name] = enum_cls
+        setattr(thrift_schema, enum.name, enum_cls)
 
     # load structs
     for struct in result.structs:
@@ -109,7 +110,7 @@ def load(schema):
         for m in struct.members:
             thrift_spec[m.id] = _ttype(m.ttype), m.name, None, None
         setattr(struct_cls, "thrift_spec", thrift_spec)
-        thrift_objs["structs"][struct.name] = struct_cls
+        setattr(thrift_schema, struct.name, struct_cls)
 
     # load services
     for service in result.services:
@@ -130,9 +131,9 @@ def load(schema):
             setattr(api_result_cls, "thrift_spec", api_result_spec)
             setattr(service_cls, "%s_result" % api.name, api_result_cls)
         setattr(service_cls, "thrift_services", thrift_services)
-        thrift_objs["services"][service.name] = service_cls
+        setattr(thrift_schema, service.name, service_cls)
 
-    return thrift_objs
+    return thrift_schema
 
 
 def import_hook():
