@@ -6,5 +6,5 @@ struct Item {
 service ExampleService {
     bool ping();
     string hello(1: string name);
-    Item make(1: i32 id, 2: string name),
+    Item make(1: i32 id, 2: string name);
 }
