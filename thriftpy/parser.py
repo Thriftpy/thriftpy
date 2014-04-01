@@ -1,4 +1,10 @@
+import collections
+
 import pyparsing as pa
+
+
+from thriftpy.thrift import TType, TPayload
+
 
 example = """
 const i16 DEFAULT = 10
@@ -53,15 +59,15 @@ def parse(schema):
 
     # enum parser
     enum_value = pa.Group(identifier('name') + pa.Optional(EQ + integer('value')))
-    enum_list = pa.Group(enum_value + pa.ZeroOrMore(COMMA + enum_value) + pa.Optional(COMMA))("names")
-    enum = pa.Group(_enum + identifier("enum") + LBRACE + enum_list + RBRACE)
+    enum_list = pa.Group(enum_value + pa.ZeroOrMore(COMMA + enum_value) + pa.Optional(COMMA))("members")
+    enum = pa.Group(_enum + identifier("name") + LBRACE + enum_list + RBRACE)
     enums = pa.Group(pa.OneOrMore(enum))("enums")
 
     # struct parser
     category = pa.Literal("required") | pa.Literal("optional")
     struct_field = pa.Group(integer("id") + COLON + category + ttype("ttype") + identifier("name") + pa.Optional(COMMA))
-    struct_fields = pa.Group(pa.OneOrMore(struct_field))("fields")
-    struct = pa.Group(_struct + identifier("struct") + LBRACE + struct_fields + RBRACE)
+    struct_members = pa.Group(pa.OneOrMore(struct_field))("members")
+    struct = pa.Group(_struct + identifier("name") + LBRACE + struct_members + RBRACE)
     structs = pa.Group(pa.OneOrMore(struct))("structs")
 
 
@@ -70,10 +76,66 @@ def parse(schema):
     api_params = pa.Group(pa.Optional(api_param) + pa.ZeroOrMore(COMMA + api_param))("params")
     service_api = pa.Group(ttype("ttype") + identifier("api") + LBRACKET + api_params + RBRACKET + SEMI)
     service_apis = pa.Group(pa.OneOrMore(service_api))("apis")
-    service = pa.Group(_service + identifier("service") + LBRACE + service_apis + RBRACE)
+    service = pa.Group(_service + identifier("name") + LBRACE + service_apis + RBRACE)
     services = pa.Group(pa.OneOrMore(service))("services")
 
     # entry
     parser = pa.OneOrMore(consts | enums | structs | services)
 
     return parser.parseString(schema)
+
+
+def load(schema):
+    result = parse(schema)
+
+    thrift_objs = collections.defaultdict(dict)
+    _ttype = lambda t: getattr(TType, t.upper())
+
+    # load consts
+    for const in result.consts:
+        thrift_objs["consts"][const.name] = const.value
+
+    # load enums
+    for enum in result.enums:
+        enum_cls = type(enum.name, (object, ), {})
+        for m in enum.members:
+            setattr(enum_cls, m.name, m.value)
+        thrift_objs["enums"][enum.name] = enum_cls
+
+    # load structs
+    for struct in result.structs:
+        struct_cls = type(struct.name, (TPayload, ), {})
+        thrift_spec = {}
+        for m in struct.members:
+            thrift_spec[m.id] = _ttype(m.ttype), m.name, None, None
+        setattr(struct_cls, "thrift_spec", thrift_spec)
+        thrift_objs["structs"][struct.name] = struct_cls
+
+    # load services
+    for service in result.services:
+        service_cls = type(service.name, (object, ), {})
+        thrift_services = []
+        for api in service.apis:
+            thrift_services.append(api.name)
+
+            api_args_cls = type("%s_args" % api.name, (TPayload, ), {})
+            api_args_spec = {}
+            for param in api.params:
+                api_args_spec[param.id] = param.ttype, param.name, None, None
+            setattr(api_args_cls, "thrift_spec", api_args_spec)
+            setattr(service_cls, "%s_args" % api.name, api_args_cls)
+
+            api_result_cls = type("%s_result" % api.name, (TPayload, ), {})
+            api_result_spec = {0: (_ttype(api.ttype), "success", None, None)}
+            setattr(api_result_cls, "thrift_spec", api_result_spec)
+            setattr(service_cls, "%s_result" % api.name, api_result_cls)
+        setattr(service_cls, "thrift_services", thrift_services)
+        thrift_objs["services"][service.name] = service_cls
+
+    return thrift_objs
+
+
+def import_hook():
+    """Load thrift file as a module.
+    """
+    pass

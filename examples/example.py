@@ -5,6 +5,14 @@ from thriftpy.thrift import (
     TType,
 )
 
+DEFAULT = 10
+MAX = 200
+
+
+class MessageStatus(object):
+    VALID = 0
+    INVALID = 1
+
 
 class TItem(TPayload):
     thrift_spec = {
