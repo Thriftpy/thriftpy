@@ -1,7 +1,6 @@
-from thriftpy.transport import TServerSocket
-from thriftpy.server import TThreadedServer
+from thriftpy.rpc import make_server
 
-import example as example_thrift
+import example_thrift
 
 
 class Dispatcher(object):
@@ -11,19 +10,10 @@ class Dispatcher(object):
     def hello(self, name):
         return "Hello {}!".format(name)
 
-    def make(self, id, name):
-        return example_thrift.TItem(id=id, name=name)
-
-
-def make_server(host, port):
-    processor = example_thrift.Processor(Dispatcher())
-    transport = TServerSocket(host=host, port=port)
-    server = TThreadedServer(processor, transport)
-    return server
-
 
 def main():
-    server = make_server('127.0.0.1', 8000)
+    server = make_server(example_thrift.ExampleService, Dispatcher(),
+                         '127.0.0.1', 8000)
     print("serving...")
     server.serve()
 
