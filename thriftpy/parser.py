@@ -1,10 +1,11 @@
 import collections
+import types
+import sys
 
 import pyparsing as pa
 
 
 from thriftpy.thrift import TType, TPayload
-from thriftpy.utils import AttributeDict
 
 
 example = """
@@ -86,10 +87,12 @@ def parse(schema):
     return parser.parseString(schema)
 
 
-def load(schema):
-    result = parse(schema)
+def load(thrift_file):
+    module_name = thrift_file[:thrift_file.find('.')]
+    with open(thrift_file, 'r') as f:
+        result = parse(f.read())
 
-    thrift_schema = AttributeDict()
+    thrift_schema = types.ModuleType(module_name)
     _ttype = lambda t: getattr(TType, t.upper())
 
     # load consts
@@ -136,7 +139,24 @@ def load(schema):
     return thrift_schema
 
 
-def import_hook():
-    """Load thrift file as a module.
-    """
-    pass
+class ThriftImporter(object):
+    def __init__(self, extension="_thrift"):
+        self.extension = extension
+
+    def __eq__(self, other):
+        return self.__class__.__module__ == other.__class__.__module__ and \
+               self.__class__.__name__ == other.__class__.__name__ and \
+               self.extension == other.extension
+
+    def install(self):
+        sys.meta_path[:] = [x for x in sys.meta_path if self != x] + [self]
+
+    def find_module(self, fullname, path=None):
+        if fullname.endswith(self.extension):
+            return self
+
+    def load_module(self, fullname):
+        filename = fullname.replace('_', '.', 1)
+        module = load(filename)
+        sys.modules[fullname] = module
+        return module
