@@ -1,4 +1,5 @@
-import collections
+# flake8: noqa
+
 import types
 import sys
 
@@ -125,7 +126,8 @@ def load(thrift_file):
             api_args_cls = type("%s_args" % api.name, (TPayload, ), {})
             api_args_spec = {}
             for param in api.params:
-                api_args_spec[param.id] = param.ttype, param.name, None, None
+                api_args_spec[int(param.id)] = (_ttype(param.ttype),
+                                           param.name, None, None)
             setattr(api_args_cls, "thrift_spec", api_args_spec)
             setattr(service_cls, "%s_args" % api.name, api_args_cls)
 
@@ -145,8 +147,8 @@ class ThriftImporter(object):
 
     def __eq__(self, other):
         return self.__class__.__module__ == other.__class__.__module__ and \
-               self.__class__.__name__ == other.__class__.__name__ and \
-               self.extension == other.extension
+            self.__class__.__name__ == other.__class__.__name__ and \
+            self.extension == other.extension
 
     def install(self):
         sys.meta_path[:] = [x for x in sys.meta_path if self != x] + [self]
