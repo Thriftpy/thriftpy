@@ -5,7 +5,7 @@ import sys
 import pyparsing as pa
 
 
-from thriftpy.thrift import TType, TPayload
+from .thrift import TType, TPayload
 
 
 example = """
@@ -76,7 +76,7 @@ def parse(schema):
     # service parser
     api_param = pa.Group(integer("id") + COLON + ttype("ttype") + identifier("name"))
     api_params = pa.Group(pa.Optional(api_param) + pa.ZeroOrMore(COMMA + api_param))("params")
-    service_api = pa.Group(ttype("ttype") + identifier("api") + LBRACKET + api_params + RBRACKET + SEMI)
+    service_api = pa.Group(ttype("ttype") + identifier("name") + LBRACKET + api_params + RBRACKET + SEMI)
     service_apis = pa.Group(pa.OneOrMore(service_api))("apis")
     service = pa.Group(_service + identifier("name") + LBRACE + service_apis + RBRACE)
     services = pa.Group(pa.OneOrMore(service))("services")
