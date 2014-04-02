@@ -1,5 +1,6 @@
 # flake8: noqa
 
+import collections
 import types
 import sys
 
@@ -10,32 +11,40 @@ from .thrift import TType, TPayload
 
 
 example = """
+typedef string json
+
 const i16 DEFAULT = 10
-const i16 MAX = 200
+const string HELLO = "hello"
+const json DETAIL = "{'hello': 'world'}"
 
 enum MessageStatus {
     VALID = 0,
     INVALID = 1,
 }
 
-struct Item {
+struct TItem {
     1: optional i32 id,
     2: optional string name,
+    3: optional json detail,
 }
 
 service ExampleService {
     bool ping();
     string hello(1: string name);
+    TItem make(1: string name, 2: json detail);
 }
 """
 
 
 def parse(schema):
+    result = collections.defaultdict(dict)
+    typemap = {}
 
     # constants
-    LBRACE, RBRACE, LBRACKET, RBRACKET, COLON, SEMI, COMMA, EQ = map(pa.Suppress, "{}():;,=")
+    LPAR, RPAR, LBRACK, RBRACK, LBRACE, RBRACE, COLON, SEMI, COMMA, EQ = map(pa.Suppress, "()[]{}:;,=")
 
     # keywords
+    _typedef = pa.Keyword("typedef")
     _const = pa.Keyword("const")
     _enum = pa.Keyword("enum")
     _struct = pa.Keyword("struct")
@@ -53,39 +62,53 @@ def parse(schema):
 
     # general tokens
     identifier = pa.Word(pa.alphas)
-    integer = pa.Word(pa.nums)
-    value = pa.Word(pa.alphas + pa.nums)
+
+    value = pa.Forward()
+    integer_ = pa.Word(pa.nums)
+    string_ = pa.quotedString
+    list_ = LBRACK + pa.Group(value + pa.ZeroOrMore(COMMA + value)) + RBRACK
+    value << (integer_ | string_ | list_)
+
+    # typedef parser
+    typedef = _typedef + ttype("ttype") + identifier("name")
+    for t, _, _ in typedef.scanString(schema):
+        result["typedefs"][t.name] = t.ttype
+        typemap[t.name] = t.ttype
 
     # const parser
-    const = pa.Group(_const + ttype + identifier("name") + EQ + value("value"))
-    consts = pa.Group(pa.OneOrMore(const))("consts")
+    utype = ttype
+    for t in typemap:
+        utype |= pa.Keyword(t)
+
+    const = _const + utype + identifier("name") + EQ + value("value")
+    result["consts"] = {c.name: c for c, _, _ in const.scanString(schema)}
 
     # enum parser
-    enum_value = pa.Group(identifier('name') + pa.Optional(EQ + integer('value')))
+    enum_value = pa.Group(identifier('name') + pa.Optional(EQ + integer_('value')))
     enum_list = pa.Group(enum_value + pa.ZeroOrMore(COMMA + enum_value) + pa.Optional(COMMA))("members")
-    enum = pa.Group(_enum + identifier("name") + LBRACE + enum_list + RBRACE)
-    enums = pa.Group(pa.OneOrMore(enum))("enums")
+    enum = _enum + identifier("name") + LBRACE + enum_list + RBRACE
+    result["enums"] = {e.name: e for e, _, _ in enum.scanString(schema)}
 
     # struct parser
     category = pa.Literal("required") | pa.Literal("optional")
-    struct_field = pa.Group(integer("id") + COLON + category + ttype("ttype") + identifier("name") + pa.Optional(COMMA))
+    struct_field = pa.Group(integer_("id") + COLON + category + utype("ttype") + identifier("name") + pa.Optional(COMMA))
     struct_members = pa.Group(pa.OneOrMore(struct_field))("members")
-    struct = pa.Group(_struct + identifier("name") + LBRACE + struct_members + RBRACE)
-    structs = pa.Group(pa.OneOrMore(struct))("structs")
-
+    struct = _struct + identifier("name") + LBRACE + struct_members + RBRACE
+    result["structs"] = {s.name: s for s, _, _ in struct.scanString(schema)}
 
     # service parser
-    api_param = pa.Group(integer("id") + COLON + ttype("ttype") + identifier("name"))
+    ftype = utype | pa.Keyword("oneway") | pa.Keyword("void")
+    for struct in result["structs"]:
+        ftype |= pa.Keyword(struct)
+
+    api_param = pa.Group(integer_("id") + COLON + utype("ttype") + identifier("name"))
     api_params = pa.Group(pa.Optional(api_param) + pa.ZeroOrMore(COMMA + api_param))("params")
-    service_api = pa.Group(ttype("ttype") + identifier("name") + LBRACKET + api_params + RBRACKET + SEMI)
+    service_api = pa.Group(ftype("ttype") + identifier("name") + LPAR + api_params + RPAR + SEMI)
     service_apis = pa.Group(pa.OneOrMore(service_api))("apis")
-    service = pa.Group(_service + identifier("name") + LBRACE + service_apis + RBRACE)
-    services = pa.Group(pa.OneOrMore(service))("services")
+    service = _service + identifier("name") + LBRACE + service_apis + RBRACE
+    result["services"] = {s.name: s for s, _, _ in service.scanString(schema)}
 
-    # entry
-    parser = pa.OneOrMore(consts | enums | structs | services)
-
-    return parser.parseString(schema)
+    return result
 
 
 def load(thrift_file):
@@ -97,18 +120,18 @@ def load(thrift_file):
     _ttype = lambda t: getattr(TType, t.upper())
 
     # load consts
-    for const in result.consts:
+    for const in result["consts"].values():
         setattr(thrift_schema, const.name, const.value)
 
     # load enums
-    for enum in result.enums:
+    for enum in result["enums"].values():
         enum_cls = type(enum.name, (object, ), {})
         for m in enum.members:
             setattr(enum_cls, m.name, m.value)
         setattr(thrift_schema, enum.name, enum_cls)
 
     # load structs
-    for struct in result.structs:
+    for struct in result["structs"].values():
         struct_cls = type(struct.name, (TPayload, ), {})
         thrift_spec = {}
         for m in struct.members:
@@ -117,7 +140,7 @@ def load(thrift_file):
         setattr(thrift_schema, struct.name, struct_cls)
 
     # load services
-    for service in result.services:
+    for service in result["services"].values():
         service_cls = type(service.name, (object, ), {})
         thrift_services = []
         for api in service.apis:
