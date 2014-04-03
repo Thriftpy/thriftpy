@@ -51,14 +51,14 @@ def parse(schema):
     _service = pa.Keyword("service")
 
     # ttypes
-    bool_ = pa.Keyword("bool")
-    byte_ = pa.Keyword("byte")
-    i16_ = pa.Keyword("i16")
-    i32_ = pa.Keyword("i32")
-    i64_ = pa.Keyword("i64")
-    double_ = pa.Keyword("double")
-    string_ = pa.Keyword("string")
-    ttype = bool_ | byte_ | i16_ | i32_ | i64_ | double_ | string_
+    t_bool = pa.Keyword("bool")
+    t_byte = pa.Keyword("byte")
+    t_i16 = pa.Keyword("i16")
+    t_i32 = pa.Keyword("i32")
+    t_i64 = pa.Keyword("i64")
+    t_double = pa.Keyword("double")
+    t_string = pa.Keyword("string")
+    ttype = t_bool | t_byte | t_i16 | t_i32 | t_i64 | t_double | t_string
 
     # general tokens
     identifier = pa.Word(pa.alphas)
