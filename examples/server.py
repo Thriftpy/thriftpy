@@ -12,7 +12,7 @@ class Dispatcher(object):
         return "Hello {}!".format(name)
 
     def make(self, id, name):
-        return example_thrift.TItem(id=id, name=name)
+        return example_thrift.TItem(id, name)
 
 
 def main():

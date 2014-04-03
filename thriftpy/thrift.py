@@ -8,6 +8,11 @@
 import functools
 
 
+def args2kwargs(thrift_spec, *args):
+    arg_names = [item[1][1] for item in sorted(thrift_spec.items())]
+    return dict(zip(arg_names, args))
+
+
 class TType(object):
     STOP = 0
     VOID = 1
@@ -58,7 +63,10 @@ class TMessageType(object):
 class TPayload(object):
     thrift_spec = {}
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
+        _kw = args2kwargs(self.thrift_spec, *args)
+        kwargs.update(_kw)
+
         for _, v in self.thrift_spec.items():
             k = v[1]
             setattr(self, k, kwargs.get(k, None))
@@ -133,9 +141,9 @@ class TClient(object):
         return self._service.thrift_services
 
     def _req(self, api, *args, **kwargs):
-        method_args = [item[1][1] for item in sorted(
-            getattr(self._service, api + "_args").thrift_spec.items())]
-        kwargs.update(dict(zip(method_args, args)))
+        _kw = args2kwargs(getattr(self._service, api + "_args").thrift_spec,
+                          *args)
+        kwargs.update(_kw)
         self._send(api, **kwargs)
         return self._recv(api)
 
