@@ -61,7 +61,7 @@ def parse(schema):
     ttype = t_bool | t_byte | t_i16 | t_i32 | t_i64 | t_double | t_string
 
     # general tokens
-    identifier = pa.Word(pa.alphas)
+    identifier = pa.Word(pa.alphas + '_')
 
     value = pa.Forward()
     integer_ = pa.Word(pa.nums)
@@ -121,7 +121,7 @@ def load(thrift_file):
     _ttype = lambda t: getattr(TType, t.upper())
 
     # load typedefs
-    typemap = {t.name: t.value for t in result["typedefs"].values()}
+    typemap = {t.name: t.ttype for t in result["typedefs"].values()}
     _utype = lambda t: _ttype(typemap[t]) if t in typemap else _ttype(t)
 
     # load consts

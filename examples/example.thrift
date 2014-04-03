@@ -7,8 +7,8 @@ enum MessageStatus {
 }
 
 struct TItem {
-    1: optional i32 id,
-    2: optional string name,
+    1: required i32 id,
+    2: optional string item_name,
 }
 
 service ExampleService {
