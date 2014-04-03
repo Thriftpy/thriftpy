@@ -1,5 +1,6 @@
 from thriftpy.rpc import make_server
 
+# import example as example_thrift
 import example_thrift
 
 
@@ -9,6 +10,9 @@ class Dispatcher(object):
 
     def hello(self, name):
         return "Hello {}!".format(name)
+
+    def make(self, id, name):
+        return example_thrift.TItem(id=id, name=name)
 
 
 def main():

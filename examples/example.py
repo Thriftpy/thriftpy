@@ -14,15 +14,16 @@ class MessageStatus(object):
 
 class TItem(TPayload):
     thrift_spec = {
-        1: (TType.I32, 'id', None, None),
-        2: (TType.STRING, 'name', None, None),
+        1: (TType.I32, 'id'),
+        2: (TType.STRING, 'name'),
     }
 
 
-class TService(object):
+class ExampleService(object):
     thrift_services = [
         "ping",
         "hello",
+        "make",
     ]
 
     class ping_args(TPayload):
@@ -31,15 +32,24 @@ class TService(object):
 
     class ping_result(TPayload):
         thrift_spec = {
-            0: (TType.BOOL, 'success', None, None),
+            0: (TType.BOOL, 'success'),
         }
 
     class hello_args(TPayload):
-        thrift_spec = {
-            1: (TType.STRING, 'name', None, None, )
-        }
+        thrift_spec = {1: (TType.STRING, 'name')}
 
     class hello_result(TPayload):
         thrift_spec = {
-            0: (TType.STRING, 'success', None, None),
+            0: (TType.STRING, 'success'),
+        }
+
+    class make_args(TPayload):
+        thrift_spec = {
+            1: (TType.I32, 'id'),
+            2: (TType.STRING, 'name')
+        }
+
+    class make_result(TPayload):
+        thrift_spec = {
+            0: (TType.STRUCT, 'success', TItem),
         }
