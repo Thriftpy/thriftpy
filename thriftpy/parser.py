@@ -72,7 +72,7 @@ def parse(schema):
     # typedef parser
     typedef = _typedef + ttype("ttype") + identifier("name")
     for t, _, _ in typedef.scanString(schema):
-        result["typedefs"][t.name] = t.ttype
+        result["typedefs"][t.name] = t
         typemap[t.name] = t.ttype
 
     # const parser
@@ -116,8 +116,13 @@ def load(thrift_file):
     with open(thrift_file, 'r') as f:
         result = parse(f.read())
 
+    # load thrift schema as module
     thrift_schema = types.ModuleType(module_name)
     _ttype = lambda t: getattr(TType, t.upper())
+
+    # load typedefs
+    typemap = {t.name: t.value for t in result["typedefs"].values()}
+    _utype = lambda t: _ttype(typemap[t]) if t in typemap else _ttype(t)
 
     # load consts
     for const in result["consts"].values():
@@ -135,7 +140,7 @@ def load(thrift_file):
         struct_cls = type(struct.name, (TPayload, ), {})
         thrift_spec = {}
         for m in struct.members:
-            thrift_spec[m.id] = _ttype(m.ttype), m.name, None, None
+            thrift_spec[int(m.id)] = _utype(m.ttype), m.name
         setattr(struct_cls, "thrift_spec", thrift_spec)
         setattr(thrift_schema, struct.name, struct_cls)
 
@@ -149,13 +154,16 @@ def load(thrift_file):
             api_args_cls = type("%s_args" % api.name, (TPayload, ), {})
             api_args_spec = {}
             for param in api.params:
-                api_args_spec[int(param.id)] = (_ttype(param.ttype),
-                                           param.name, None, None)
+                api_args_spec[int(param.id)] = _ttype(param.ttype), param.name
             setattr(api_args_cls, "thrift_spec", api_args_spec)
             setattr(service_cls, "%s_args" % api.name, api_args_cls)
 
             api_result_cls = type("%s_result" % api.name, (TPayload, ), {})
-            api_result_spec = {0: (_ttype(api.ttype), "success", None, None)}
+            if api.ttype in result["structs"]:
+                api_result_spec = {0: (TType.STRUCT, "success",
+                                       getattr(thrift_schema, api.ttype))}
+            else:
+                api_result_spec = {0: (_ttype(api.ttype), "success")}
             setattr(api_result_cls, "thrift_spec", api_result_spec)
             setattr(service_cls, "%s_result" % api.name, api_result_cls)
         setattr(service_cls, "thrift_services", thrift_services)

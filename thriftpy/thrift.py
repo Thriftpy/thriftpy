@@ -63,6 +63,9 @@ class TPayload(object):
             k = v[1]
             setattr(self, k, kwargs.get(k, None))
 
+    def _parse_spec(self, spec):
+        return spec + (None,) if len(spec) == 2 else spec
+
     def read(self, iprot):
         iprot.readStructBegin()
 
@@ -75,7 +78,7 @@ class TPayload(object):
                 iprot.skip(ftype)
             else:
                 spec = self.thrift_spec[fid]
-                spec_type, spec_name, container_spec, _none = spec
+                spec_type, spec_name, container_spec = self._parse_spec(spec)
                 if spec_type == ftype:
                     setattr(self, spec_name,
                             iprot.readFieldByTType(ftype, container_spec))
@@ -89,7 +92,7 @@ class TPayload(object):
         oprot.writeStructBegin(self.__class__.__name__)
 
         for fid, spec in self.thrift_spec.items():
-            spec_type, spec_name, container_spec, _none = spec
+            spec_type, spec_name, container_spec = self._parse_spec(spec)
             val = getattr(self, spec_name)
             if val is not None:
                 oprot.writeFieldBegin(spec_name, spec_type, fid)

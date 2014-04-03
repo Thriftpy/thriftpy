@@ -313,8 +313,7 @@ class TBinaryProtocol(object):
         self.readSetEnd()
         return results
 
-    def readContainerStruct(self, spec):
-        (obj_class, obj_spec) = spec
+    def readContainerStruct(self, obj_class):
         obj = obj_class()
         obj.read(self)
         return obj
