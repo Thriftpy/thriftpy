@@ -30,7 +30,7 @@ class TBinaryProtocol(object):
     VERSION_1 = -2147418112
     TYPE_MASK = 0x000000ff
 
-    # tuple of: ('reader method' name, is_container bool, 'writer_method' name)
+    # tuple of: ('reader method' name, 'writer_method' name, is_container bool)
     _TTYPE_HANDLERS = (
         (None, None, False),    # 0 TType.STOP
         (None, None, False),    # 1 TType.VOID # TODO: handle void?
@@ -52,20 +52,13 @@ class TBinaryProtocol(object):
         (None, None, False)    # 17 TType.UTF16 # TODO: handle utf16 types?
     )
 
-    def __init__(self, trans, strictRead=False, strictWrite=True):
+    def __init__(self, trans):
         self.trans = trans
-        self.strictRead = strictRead
-        self.strictWrite = strictWrite
 
-    def writeMessageBegin(self, name, type, seqid):
-        if self.strictWrite:
-            self.writeI32(TBinaryProtocol.VERSION_1 | type)
-            self.writeString(name)
-            self.writeI32(seqid)
-        else:
-            self.writeString(name)
-            self.writeByte(type)
-            self.writeI32(seqid)
+    def writeMessageBegin(self, name, type_, seqid):
+        self.writeI32(TBinaryProtocol.VERSION_1 | type_)
+        self.writeString(name)
+        self.writeI32(seqid)
 
     def writeMessageEnd(self):
         pass
@@ -108,11 +101,8 @@ class TBinaryProtocol(object):
     def writeSetEnd(self):
         pass
 
-    def writeBool(self, bool):
-        if bool:
-            self.writeByte(1)
-        else:
-            self.writeByte(0)
+    def writeBool(self, bool_):
+        self.writeByte(1) if bool_ else self.writeByte(0)
 
     def writeByte(self, byte):
         buff = struct.pack("!b", byte)
@@ -140,23 +130,15 @@ class TBinaryProtocol(object):
 
     def readMessageBegin(self):
         sz = self.readI32()
-        if sz < 0:
-            version = sz & TBinaryProtocol.VERSION_MASK
-            if version != TBinaryProtocol.VERSION_1:
-                raise TProtocolException(
-                    type=TProtocolException.BAD_VERSION,
-                    message='Bad version in readMessageBegin: %d' % (sz))
-            type = sz & TBinaryProtocol.TYPE_MASK
-            name = self.readString()
-            seqid = self.readI32()
-        else:
-            if self.strictRead:
-                raise TProtocolException(type=TProtocolException.BAD_VERSION,
-                                         message='No protocol version header')
-            name = self.trans.readAll(sz).decode('utf-8')
-            type = self.readByte()
-            seqid = self.readI32()
-        return (name, type, seqid)
+        version = sz & TBinaryProtocol.VERSION_MASK
+        if version != TBinaryProtocol.VERSION_1:
+            raise TProtocolException(
+                type=TProtocolException.BAD_VERSION,
+                message='Bad version in readMessageBegin: %d' % (sz))
+        type_ = sz & TBinaryProtocol.TYPE_MASK
+        name = self.readString()
+        seqid = self.readI32()
+        return name, type_, seqid
 
     def readMessageEnd(self):
         pass
@@ -168,11 +150,11 @@ class TBinaryProtocol(object):
         pass
 
     def readFieldBegin(self):
-        type = self.readByte()
-        if type == TType.STOP:
-            return (None, type, 0)
+        type_ = self.readByte()
+        if type_ == TType.STOP:
+            return (None, type_, 0)
         id = self.readI16()
-        return (None, type, id)
+        return None, type_, id
 
     def readFieldEnd(self):
         pass
@@ -431,7 +413,7 @@ class TBinaryProtocol(object):
 
     def writeStruct(self, obj, thrift_spec):
         self.writeStructBegin(obj.__class__.__name__)
-        #for field in thrift_spec:
+        # for field in thrift_spec:
         for fid, spec in thrift_spec.items():
             spec_type, spec_name, container_spec, _none = spec
             val = getattr(obj, spec_name)
@@ -454,9 +436,5 @@ class TBinaryProtocol(object):
 
 
 class TBinaryProtocolFactory(object):
-    def __init__(self, strictRead=False, strictWrite=True):
-        self.strictRead = strictRead
-        self.strictWrite = strictWrite
-
     def getProtocol(self, trans):
-        return TBinaryProtocol(trans, self.strictRead, self.strictWrite)
+        return TBinaryProtocol(trans)
