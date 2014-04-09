@@ -158,12 +158,10 @@ def load(thrift_file):
 
     # load consts
     for name, value in result["consts"].items():
-        print("parsing const: {}".format(name))
         setattr(thrift_schema, name, value)
 
     # load enums
     for name, enum in result["enums"].items():
-        print("parsing enum: {}".format(name))
         enum_cls = type(name, (object, ), {})
         value = 0
         for m in enum.members:
@@ -176,7 +174,6 @@ def load(thrift_file):
 
     # load structs
     for struct in result["structs"]:
-        print("parsing struct: {}".format(struct.name))
         struct_cls = type(struct.name, (TPayload, ), {})
         thrift_spec = {}
         for m in struct.members:
@@ -186,7 +183,6 @@ def load(thrift_file):
 
     # load services
     for service in result["services"]:
-        print("parsing service: {}".format(service.name))
         service_cls = type(service.name, (object, ), {})
         thrift_services = []
         for api in service.apis:
