@@ -290,8 +290,7 @@ class TBinaryProtocol(object):
             container_reader = self._TTYPE_HANDLERS[list_type][0]
             val_reader = getattr(self, container_reader)
             for idx in range(list_len):
-                val = val_reader(tspec)
-                results.append(val)
+                results.append(val_reader(tspec))
         self.readListEnd()
         return results
 
@@ -300,7 +299,7 @@ class TBinaryProtocol(object):
         ttype, tspec = spec[0], spec[1]
         r_handler = self._TTYPE_HANDLERS[ttype][0]
         reader = getattr(self, r_handler)
-        (set_type, set_len) = self.readSetBegin()
+        set_type, set_len = self.readSetBegin()
         if tspec is None:
             # set members are simple types
             for idx in range(set_len):
@@ -320,13 +319,22 @@ class TBinaryProtocol(object):
 
     def readContainerMap(self, spec):
         results = dict()
-        key_ttype, key_spec = spec[0], spec[1]
-        val_ttype, val_spec = spec[2], spec[3]
-        (map_ktype, map_vtype, map_len) = self.readMapBegin()
+        key_ttype, val_ttype = spec
+        map_ktype, map_vtype, map_len = self.readMapBegin()
+        if isinstance(key_ttype, int):
+            key_spec = None
+        else:
+            key_ttype, key_spec = key_ttype
+        if isinstance(val_ttype, int):
+            val_spec = None
+        else:
+            val_ttype, val_spec = val_ttype
+
         # TODO: compare types we just decoded with thrift_spec and
         # abort/skip if types disagree
         key_reader = getattr(self, self._TTYPE_HANDLERS[key_ttype][0])
         val_reader = getattr(self, self._TTYPE_HANDLERS[val_ttype][0])
+
         # list values are simple types
         for idx in range(map_len):
             if key_spec is None:
@@ -392,22 +400,33 @@ class TBinaryProtocol(object):
         self.writeSetEnd()
 
     def writeContainerMap(self, val, spec):
-        k_type = spec[0]
-        v_type = spec[2]
-        ignore, ktype_name, k_is_container = self._TTYPE_HANDLERS[k_type]
-        ignore, vtype_name, v_is_container = self._TTYPE_HANDLERS[v_type]
+        if isinstance(spec[0], int):
+            k_type = spec[0]
+            k_spec = None
+        else:
+            k_type, k_spec = spec[0]
+
+        if isinstance(spec[1], int):
+            v_type = spec[1]
+            v_spec = None
+        else:
+            v_type, v_spec = spec[1]
+
+        _, ktype_name, k_is_container = self._TTYPE_HANDLERS[k_type]
+        _, vtype_name, v_is_container = self._TTYPE_HANDLERS[v_type]
         k_writer = getattr(self, ktype_name)
         v_writer = getattr(self, vtype_name)
+
         self.writeMapBegin(k_type, v_type, len(val))
-        for m_key, m_val in val.iteritems():
+        for m_key, m_val in val.items():
             if not k_is_container:
                 k_writer(m_key)
             else:
-                k_writer(m_key, spec[1])
+                k_writer(m_key, k_spec)
             if not v_is_container:
                 v_writer(m_val)
             else:
-                v_writer(m_val, spec[3])
+                v_writer(m_val, v_spec)
         self.writeMapEnd()
 
     def writeStruct(self, obj, thrift_spec):
