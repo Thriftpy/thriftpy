@@ -31,7 +31,7 @@ class TBinaryProtocol(object):
     TYPE_MASK = 0x000000ff
 
     # tuple of: ('reader method' name, 'writer_method' name, is_container bool)
-    _TTYPE_HANDLERS = (
+    _TTYPE_HANDLERS = [
         (None, None, False),    # 0 TType.STOP
         (None, None, False),    # 1 TType.VOID # TODO: handle void?
         ('readBool', 'writeBool', False),    # 2 TType.BOOL
@@ -50,7 +50,7 @@ class TBinaryProtocol(object):
         ('readContainerList', 'writeContainerList', True),    # 15 TType.LIST
         (None, None, False),    # 16 TType.UTF8 # TODO: handle utf8 types?
         (None, None, False)    # 17 TType.UTF16 # TODO: handle utf16 types?
-    )
+    ]
 
     def __init__(self, trans):
         self.trans = trans
@@ -260,7 +260,7 @@ class TBinaryProtocol(object):
 
     def readFieldByTType(self, ttype, spec):
         try:
-            r_handler, w_handler, is_container = self._TTYPE_HANDLERS[ttype]
+            r_handler = self._TTYPE_HANDLERS[ttype][0]
         except IndexError:
             raise TProtocolException(type=TProtocolException.INVALID_DATA,
                                      message='Invalid field type %d' % (ttype))
@@ -268,7 +268,7 @@ class TBinaryProtocol(object):
             raise TProtocolException(type=TProtocolException.INVALID_DATA,
                                      message='Invalid field type %d' % (ttype))
         reader = getattr(self, r_handler)
-        if not is_container:
+        if spec is None:
             return reader()
         return reader(spec)
 
@@ -385,18 +385,18 @@ class TBinaryProtocol(object):
         else:
             v_type, v_spec = spec[1]
 
-        _, ktype_name, k_is_container = self._TTYPE_HANDLERS[k_type]
-        _, vtype_name, v_is_container = self._TTYPE_HANDLERS[v_type]
+        ktype_name = self._TTYPE_HANDLERS[k_type][1]
+        vtype_name = self._TTYPE_HANDLERS[v_type][1]
         k_writer = getattr(self, ktype_name)
         v_writer = getattr(self, vtype_name)
 
         self.writeMapBegin(k_type, v_type, len(val))
         for m_key, m_val in val.items():
-            if not k_is_container:
+            if k_spec is None:
                 k_writer(m_key)
             else:
                 k_writer(m_key, k_spec)
-            if not v_is_container:
+            if v_spec is None:
                 v_writer(m_val)
             else:
                 v_writer(m_val, v_spec)
