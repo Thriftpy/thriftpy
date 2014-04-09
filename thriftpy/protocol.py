@@ -95,11 +95,10 @@ class TBinaryProtocol(object):
         pass
 
     def writeSetBegin(self, etype, size):
-        self.writeByte(etype)
-        self.writeI32(size)
+        return self.writeListBegin(etype, size)
 
     def writeSetEnd(self):
-        pass
+        return self.writeListEnd()
 
     def writeBool(self, bool_):
         self.writeByte(1) if bool_ else self.writeByte(0)
@@ -177,12 +176,10 @@ class TBinaryProtocol(object):
         pass
 
     def readSetBegin(self):
-        etype = self.readByte()
-        size = self.readI32()
-        return etype, size
+        return self.readListBegin()
 
     def readSetEnd(self):
-        pass
+        return self.readListEnd()
 
     def readBool(self):
         byte = self.readByte()
@@ -295,22 +292,7 @@ class TBinaryProtocol(object):
         return results
 
     def readContainerSet(self, spec):
-        results = set()
-        ttype, tspec = spec[0], spec[1]
-        r_handler = self._TTYPE_HANDLERS[ttype][0]
-        reader = getattr(self, r_handler)
-        set_type, set_len = self.readSetBegin()
-        if tspec is None:
-            # set members are simple types
-            for idx in range(set_len):
-                results.add(reader())
-        else:
-            container_reader = self._TTYPE_HANDLERS[set_type][0]
-            val_reader = getattr(self, container_reader)
-            for idx in range(set_len):
-                results.add(val_reader(tspec))
-        self.readSetEnd()
-        return results
+        return set(self.readContainerList(spec))
 
     def readContainerStruct(self, obj_class):
         obj = obj_class()
@@ -388,16 +370,7 @@ class TBinaryProtocol(object):
         self.writeListEnd()
 
     def writeContainerSet(self, val, spec):
-        self.writeSetBegin(spec[0], len(val))
-        r_handler, w_handler, is_container = self._TTYPE_HANDLERS[spec[0]]
-        e_writer = getattr(self, w_handler)
-        if not is_container:
-            for elem in val:
-                e_writer(elem)
-        else:
-            for elem in val:
-                e_writer(elem, spec[1])
-        self.writeSetEnd()
+        return self.writeContainerList(val, spec)
 
     def writeContainerMap(self, val, spec):
         if isinstance(spec[0], int):
