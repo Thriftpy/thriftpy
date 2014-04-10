@@ -1,5 +1,6 @@
 from thriftpy.thrift import (
     TPayload,
+    TException,
     TType,
 )
 
@@ -33,12 +34,20 @@ class AddressBook(TPayload):
     }
 
 
+class PersonNotExistsError(TException):
+    thrift_spec = {
+        1: (TType.STRING, "message")
+    }
+
+
 class AddressBookService(object):
     thrift_services = [
         "ping",
         "add",
-        "del",
+        "remove",
         "get",
+        "book",
+        "get_phones",
     ]
 
     class ping_args(TPayload):
@@ -60,20 +69,31 @@ class AddressBookService(object):
             0: (TType.BOOL, "success"),
         }
 
-    class del_args(TPayload):
+    class remove_args(TPayload):
         thrift_spec = {
             1: (TType.STRING, "name"),
         }
 
-    class del_result(TPayload):
+    class remove_result(TPayload):
         thrift_spec = {
             0: (TType.BOOL, "success"),
+            1: (TType.STRUCT, "not_exists", PersonNotExistsError)
         }
 
     class get_args(TPayload):
-        thrift_spec = {}
+        thrift_spec = {
+            1: (TType.STRING, "name"),
+        }
 
     class get_result(TPayload):
+        thrift_spec = {
+            0: (TType.STRUCT, "success", Person),
+        }
+
+    class book_args(TPayload):
+        thrift_spec = {}
+
+    class book_result(TPayload):
         thrift_spec = {
             0: (TType.STRUCT, "success", AddressBook),
         }

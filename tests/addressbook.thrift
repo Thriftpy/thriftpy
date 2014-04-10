@@ -19,15 +19,21 @@ struct Person {
     4: optional timestamp created_at,
 }
 
+typedef map<string, Person> PersonMap
+
 struct AddressBook {
-    1: optional map<string, Person> people,
+    1: optional PersonMap people,
+}
+
+exception PersonNotExistsError {
+    1: optional string message,
 }
 
 service AddressBookService {
     bool ping();
     bool add(1: Person person);
-    bool delete(1: string name);
-    Person get(1: string name);
+    bool remove(1: string name) throws (1: PersonNotExistsError not_exists);
+    Person get(1: string name) throws (1: PersonNotExistsError not_exists);
     AddressBook book();
     map<PhoneType, string> get_phones(1: string name);
 }

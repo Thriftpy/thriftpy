@@ -1,6 +1,7 @@
 from thriftpy.rpc import make_server
 
-import addressbook_thrift as addressbook
+import addressbook
+# import addressbook_thrift as addressbook
 
 
 class Dispatcher(object):
@@ -15,12 +16,20 @@ class Dispatcher(object):
         self.ab.people[person.name] = person
         return True
 
-    def delete(self, name):
-        self.ab.people.pop(name)
-        return True
+    def remove(self, name):
+        try:
+            self.ab.people.pop(name)
+            return True
+        except KeyError:
+            raise addressbook.PersonNotExistsError(
+                "{} not exists".format(name))
 
     def get(self, name):
-        return self.ab.people[name]
+        try:
+            return self.ab.people[name]
+        except KeyError:
+            raise addressbook.PersonNotExistsError(
+                "{} not exists".format(name))
 
     def book(self):
         return self.ab
