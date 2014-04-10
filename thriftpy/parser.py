@@ -70,7 +70,7 @@ def parse(schema):
     # scan for possible user defined types
     _typedef_prefix = _typedef + identifier + pa.Optional(pa.nestedExpr(opener='<', closer='>'))
     scan_utypes = _or(_typedef_prefix, _enum, _struct, _exception) + identifier
-    utypes = _or(*(pa.Keyword(t[-1]) for t, _, _ in scan_utypes.scanString(schema)))
+    utypes = [pa.Keyword(t[-1]) for t, _, _ in scan_utypes.scanString(schema)]
 
     # ttypes
     ttype = pa.Forward()
@@ -84,7 +84,7 @@ def parse(schema):
     t_list = pa.Group(pa.Keyword("list")("ttype") + LABRACK + ttype('v') + RABRACK)
     t_map = pa.Group(pa.Keyword("map")("ttype") + LABRACK + ttype('k') + COMMA + ttype('v') + RABRACK)
     orig_types = _or(t_bool, t_byte, t_i16, t_i32, t_i64, t_double, t_string, t_list, t_map)
-    ttype << _or(orig_types, utypes)
+    ttype << _or(orig_types, *utypes)
 
     # typedef parser
     typedef = _typedef + orig_types("ttype") + identifier("name")
@@ -97,15 +97,15 @@ def parse(schema):
                         for c, _, _ in const.scanString(schema)}
 
     # enum parser
-    enum_value = pa.Group(identifier('name') + pa.Optional(EQ + integer_('value')))
-    enum_list = pa.Group(enum_value + pa.ZeroOrMore(COMMA + enum_value) + pa.Optional(COMMA))("members")
+    enum_value = pa.Group(identifier('name') + pa.Optional(EQ + integer_('value')) + pa.Optional(COMMA))
+    enum_list = pa.Group(pa.OneOrMore(enum_value))("members")
     enum = _enum + identifier("name") + LBRACE + enum_list + RBRACE
     enum.ignore(single_line_comment)
     result["enums"] = {e.name: e for e, _, _ in enum.scanString(schema)}
 
     # struct parser
     category = pa.Literal("required") | pa.Literal("optional")
-    struct_field = pa.Group(integer_("id") + COLON + category + ttype("ttype") + identifier("name") + pa.Optional(COMMA))
+    struct_field = pa.Group(integer_("id") + COLON + pa.Optional(category) + ttype("ttype") + identifier("name") + pa.Optional(COMMA))
     struct_members = pa.Group(pa.OneOrMore(struct_field))("members")
     struct = _struct + identifier("name") + LBRACE + struct_members + RBRACE
     struct.ignore(single_line_comment)
@@ -119,9 +119,9 @@ def parse(schema):
 
     # service parser
     ftype = _or(ttype, pa.Keyword("oneway"), pa.Keyword("void"))
-    api_param = pa.Group(integer_("id") + COLON + ttype("ttype") + identifier("name"))
-    api_params = pa.Group(pa.Optional(api_param) + pa.ZeroOrMore(COMMA + api_param))
-    service_api = pa.Group(ftype("ttype") + identifier("name") + LPAR + api_params("params") + RPAR + pa.Optional(pa.Keyword("throws") + LPAR + api_params("throws") + RPAR) + SEMI)
+    api_param = pa.Group(integer_("id") + COLON + ttype("ttype") + identifier("name") + pa.Optional(COMMA))
+    api_params = pa.Group(pa.ZeroOrMore(api_param))
+    service_api = pa.Group(ftype("ttype") + identifier("name") + LPAR + api_params("params") + RPAR + pa.Optional(pa.Keyword("throws") + LPAR + api_params("throws") + RPAR) + pa.Optional(SEMI | COMMA))
     service_apis = pa.Group(pa.OneOrMore(service_api))("apis")
     service = _service + identifier("name") + LBRACE + service_apis + RBRACE
     service.ignore(single_line_comment)
