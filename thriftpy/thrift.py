@@ -5,6 +5,13 @@
     Thrift simplified.
 """
 
+import functools
+
+
+def args2kwargs(thrift_spec, *args):
+    arg_names = [item[1][1] for item in sorted(thrift_spec.items())]
+    return dict(zip(arg_names, args))
+
 
 class TType(object):
     STOP = 0
@@ -56,10 +63,16 @@ class TMessageType(object):
 class TPayload(object):
     thrift_spec = {}
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
+        _kw = args2kwargs(self.thrift_spec, *args)
+        kwargs.update(_kw)
+
         for _, v in self.thrift_spec.items():
             k = v[1]
             setattr(self, k, kwargs.get(k, None))
+
+    def _parse_spec(self, spec):
+        return spec + (None,) if len(spec) == 2 else spec
 
     def read(self, iprot):
         iprot.readStructBegin()
@@ -73,7 +86,7 @@ class TPayload(object):
                 iprot.skip(ftype)
             else:
                 spec = self.thrift_spec[fid]
-                spec_type, spec_name, container_spec, _none = spec
+                spec_type, spec_name, container_spec = self._parse_spec(spec)
                 if spec_type == ftype:
                     setattr(self, spec_name,
                             iprot.readFieldByTType(ftype, container_spec))
@@ -87,12 +100,13 @@ class TPayload(object):
         oprot.writeStructBegin(self.__class__.__name__)
 
         for fid, spec in self.thrift_spec.items():
-            spec_type, spec_name, container_spec, _none = spec
+            spec_type, spec_name, container_spec = self._parse_spec(spec)
             val = getattr(self, spec_name)
             if val is not None:
                 oprot.writeFieldBegin(spec_name, spec_type, fid)
                 oprot.writeFieldByTType(spec_type, val, container_spec)
                 oprot.writeFieldEnd()
+
         oprot.writeFieldStop()
         oprot.writeStructEnd()
 
@@ -104,6 +118,9 @@ class TPayload(object):
              for key, value in self.__dict__.items()]
         return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
+    def __str__(self):
+        return repr(self)
+
     def __eq__(self, other):
         return isinstance(other, self.__class__) and \
             self.__dict__ == other.__dict__
@@ -112,40 +129,31 @@ class TPayload(object):
         return not (self == other)
 
 
-class TClientMeta(type):
-    def __init__(cls, name, bases, nmspc):
-        super(TClientMeta, cls).__init__(name, bases, nmspc)
-
-        for method in cls.thrift_services:
-            def _send_req(self, *args, method=method):
-                method_args = [item[1][1] for item in sorted(
-                    getattr(cls, method + "_args").thrift_spec.items())]
-                kwargs = dict(zip(method_args, args))
-                return self._send(method, **kwargs)
-            setattr(cls, "send_" + method, _send_req)
-
-            def _recv_req(self, method=method):
-                return self._recv(method)
-            setattr(cls, "recv_" + method, _recv_req)
-
-            def _req(self, *args, method=method):
-                getattr(self, "send_" + method)(*args)
-                return getattr(self, "recv_" + method)()
-            setattr(cls, method, _req)
-
-
-class TClient(object, metaclass=TClientMeta):
-    thrift_services = []
-
-    def __init__(self, iprot, oprot=None):
+class TClient(object):
+    def __init__(self, service, iprot, oprot=None):
+        self._service = service
         self._iprot = self._oprot = iprot
         if oprot is not None:
             self._oprot = oprot
         self._seqid = 0
 
+    def __getattr__(self, api):
+        if api in self._service.thrift_services:
+            return functools.partial(self._req, api)
+
+    def __dir__(self):
+        return self._service.thrift_services
+
+    def _req(self, api, *args, **kwargs):
+        _kw = args2kwargs(getattr(self._service, api + "_args").thrift_spec,
+                          *args)
+        kwargs.update(_kw)
+        self._send(api, **kwargs)
+        return self._recv(api)
+
     def _send(self, api, **kwargs):
         self._oprot.writeMessageBegin(api, TMessageType.CALL, self._seqid)
-        args = getattr(self, api + "_args")()
+        args = getattr(self._service, api + "_args")()
         for k, v in kwargs.items():
             setattr(args, k, v)
         args.write(self._oprot)
@@ -159,58 +167,83 @@ class TClient(object, metaclass=TClientMeta):
             x.read(self._iprot)
             self._iprot.readMessageEnd()
             raise x
-        result = getattr(self, api + "_result")()
+        result = getattr(self._service, api + "_result")()
         result.read(self._iprot)
         self._iprot.readMessageEnd()
-        if result.success is not None:
+
+        if result.success:
             return result.success
+
+        # check throws
+        for k, v in result.__dict__.items():
+            if k != "success" and v is not None:
+                raise v
+
         raise TApplicationException(TApplicationException.MISSING_RESULT)
 
 
 class TProcessor(object):
     """Base class for procsessor, which works on two streams."""
 
-    thrift_services = []
-
-    def __init__(self, handler):
+    def __init__(self, service, handler):
+        self._service = service
         self._handler = handler
 
     def process(self, iprot, oprot):
         api, type, seqid = iprot.readMessageBegin()
-        if api not in self.thrift_services:
+        if api not in self._service.thrift_services:
             iprot.skip(TType.STRUCT)
             iprot.readMessageEnd()
-            x = TApplicationException(TApplicationException.UNKNOWN_METHOD)
+            exc = TApplicationException(TApplicationException.UNKNOWN_METHOD)
             oprot.writeMessageBegin(api, TMessageType.EXCEPTION, seqid)
-            x.write(oprot)
+            exc.write(oprot)
             oprot.writeMessageEnd()
             oprot.trans.flush()
 
         else:
-            args = getattr(self, api + "_args")()
+            args = getattr(self._service, api + "_args")()
             args.read(iprot)
             iprot.readMessageEnd()
-            result = getattr(self, api + "_result")()
-            result.success = getattr(self._handler, api)(**args.__dict__)
+            result = getattr(self._service, api + "_result")()
+            try:
+                result.success = getattr(self._handler, api)(**args.__dict__)
+            except Exception as e:
+                # raise if don't have throws
+                if len(result.thrift_spec) == 1:
+                    raise
+
+                # check throws
+                catched = False
+                for k, v in result.thrift_spec.items():
+                    # skip success
+                    if k == 0:
+                        continue
+                    _, exc_name, exc_cls = v
+                    if isinstance(e, exc_cls):
+                        setattr(result, exc_name, e)
+                        catched = True
+                        break
+
+                # if exc not defined in throws, raise
+                if not catched:
+                    raise
+
             oprot.writeMessageBegin(api, TMessageType.REPLY, seqid)
             result.write(oprot)
             oprot.writeMessageEnd()
             oprot.trans.flush()
 
 
-class TException(Exception):
+class TException(TPayload, Exception):
     """Base class for all thrift exceptions."""
 
-    def __init__(self, message):
-        self.message = message
 
-
-class TApplicationException(TException, TPayload):
+class TApplicationException(TException):
     """Application level thrift exceptions."""
 
     thrift_spec = {
-        1: (TType.STRING, 'message', None, None),
-        2: (TType.I32, 'type', None, None),
+        1: (TType.STRING, 'message'),
+        2: (TType.I32, 'type'),
     }
 
     UNKNOWN = 0
