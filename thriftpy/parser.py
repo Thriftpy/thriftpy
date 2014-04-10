@@ -1,14 +1,14 @@
 # flake8: noqa
 
-import collections
 import functools
 import sys
 import types
+import itertools
 
 import pyparsing as pa
 
 
-from .thrift import TType, TPayload
+from .thrift import TType, TPayload, TException
 
 
 example = """
@@ -52,6 +52,7 @@ def parse(schema):
     _const = pa.Keyword("const")
     _enum = pa.Keyword("enum")
     _struct = pa.Keyword("struct")
+    _exception = pa.Keyword("exception")
     _service = pa.Keyword("service")
 
     # general tokens
@@ -66,7 +67,7 @@ def parse(schema):
 
     # scan for possible user defined types
     _typedef_prefix = _typedef + identifier + pa.Optional(pa.nestedExpr(opener='<', closer='>'))
-    scan_utypes = _or(_typedef_prefix, _enum, _struct) + identifier
+    scan_utypes = _or(_typedef_prefix, _enum, _struct, _exception) + identifier
     utypes = _or(*(pa.Keyword(t[-1]) for t, _, _ in scan_utypes.scanString(schema)))
 
     # ttypes
@@ -107,17 +108,18 @@ def parse(schema):
     # struct defines is ordered
     result["structs"] = [s for s, _, _ in struct.scanString(schema)]
 
+    # exception parser
+    exception = _exception + identifier("name") + LBRACE + struct_members + RBRACE
+    result["exceptions"] = [s for s, _, _ in exception.scanString(schema)]
+
     # service parser
     ftype = _or(ttype, pa.Keyword("oneway"), pa.Keyword("void"))
     api_param = pa.Group(integer_("id") + COLON + ttype("ttype") + identifier("name"))
-    api_params = pa.Group(pa.Optional(api_param) + pa.ZeroOrMore(COMMA + api_param))("params")
-    service_api = pa.Group(ftype("ttype") + identifier("name") + LPAR + api_params + RPAR + SEMI)
+    api_params = pa.Group(pa.Optional(api_param) + pa.ZeroOrMore(COMMA + api_param))
+    service_api = pa.Group(ftype("ttype") + identifier("name") + LPAR + api_params("params") + RPAR + pa.Optional(pa.Keyword("throws") + LPAR + api_params("throws") + RPAR) + SEMI)
     service_apis = pa.Group(pa.OneOrMore(service_api))("apis")
     service = _service + identifier("name") + LBRACE + service_apis + RBRACE
     result["services"] = [s for s, _, _ in service.scanString(schema)]
-
-    #import IPython
-    #IPython.embed()
 
     return result
 
@@ -126,7 +128,8 @@ def load(thrift_file):
     module_name = thrift_file[:thrift_file.find('.')]
     with open(thrift_file, 'r') as f:
         result = parse(f.read())
-    struct_names = [s.name for s in result["structs"]]
+    struct_names = [s.name for s in itertools.chain(result["structs"],
+                                                    result["exceptions"])]
 
     # load thrift schema as module
     thrift_schema = types.ModuleType(module_name)
@@ -181,6 +184,15 @@ def load(thrift_file):
         setattr(struct_cls, "thrift_spec", thrift_spec)
         setattr(thrift_schema, struct.name, struct_cls)
 
+    # load exceptions
+    for exc in result["exceptions"]:
+        exc_cls = type(exc.name, (TException, ), {})
+        thrift_spec = {}
+        for m in exc.members:
+            thrift_spec[int(m.id)] = _ttype_spec(m.ttype, m.name)
+        setattr(exc_cls, "thrift_spec", thrift_spec)
+        setattr(thrift_schema, exc.name, exc_cls)
+
     # load services
     for service in result["services"]:
         service_cls = type(service.name, (object, ), {})
@@ -188,6 +200,7 @@ def load(thrift_file):
         for api in service.apis:
             thrift_services.append(api.name)
 
+            # args payload
             api_args_cls = type("%s_args" % api.name, (TPayload, ), {})
             api_args_spec = {}
             for param in api.params:
@@ -196,10 +209,17 @@ def load(thrift_file):
             setattr(api_args_cls, "thrift_spec", api_args_spec)
             setattr(service_cls, "%s_args" % api.name, api_args_cls)
 
+            # result payload
             api_result_cls = type("%s_result" % api.name, (TPayload, ), {})
             api_result_spec = {0: _ttype_spec(api.ttype, "success")}
+
+            if hasattr(api, "throws"):
+                for t in api.throws:
+                    api_result_spec[int(t.id)] = _ttype_spec(t.ttype, t.name)
+
             setattr(api_result_cls, "thrift_spec", api_result_spec)
             setattr(service_cls, "%s_result" % api.name, api_result_cls)
+
         setattr(service_cls, "thrift_services", thrift_services)
         setattr(thrift_schema, service.name, service_cls)
 
