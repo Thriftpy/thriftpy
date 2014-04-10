@@ -12,32 +12,6 @@ import pyparsing as pa
 from .thrift import TType, TPayload, TException
 
 
-example = """
-typedef string json
-
-const i16 DEFAULT = 10
-const string HELLO = "hello"
-const json DETAIL = "{'hello': 'world'}"
-
-enum MessageStatus {
-    VALID = 0,
-    INVALID = 1,
-}
-
-struct TItem {
-    1: optional i32 id,
-    2: optional string name,
-    3: optional json detail,
-}
-
-service ExampleService {
-    bool ping();
-    string hello(1: string name);
-    TItem make(1: string name, 2: json detail);
-}
-"""
-
-
 def _or(*iterable):
     return functools.reduce(lambda x, y: x | y, iterable)
 
@@ -49,13 +23,9 @@ def parse(schema):
     LPAR, RPAR, LBRACK, RBRACK, LBRACE, RBRACE, LABRACK, RABRACK, COLON, SEMI, COMMA, EQ = map(pa.Suppress, "()[]{}<>:;,=")
 
     # keywords
-    _typedef = pa.Keyword("typedef")
-    _const = pa.Keyword("const")
-    _enum = pa.Keyword("enum")
-    _struct = pa.Keyword("struct")
-    _exception = pa.Keyword("exception")
-    _service = pa.Keyword("service")
+    _typedef, _const, _enum, _struct, _exception, _service = map(pa.Keyword, ("typedef", "const", "enum", "struct", "exception", "service"))
 
+    # comment match
     single_line_comment = (pa.Suppress("//") | pa.Suppress("#")) + pa.restOfLine
 
     # general tokens
@@ -71,31 +41,22 @@ def parse(schema):
     # scan for possible user defined types
     _typedef_prefix = _typedef + identifier + pa.Optional(pa.nestedExpr(opener='<', closer='>'))
     scan_utypes = _or(_typedef_prefix, _enum, _struct, _exception) + identifier
-    utypes = [pa.Keyword(t[-1]) for t, _, _ in scan_utypes.scanString(schema)]
+    utypes = map(pa.Keyword, (t[-1] for t, _, _ in scan_utypes.scanString(schema)))
 
     # ttypes
     ttype = pa.Forward()
-    t_bool = pa.Keyword("bool")
-    t_byte = pa.Keyword("byte")
-    t_i16 = pa.Keyword("i16")
-    t_i32 = pa.Keyword("i32")
-    t_i64 = pa.Keyword("i64")
-    t_double = pa.Keyword("double")
-    t_string = pa.Keyword("string")
     t_list = pa.Group(pa.Keyword("list")("ttype") + LABRACK + ttype('v') + RABRACK)
     t_map = pa.Group(pa.Keyword("map")("ttype") + LABRACK + ttype('k') + COMMA + ttype('v') + RABRACK)
-    orig_types = _or(t_bool, t_byte, t_i16, t_i32, t_i64, t_double, t_string, t_list, t_map)
+    orig_types = _or(t_list, t_map, *map(pa.Keyword, ("bool", "byte", "i16", "i32", "i64", "double", "string")))
     ttype << _or(orig_types, *utypes)
 
     # typedef parser
     typedef = _typedef + orig_types("ttype") + identifier("name")
-    result["typedefs"] = {t.name: t.ttype
-                          for t, _, _ in typedef.scanString(schema)}
+    result["typedefs"] = {t.name: t.ttype for t, _, _ in typedef.scanString(schema)}
 
     # const parser
     const = _const + ttype("ttype") + identifier("name") + EQ + value("value")
-    result["consts"] = {c.name: c.value
-                        for c, _, _ in const.scanString(schema)}
+    result["consts"] = {c.name: c.value for c, _, _ in const.scanString(schema)}
 
     # enum parser
     enum_value = pa.Group(identifier('name') + pa.Optional(EQ + integer_('value')) + pa.Optional(COMMA))
@@ -105,7 +66,7 @@ def parse(schema):
     result["enums"] = {e.name: e for e, _, _ in enum.scanString(schema)}
 
     # struct parser
-    category = pa.Literal("required") | pa.Literal("optional")
+    category = _or(*map(pa.Literal, ("required", "optional")))
     struct_field = pa.Group(integer_("id") + COLON + pa.Optional(category) + ttype("ttype") + identifier("name") + pa.Optional(COMMA))
     struct_members = pa.Group(pa.OneOrMore(struct_field))("members")
     struct = _struct + identifier("name") + LBRACE + struct_members + RBRACE
@@ -255,11 +216,8 @@ class ThriftImporter(object):
             module_name, thrift_file = fullname.rsplit('.', 1)
             module = self._import_module(module_name)
             path_prefix = os.path.dirname(os.path.abspath(module.__file__))
-        else:
-            path_prefix = ""
-        thrift_file = thrift_file.replace('_', '.', 1)
-        filename = os.path.join(path_prefix, thrift_file)
-
+            filename = os.path.join(path_prefix, thrift_file)
+        filename = filename.replace('_', '.', 1)
         thrift = load(filename)
         sys.modules[fullname] = thrift
         return thrift
