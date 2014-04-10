@@ -55,6 +55,8 @@ def parse(schema):
     _exception = pa.Keyword("exception")
     _service = pa.Keyword("service")
 
+    single_line_comment = (pa.Suppress("//") | pa.Suppress("#")) + pa.restOfLine
+
     # general tokens
     identifier = pa.Word(pa.alphanums + '_')
 
@@ -98,6 +100,7 @@ def parse(schema):
     enum_value = pa.Group(identifier('name') + pa.Optional(EQ + integer_('value')))
     enum_list = pa.Group(enum_value + pa.ZeroOrMore(COMMA + enum_value) + pa.Optional(COMMA))("members")
     enum = _enum + identifier("name") + LBRACE + enum_list + RBRACE
+    enum.ignore(single_line_comment)
     result["enums"] = {e.name: e for e, _, _ in enum.scanString(schema)}
 
     # struct parser
@@ -105,11 +108,13 @@ def parse(schema):
     struct_field = pa.Group(integer_("id") + COLON + category + ttype("ttype") + identifier("name") + pa.Optional(COMMA))
     struct_members = pa.Group(pa.OneOrMore(struct_field))("members")
     struct = _struct + identifier("name") + LBRACE + struct_members + RBRACE
+    struct.ignore(single_line_comment)
     # struct defines is ordered
     result["structs"] = [s for s, _, _ in struct.scanString(schema)]
 
     # exception parser
     exception = _exception + identifier("name") + LBRACE + struct_members + RBRACE
+    exception.ignore(single_line_comment)
     result["exceptions"] = [s for s, _, _ in exception.scanString(schema)]
 
     # service parser
@@ -119,6 +124,8 @@ def parse(schema):
     service_api = pa.Group(ftype("ttype") + identifier("name") + LPAR + api_params("params") + RPAR + pa.Optional(pa.Keyword("throws") + LPAR + api_params("throws") + RPAR) + SEMI)
     service_apis = pa.Group(pa.OneOrMore(service_api))("apis")
     service = _service + identifier("name") + LBRACE + service_apis + RBRACE
+    service.ignore(single_line_comment)
+    service.ignore(pa.cStyleComment)
     result["services"] = [s for s, _, _ in service.scanString(schema)]
 
     return result
