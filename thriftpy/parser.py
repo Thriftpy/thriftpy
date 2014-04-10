@@ -1,9 +1,10 @@
 # flake8: noqa
 
 import functools
+import itertools
+import os
 import sys
 import types
-import itertools
 
 import pyparsing as pa
 
@@ -250,7 +251,22 @@ class ThriftImporter(object):
             return self
 
     def load_module(self, fullname):
-        filename = fullname.replace('_', '.', 1)
-        module = load(filename)
-        sys.modules[fullname] = module
-        return module
+        if '.' in fullname:
+            module_name, thrift_file = fullname.rsplit('.', 1)
+            module = self._import_module(module_name)
+            path_prefix = os.path.dirname(os.path.abspath(module.__file__))
+        else:
+            path_prefix = ""
+        thrift_file = thrift_file.replace('_', '.', 1)
+        filename = os.path.join(path_prefix, thrift_file)
+
+        thrift = load(filename)
+        sys.modules[fullname] = thrift
+        return thrift
+
+    def _import_module(self, import_name):
+        if '.' in import_name:
+            module, obj = import_name.rsplit('.', 1)
+            return getattr(__import__(module, None, None, [obj]), obj)
+        else:
+            return __import__(import_name)
