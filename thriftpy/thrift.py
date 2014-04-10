@@ -106,6 +106,7 @@ class TPayload(object):
                 oprot.writeFieldBegin(spec_name, spec_type, fid)
                 oprot.writeFieldByTType(spec_type, val, container_spec)
                 oprot.writeFieldEnd()
+
         oprot.writeFieldStop()
         oprot.writeStructEnd()
 
@@ -116,6 +117,9 @@ class TPayload(object):
         L = ['%s=%r' % (key, value)
              for key, value in self.__dict__.items()]
         return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __str__(self):
+        return repr(self)
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and \
@@ -166,8 +170,15 @@ class TClient(object):
         result = getattr(self._service, api + "_result")()
         result.read(self._iprot)
         self._iprot.readMessageEnd()
-        if result.success is not None:
+
+        if result.success:
             return result.success
+
+        # check throws
+        for k, v in result.__dict__.items():
+            if k != "success" and v is not None:
+                raise v
+
         raise TApplicationException(TApplicationException.MISSING_RESULT)
 
 
@@ -183,9 +194,9 @@ class TProcessor(object):
         if api not in self._service.thrift_services:
             iprot.skip(TType.STRUCT)
             iprot.readMessageEnd()
-            x = TApplicationException(TApplicationException.UNKNOWN_METHOD)
+            exc = TApplicationException(TApplicationException.UNKNOWN_METHOD)
             oprot.writeMessageBegin(api, TMessageType.EXCEPTION, seqid)
-            x.write(oprot)
+            exc.write(oprot)
             oprot.writeMessageEnd()
             oprot.trans.flush()
 
@@ -194,21 +205,40 @@ class TProcessor(object):
             args.read(iprot)
             iprot.readMessageEnd()
             result = getattr(self._service, api + "_result")()
-            result.success = getattr(self._handler, api)(**args.__dict__)
+            try:
+                result.success = getattr(self._handler, api)(**args.__dict__)
+            except Exception as e:
+                # raise if don't have throws
+                if len(result.thrift_spec) == 1:
+                    raise
+
+                # check throws
+                catched = False
+                for k, v in result.thrift_spec.items():
+                    # skip success
+                    if k == 0:
+                        continue
+                    _, exc_name, exc_cls = v
+                    if isinstance(e, exc_cls):
+                        setattr(result, exc_name, e)
+                        catched = True
+                        break
+
+                # if exc not defined in throws, raise
+                if not catched:
+                    raise
+
             oprot.writeMessageBegin(api, TMessageType.REPLY, seqid)
             result.write(oprot)
             oprot.writeMessageEnd()
             oprot.trans.flush()
 
 
-class TException(Exception):
+class TException(TPayload, Exception):
     """Base class for all thrift exceptions."""
 
-    def __init__(self, message):
-        self.message = message
 
-
-class TApplicationException(TException, TPayload):
+class TApplicationException(TException):
     """Application level thrift exceptions."""
 
     thrift_spec = {

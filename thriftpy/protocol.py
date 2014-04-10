@@ -151,7 +151,7 @@ class TBinaryProtocol(object):
     def readFieldBegin(self):
         type_ = self.readByte()
         if type_ == TType.STOP:
-            return (None, type_, 0)
+            return None, type_, 0
         id = self.readI16()
         return None, type_, id
 
@@ -336,7 +336,7 @@ class TBinaryProtocol(object):
     def readStruct(self, obj, thrift_spec):
         self.readStructBegin()
         while True:
-            (fname, ftype, fid) = self.readFieldBegin()
+            fname, ftype, fid = self.readFieldBegin()
             if ftype == TType.STOP:
                 break
             try:
