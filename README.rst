@@ -5,7 +5,7 @@ ThriftPY
 
 Pure python implemention of Apache Thrift in a pythonic way.
 
-It currently supports python 3.3 or higher.
+It currently supports python2.7 or higher & python3.3 or higher.
 
 
 Features
