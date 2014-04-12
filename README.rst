@@ -1,5 +1,41 @@
 ThriftPY
 ========
 
-The official thrift python lib is old and moving too slowly, thriftpy try to
-rework it with the newest tech packed.
+(Still under developing...)
+
+Pure python implemention of Apache Thrift in a pythonic way.
+
+It currently supports python 3.3 or higher.
+
+
+Features
+--------
+
+* Compatiable with Apache Thirft. (Currently only compatiable with binary
+  protocol & buffered transport.)
+
+* Pure python implemention, no longer need to compile & install the `thrift`
+  package.
+
+* Dynamic generate sdk codes. No need for code generator.
+
+* `.thrift` file can be directly import with `_thrift`, such as `import
+  addressbook_thrift`
+
+* Easy rpc server/client setup.
+
+
+Install
+-------
+
+Install while pip
+
+.. code:: bash
+
+    $ pip install thriftpy
+
+
+Usage
+-----
+
+Refer to `tests/` for example.
