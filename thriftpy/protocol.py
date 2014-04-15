@@ -273,11 +273,16 @@ class TBinaryProtocol(object):
         return reader(spec)
 
     def readContainerList(self, spec):
-        results = []
-        ttype, tspec = spec[0], spec[1]
+        if isinstance(spec, int):
+            ttype, tspec = spec, None
+        else:
+            ttype, tspec = spec[0], spec[1]
+
         r_handler = self._TTYPE_HANDLERS[ttype][0]
         reader = getattr(self, r_handler)
         list_type, list_len = self.readListBegin()
+
+        results = []
         if tspec is None:
             # list values are simple types
             for idx in range(list_len):
