@@ -69,7 +69,7 @@ cdef class TBinaryProtocol:
 
     cpdef writeMessageBegin(self, str name, signed char type_, int seqid):
         self.writeI32(self.VERSION_1 | type_)
-        self.writeString(name)
+        self.writeString(name.encode('utf-8'))
         self.writeI32(seqid)
 
     cpdef writeMessageEnd(self):
@@ -138,11 +138,9 @@ cdef class TBinaryProtocol:
         buff = struct.pack("!d", d)
         self.trans.write(buff)
 
-    cdef void writeString(self, str string):
-        cdef bytes b
-        b = string.encode("utf-8")
-        self.writeI32(len(b))
-        self.trans.write(b)
+    cdef void writeString(self, bytes string):
+        self.writeI32(len(string))
+        self.trans.write(string)
 
     cpdef tuple readMessageBegin(self):
         sz = self.readI32()
@@ -228,10 +226,8 @@ cdef class TBinaryProtocol:
         return val
 
     cdef str readString(self):
-        cdef bytes string
         length = self.readI32()
-        string = self.trans.readAll(length)
-        return string.decode('utf-8')
+        return self.trans.readAll(length).decode('utf-8')
 
     cdef void skip(self, signed char _type):
         if _type == TType.STOP:
@@ -435,7 +431,7 @@ cdef class TBinaryProtocol:
         elif ttype == 10:
             self.writeI64(val)
         elif ttype == 11:
-            self.writeString(val)
+            self.writeString(val.encode("utf-8"))
         elif ttype == 12:
             self.writeContainerStruct(val, spec)
         elif ttype == 13:
