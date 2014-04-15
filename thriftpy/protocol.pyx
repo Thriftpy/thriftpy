@@ -1,6 +1,27 @@
 import struct
 
-from .thrift import TType, TException
+from .thrift import TException
+
+
+cdef enum TType:
+    STOP = 0
+    VOID = 1
+    BOOL = 2
+    BYTE = 3
+    I08 = 3
+    DOUBLE = 4
+    I16 = 6
+    I32 = 8
+    I64 = 10
+    STRING = 11
+    UTF7 = 11
+    STRUCT = 12
+    MAP = 13
+    SET = 14
+    LIST = 15
+    UTF8 = 16
+    UTF16 = 17
+
 
 
 class TProtocolException(TException):
@@ -67,7 +88,7 @@ cdef class TBinaryProtocol:
         pass
 
     cdef void writeFieldStop(self):
-        self.writeByte(TType.STOP)
+        self.writeByte(STOP)
 
     cdef void writeMapBegin(self, signed char ktype, signed char vtype, int size):
         self.writeByte(ktype)
@@ -143,7 +164,7 @@ cdef class TBinaryProtocol:
 
     cdef tuple readFieldBegin(self):
         type_ = self.readByte()
-        if type_ == TType.STOP:
+        if type_ == STOP:
             return None, type_, 0
         id = self.readI16()
         return None, type_, id
@@ -208,43 +229,43 @@ cdef class TBinaryProtocol:
         return self.trans.readAll(length).decode('utf-8')
 
     cdef void skip(self, signed char _type):
-        if _type == TType.STOP:
+        if _type == STOP:
             return
-        elif _type == TType.BOOL:
+        elif _type == BOOL:
             self.readBool()
-        elif _type == TType.BYTE:
+        elif _type == BYTE:
             self.readByte()
-        elif _type == TType.I16:
+        elif _type == I16:
             self.readI16()
-        elif _type == TType.I32:
+        elif _type == I32:
             self.readI32()
-        elif _type == TType.I64:
+        elif _type == I64:
             self.readI64()
-        elif _type == TType.DOUBLE:
+        elif _type == DOUBLE:
             self.readDouble()
-        elif _type == TType.STRING:
+        elif _type == STRING:
             self.readString()
-        elif _type == TType.STRUCT:
+        elif _type == STRUCT:
             self.readStructBegin()
             while True:
                 name, _type, _id = self.readFieldBegin()
-                if _type == TType.STOP:
+                if _type == STOP:
                     break
                 self.skip(_type)
                 self.readFieldEnd()
             self.readStructEnd()
-        elif _type == TType.MAP:
+        elif _type == MAP:
             ktype, vtype, size = self.readMapBegin()
             for i in range(size):
                 self.skip(ktype)
                 self.skip(vtype)
             self.readMapEnd()
-        elif _type == TType.SET:
+        elif _type == SET:
             etype, size = self.readSetBegin()
             for i in range(size):
                 self.skip(etype)
             self.readSetEnd()
-        elif _type == TType.LIST:
+        elif _type == LIST:
             etype, size = self.readListBegin()
             for i in range(size):
                 self.skip(etype)
@@ -334,7 +355,7 @@ cdef class TBinaryProtocol:
 
         while True:
             _, ftype, fid = self.readFieldBegin()
-            if ftype == TType.STOP:
+            if ftype == STOP:
                 break
 
             if fid not in thrift_spec:
@@ -408,27 +429,27 @@ cdef class TBinaryProtocol:
         self.writeStructEnd()
 
     cdef void writeFieldByTType(self, signed char ttype, val, spec):
-        if ttype == 2:
+        if ttype == BOOL:
             self.writeBool(val)
-        elif ttype == 3:
+        elif ttype == BYTE:
             self.writeByte(val)
-        elif ttype == 4:
+        elif ttype == DOUBLE:
             self.writeDouble(val)
-        elif ttype == 6:
+        elif ttype == I16:
             self.writeI16(val)
-        elif ttype == 8:
+        elif ttype == I32:
             self.writeI32(val)
-        elif ttype == 10:
+        elif ttype == I64:
             self.writeI64(val)
-        elif ttype == 11:
+        elif ttype == STRING:
             self.writeString(val.encode("utf-8"))
-        elif ttype == 12:
+        elif ttype == STRUCT:
             self.writeContainerStruct(val, spec)
-        elif ttype == 13:
+        elif ttype == MAP:
             self.writeContainerMap(val, spec)
-        elif ttype == 14:
+        elif ttype == SET:
             self.writeContainerSet(val, spec)
-        elif ttype == 15:
+        elif ttype == LIST:
             self.writeContainerList(val, spec)
         else:
             raise TProtocolException(type=TProtocolException.INVALID_DATA,
