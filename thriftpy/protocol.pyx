@@ -17,18 +17,11 @@ class TProtocolException(TException):
         self.type = type
 
 
-class TBinaryProtocol(object):
+cdef class TBinaryProtocol:
     """Binary implementation of the Thrift protocol driver."""
 
-    # NastyHaxx. Python 2.4+ on 32-bit machines forces hex constants to be
-    # positive, converting this into a long. If we hardcode the int value
-    # instead it'll stay in 32 bit-land.
-
-    # VERSION_MASK = 0xffff0000
-    VERSION_MASK = -65536
-    # VERSION_1 = 0x80010000
-    VERSION_1 = -2147418112
-    TYPE_MASK = 0x000000ff
+    cdef int VERSION_1, VERSION_MASK, TYPE_MASK
+    cdef public object trans
 
     # tuple of: ('reader method' name, 'writer_method' name, is_container bool)
     _TTYPE_HANDLERS = [
@@ -52,174 +45,195 @@ class TBinaryProtocol(object):
         (None, None, False)    # 17 TType.UTF16 # TODO: handle utf16 types?
     ]
 
-    def __init__(self, trans):
+    def __init__(self, object trans):
         self.trans = trans
 
-    def _parse_spec(self, spec):
+        # VERSION_MASK = -65536
+        self.VERSION_MASK = 0xffff0000
+        # VERSION_1 = -2147418112
+        self.VERSION_1 = 0x80010000
+        self.TYPE_MASK = 0x000000ff
+
+    def __cinit__(self, object trans):
+        self.trans = trans
+
+        # VERSION_MASK = -65536
+        self.VERSION_MASK = 0xffff0000
+        # VERSION_1 = -2147418112
+        self.VERSION_1 = 0x80010000
+        self.TYPE_MASK = 0x000000ff
+
+
+    cdef tuple _parse_spec(self, tuple spec):
         return spec + (None,) if len(spec) == 2 else spec
 
-    def writeMessageBegin(self, name, type_, seqid):
-        self.writeI32(TBinaryProtocol.VERSION_1 | type_)
+    cpdef writeMessageBegin(self, str name, signed char type_, int seqid):
+        self.writeI32(self.VERSION_1 | type_)
         self.writeString(name)
         self.writeI32(seqid)
 
-    def writeMessageEnd(self):
+    cpdef writeMessageEnd(self):
         pass
 
-    def writeStructBegin(self, name):
+    cdef void writeStructBegin(self, str name):
         pass
 
-    def writeStructEnd(self):
+    cdef writeStructEnd(self):
         pass
 
-    def writeFieldBegin(self, name, type, id):
-        self.writeByte(type)
-        self.writeI16(id)
+    cdef void writeFieldBegin(self, str name, signed char type_, int id_):
+        self.writeByte(type_)
+        self.writeI16(id_)
 
-    def writeFieldEnd(self):
+    cdef void writeFieldEnd(self):
         pass
 
-    def writeFieldStop(self):
+    cdef void writeFieldStop(self):
         self.writeByte(TType.STOP)
 
-    def writeMapBegin(self, ktype, vtype, size):
+    cdef void writeMapBegin(self, signed char ktype, signed char vtype, int size):
         self.writeByte(ktype)
         self.writeByte(vtype)
         self.writeI32(size)
 
-    def writeMapEnd(self):
+    cdef void writeMapEnd(self):
         pass
 
-    def writeListBegin(self, etype, size):
+    cdef void writeListBegin(self, signed char etype, int size):
         self.writeByte(etype)
         self.writeI32(size)
 
-    def writeListEnd(self):
+    cdef void writeListEnd(self):
         pass
 
-    def writeSetBegin(self, etype, size):
-        return self.writeListBegin(etype, size)
+    cdef void writeSetBegin(self, signed char etype, int size):
+        self.writeListBegin(etype, size)
 
-    def writeSetEnd(self):
-        return self.writeListEnd()
+    cdef void writeSetEnd(self):
+        self.writeListEnd()
 
-    def writeBool(self, bool_):
-        self.writeByte(1) if bool_ else self.writeByte(0)
+    cdef writeBool(self, signed char bool_):
+        if bool_:
+            self.writeByte(1)
+        else:
+            self.writeByte(0)
 
-    def writeByte(self, byte):
+    cdef void writeByte(self, signed char byte):
         buff = struct.pack("!b", byte)
         self.trans.write(buff)
 
-    def writeI16(self, i16):
+    cdef void writeI16(self, short i16):
         buff = struct.pack("!h", i16)
         self.trans.write(buff)
 
-    def writeI32(self, i32):
+    cdef void writeI32(self, int i32):
         buff = struct.pack("!i", i32)
         self.trans.write(buff)
 
-    def writeI64(self, i64):
+    cdef void writeI64(self, long long i64):
         buff = struct.pack("!q", i64)
         self.trans.write(buff)
 
-    def writeDouble(self, dub):
-        buff = struct.pack("!d", dub)
+    cdef void writeDouble(self, double d):
+        buff = struct.pack("!d", d)
         self.trans.write(buff)
 
-    def writeString(self, string):
-        string = string.encode("utf-8")
-        self.writeI32(len(string))
-        self.trans.write(string)
+    cdef void writeString(self, str string):
+        cdef bytes b
+        b = string.encode("utf-8")
+        self.writeI32(len(b))
+        self.trans.write(b)
 
-    def readMessageBegin(self):
+    cpdef tuple readMessageBegin(self):
         sz = self.readI32()
-        version = sz & TBinaryProtocol.VERSION_MASK
-        if version != TBinaryProtocol.VERSION_1:
+        version = sz & self.VERSION_MASK
+        if version != self.VERSION_1:
             raise TProtocolException(
                 type=TProtocolException.BAD_VERSION,
                 message='Bad version in readMessageBegin: %d' % (sz))
-        type_ = sz & TBinaryProtocol.TYPE_MASK
+        type_ = sz & self.TYPE_MASK
         name = self.readString()
         seqid = self.readI32()
         return name, type_, seqid
 
-    def readMessageEnd(self):
+    cpdef readMessageEnd(self):
         pass
 
-    def readStructBegin(self):
+    cdef void readStructBegin(self):
         pass
 
-    def readStructEnd(self):
+    cdef void readStructEnd(self):
         pass
 
-    def readFieldBegin(self):
+    cdef tuple readFieldBegin(self):
         type_ = self.readByte()
         if type_ == TType.STOP:
             return None, type_, 0
         id = self.readI16()
         return None, type_, id
 
-    def readFieldEnd(self):
+    cdef void readFieldEnd(self):
         pass
 
-    def readMapBegin(self):
+    cdef tuple readMapBegin(self):
         ktype = self.readByte()
         vtype = self.readByte()
         size = self.readI32()
         return ktype, vtype, size
 
-    def readMapEnd(self):
+    cdef void readMapEnd(self):
         pass
 
-    def readListBegin(self):
+    cdef tuple readListBegin(self):
         etype = self.readByte()
         size = self.readI32()
         return etype, size
 
-    def readListEnd(self):
+    cdef void readListEnd(self):
         pass
 
-    def readSetBegin(self):
+    cdef tuple readSetBegin(self):
         return self.readListBegin()
 
-    def readSetEnd(self):
-        return self.readListEnd()
+    cdef void readSetEnd(self):
+        self.readListEnd()
 
-    def readBool(self):
+    cdef signed char readBool(self):
         byte = self.readByte()
         return byte != 0
 
-    def readByte(self):
+    cdef signed char readByte(self):
         buff = self.trans.readAll(1)
         val, = struct.unpack('!b', buff)
         return val
 
-    def readI16(self):
+    cdef short readI16(self):
         buff = self.trans.readAll(2)
         val, = struct.unpack('!h', buff)
         return val
 
-    def readI32(self):
+    cdef int readI32(self):
         buff = self.trans.readAll(4)
         val, = struct.unpack('!i', buff)
         return val
 
-    def readI64(self):
+    cdef long long readI64(self):
         buff = self.trans.readAll(8)
         val, = struct.unpack('!q', buff)
         return val
 
-    def readDouble(self):
+    cdef double readDouble(self):
         buff = self.trans.readAll(8)
         val, = struct.unpack('!d', buff)
         return val
 
-    def readString(self):
+    cdef str readString(self):
+        cdef bytes string
         length = self.readI32()
         string = self.trans.readAll(length)
         return string.decode('utf-8')
 
-    def skip(self, _type):
+    cdef void skip(self, signed char _type):
         if _type == TType.STOP:
             return
         elif _type == TType.BOOL:
@@ -237,7 +251,7 @@ class TBinaryProtocol(object):
         elif _type == TType.STRING:
             self.readString()
         elif _type == TType.STRUCT:
-            name = self.readStructBegin()
+            self.readStructBegin()
             while True:
                 name, _type, _id = self.readFieldBegin()
                 if _type == TType.STOP:
@@ -262,52 +276,60 @@ class TBinaryProtocol(object):
                 self.skip(etype)
             self.readListEnd()
 
-    def readFieldByTType(self, ttype, spec):
-        try:
-            r_handler = self._TTYPE_HANDLERS[ttype][0]
-        except IndexError:
+    cdef readFieldByTType(self, signed char ttype, spec):
+        if ttype == 2:
+            return self.readBool()
+        elif ttype == 3:
+            return self.readByte()
+        elif ttype == 4:
+            return self.readDouble()
+        elif ttype == 6:
+            return self.readI16()
+        elif ttype == 8:
+            return self.readI32()
+        elif ttype == 10:
+            return self.readI64()
+        elif ttype == 11:
+            return self.readString()
+        elif ttype == 12:
+            return self.readContainerStruct(spec)
+        elif ttype == 13:
+            return self.readContainerMap(spec)
+        elif ttype == 14:
+            return self.readContainerSet(spec)
+        elif ttype == 15:
+            return self.readContainerList(spec)
+        else:
             raise TProtocolException(type=TProtocolException.INVALID_DATA,
                                      message='Invalid field type %d' % (ttype))
-        if r_handler is None:
-            raise TProtocolException(type=TProtocolException.INVALID_DATA,
-                                     message='Invalid field type %d' % (ttype))
-        reader = getattr(self, r_handler)
-        if spec is None:
-            return reader()
-        return reader(spec)
 
-    def readContainerList(self, spec):
+    cdef readContainerList(self, spec):
         if isinstance(spec, int):
             ttype, tspec = spec, None
         else:
             ttype, tspec = spec[0], spec[1]
 
-        list_type, list_len = self.readListBegin()
-        r_handler = self._TTYPE_HANDLERS[ttype][0]
-        reader = getattr(self, r_handler)
         results = []
+        list_type, list_len = self.readListBegin()
+        cdef int e
         if tspec is None:
-            # list values are simple types
-            for idx in range(list_len):
-                results.append(reader())
+            for e in range(list_len):
+                results.append(self.readFieldByTType(ttype, tspec))
         else:
-            # this is like an inlined readFieldByTType
-            container_reader = self._TTYPE_HANDLERS[list_type][0]
-            val_reader = getattr(self, container_reader)
-            for idx in range(list_len):
-                results.append(val_reader(tspec))
+            for e in range(list_len):
+                results.append(self.readFieldByTType(list_type, tspec))
         self.readListEnd()
         return results
 
-    def readContainerSet(self, spec):
+    cdef readContainerSet(self, tuple spec):
         return set(self.readContainerList(spec))
 
-    def readContainerStruct(self, obj_class):
+    cdef readContainerStruct(self, obj_class):
         obj = obj_class()
         obj.read(self)
         return obj
 
-    def readContainerMap(self, spec):
+    cdef readContainerMap(self, tuple spec):
         results = dict()
         key_ttype, val_ttype = spec
         map_ktype, map_vtype, map_len = self.readMapBegin()
@@ -320,28 +342,15 @@ class TBinaryProtocol(object):
         else:
             val_ttype, val_spec = val_ttype
 
-        # TODO: compare types we just decoded with thrift_spec and
-        # abort/skip if types disagree
-        key_reader = getattr(self, self._TTYPE_HANDLERS[key_ttype][0])
-        val_reader = getattr(self, self._TTYPE_HANDLERS[val_ttype][0])
-
-        # list values are simple types
-        for idx in range(map_len):
-            if key_spec is None:
-                k_val = key_reader()
-            else:
-                k_val = self.readFieldByTType(key_ttype, key_spec)
-            if val_spec is None:
-                v_val = val_reader()
-            else:
-                v_val = self.readFieldByTType(val_ttype, val_spec)
-            # this raises a TypeError with unhashable keys types
-            # i.e. this fails: d=dict(); d[[0,1]] = 2
+        cdef int i
+        for i in range(map_len):
+            k_val = self.readFieldByTType(key_ttype, key_spec)
+            v_val = self.readFieldByTType(val_ttype, val_spec)
             results[k_val] = v_val
         self.readMapEnd()
         return results
 
-    def readStruct(self, obj, thrift_spec):
+    cpdef readStruct(self, obj, thrift_spec):
         self.readStructBegin()
         while True:
             _, ftype, fid = self.readFieldBegin()
@@ -361,30 +370,24 @@ class TBinaryProtocol(object):
             self.readFieldEnd()
         self.readStructEnd()
 
-    def writeContainerStruct(self, val, spec):
+    cdef writeContainerStruct(self, val, spec):
         val.write(self)
 
-    def writeContainerList(self, val, spec):
+    cdef void writeContainerList(self, val, spec):
         if isinstance(spec, int):
             ttype, tspec = spec, None
         else:
             ttype, tspec = spec[0], spec[1]
 
         self.writeListBegin(ttype, len(val))
-        w_handler = self._TTYPE_HANDLERS[ttype][1]
-        writer = getattr(self, w_handler)
-        if tspec is None:
-            for e in val:
-                writer(e)
-        else:
-            for e in val:
-                writer(e, tspec)
+        for e in val:
+            self.writeFieldByTType(ttype, e, tspec)
         self.writeListEnd()
 
-    def writeContainerSet(self, val, spec):
-        return self.writeContainerList(val, spec)
+    cdef void writeContainerSet(self, val, spec):
+        self.writeContainerList(val, spec)
 
-    def writeContainerMap(self, val, spec):
+    cdef void writeContainerMap(self, val, spec):
         if isinstance(spec[0], int):
             k_type = spec[0]
             k_spec = None
@@ -397,24 +400,13 @@ class TBinaryProtocol(object):
         else:
             v_type, v_spec = spec[1]
 
-        ktype_name = self._TTYPE_HANDLERS[k_type][1]
-        vtype_name = self._TTYPE_HANDLERS[v_type][1]
-        k_writer = getattr(self, ktype_name)
-        v_writer = getattr(self, vtype_name)
-
         self.writeMapBegin(k_type, v_type, len(val))
         for m_key, m_val in val.items():
-            if k_spec is None:
-                k_writer(m_key)
-            else:
-                k_writer(m_key, k_spec)
-            if v_spec is None:
-                v_writer(m_val)
-            else:
-                v_writer(m_val, v_spec)
+            self.writeFieldByTType(k_type, m_key, k_spec)
+            self.writeFieldByTType(v_type, m_val, v_spec)
         self.writeMapEnd()
 
-    def writeStruct(self, obj, thrift_spec):
+    cpdef writeStruct(self, obj, thrift_spec):
         self.writeStructBegin(obj.__class__.__name__)
         # for field in thrift_spec:
         for fid, spec in thrift_spec.items():
@@ -429,15 +421,37 @@ class TBinaryProtocol(object):
         self.writeFieldStop()
         self.writeStructEnd()
 
-    def writeFieldByTType(self, ttype, val, spec):
-        _, w_handler, is_container = self._TTYPE_HANDLERS[ttype]
-        writer = getattr(self, w_handler)
-        if is_container:
-            writer(val, spec)
+    cdef void writeFieldByTType(self, signed char ttype, val, spec):
+        if ttype == 2:
+            self.writeBool(val)
+        elif ttype == 3:
+            self.writeByte(val)
+        elif ttype == 4:
+            self.writeDouble(val)
+        elif ttype == 6:
+            self.writeI16(val)
+        elif ttype == 8:
+            self.writeI32(val)
+        elif ttype == 10:
+            self.writeI64(val)
+        elif ttype == 11:
+            self.writeString(val)
+        elif ttype == 12:
+            self.writeContainerStruct(val, spec)
+        elif ttype == 13:
+            self.writeContainerMap(val, spec)
+        elif ttype == 14:
+            self.writeContainerSet(val, spec)
+        elif ttype == 15:
+            self.writeContainerList(val, spec)
         else:
-            writer(val)
+            raise TProtocolException(type=TProtocolException.INVALID_DATA,
+                                     message='Invalid field type %d' % (ttype))
 
 
-class TBinaryProtocolFactory(object):
-    def getProtocol(self, trans):
-        return TBinaryProtocol(trans)
+
+cdef class TBinaryProtocolFactory:
+    cdef public TBinaryProtocol trans
+
+    cpdef getProtocol(self, object trans):
+        return TBinaryProtocol.__new__(TBinaryProtocol, trans)

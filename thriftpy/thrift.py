@@ -72,10 +72,10 @@ class TPayload(object):
             setattr(self, k, kwargs.get(k, None))
 
     def read(self, iprot):
-        return iprot.readStruct(self, self.thrift_spec)
+        iprot.readStruct(self, self.thrift_spec)
 
     def write(self, oprot):
-        return oprot.writeStruct(self, self.thrift_spec)
+        oprot.writeStruct(self, self.thrift_spec)
 
     def validate(self):
         pass
