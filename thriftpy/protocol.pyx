@@ -23,28 +23,6 @@ cdef class TBinaryProtocol:
     cdef int VERSION_1, VERSION_MASK, TYPE_MASK
     cdef public object trans
 
-    # tuple of: ('reader method' name, 'writer_method' name, is_container bool)
-    _TTYPE_HANDLERS = [
-        (None, None, False),    # 0 TType.STOP
-        (None, None, False),    # 1 TType.VOID # TODO: handle void?
-        ('readBool', 'writeBool', False),    # 2 TType.BOOL
-        ('readByte', 'writeByte', False),    # 3 TType.BYTE and I08
-        ('readDouble', 'writeDouble', False),    # 4 TType.DOUBLE
-        (None, None, False),    # 5 undefined
-        ('readI16', 'writeI16', False),    # 6 TType.I16
-        (None, None, False),    # 7 undefined
-        ('readI32', 'writeI32', False),    # 8 TType.I32
-        (None, None, False),    # 9 undefined
-        ('readI64', 'writeI64', False),    # 10 TType.I64
-        ('readString', 'writeString', False),    # 11 TType.STRING and UTF7
-        ('readContainerStruct', 'writeContainerStruct', True),    # 12 *.STRUCT
-        ('readContainerMap', 'writeContainerMap', True),    # 13 TType.MAP
-        ('readContainerSet', 'writeContainerSet', True),    # 14 TType.SET
-        ('readContainerList', 'writeContainerList', True),    # 15 TType.LIST
-        (None, None, False),    # 16 TType.UTF8 # TODO: handle utf8 types?
-        (None, None, False)    # 17 TType.UTF16 # TODO: handle utf16 types?
-    ]
-
     def __init__(self, object trans):
         self.trans = trans
 
