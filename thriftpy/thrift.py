@@ -71,44 +71,11 @@ class TPayload(object):
             k = v[1]
             setattr(self, k, kwargs.get(k, None))
 
-    def _parse_spec(self, spec):
-        return spec + (None,) if len(spec) == 2 else spec
-
     def read(self, iprot):
-        iprot.readStructBegin()
-
-        while True:
-            _, ftype, fid = iprot.readFieldBegin()
-            if ftype == TType.STOP:
-                break
-
-            if fid not in self.thrift_spec:
-                iprot.skip(ftype)
-            else:
-                spec = self.thrift_spec[fid]
-                spec_type, spec_name, container_spec = self._parse_spec(spec)
-                if spec_type == ftype:
-                    setattr(self, spec_name,
-                            iprot.readFieldByTType(ftype, container_spec))
-                else:
-                    iprot.skip(ftype)
-            iprot.readFieldEnd()
-
-        iprot.readStructEnd()
+        return iprot.readStruct(self, self.thrift_spec)
 
     def write(self, oprot):
-        oprot.writeStructBegin(self.__class__.__name__)
-
-        for fid, spec in self.thrift_spec.items():
-            spec_type, spec_name, container_spec = self._parse_spec(spec)
-            val = getattr(self, spec_name)
-            if val is not None:
-                oprot.writeFieldBegin(spec_name, spec_type, fid)
-                oprot.writeFieldByTType(spec_type, val, container_spec)
-                oprot.writeFieldEnd()
-
-        oprot.writeFieldStop()
-        oprot.writeStructEnd()
+        return oprot.writeStruct(self, self.thrift_spec)
 
     def validate(self):
         pass

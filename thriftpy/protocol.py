@@ -55,6 +55,9 @@ class TBinaryProtocol(object):
     def __init__(self, trans):
         self.trans = trans
 
+    def _parse_spec(self, spec):
+        return spec + (None,) if len(spec) == 2 else spec
+
     def writeMessageBegin(self, name, type_, seqid):
         self.writeI32(TBinaryProtocol.VERSION_1 | type_)
         self.writeString(name)
@@ -278,10 +281,9 @@ class TBinaryProtocol(object):
         else:
             ttype, tspec = spec[0], spec[1]
 
+        list_type, list_len = self.readListBegin()
         r_handler = self._TTYPE_HANDLERS[ttype][0]
         reader = getattr(self, r_handler)
-        list_type, list_len = self.readListBegin()
-
         results = []
         if tspec is None:
             # list values are simple types
@@ -341,19 +343,18 @@ class TBinaryProtocol(object):
     def readStruct(self, obj, thrift_spec):
         self.readStructBegin()
         while True:
-            fname, ftype, fid = self.readFieldBegin()
+            _, ftype, fid = self.readFieldBegin()
             if ftype == TType.STOP:
                 break
-            try:
-                field = thrift_spec[fid]
-            except IndexError:
+
+            if fid not in thrift_spec:
                 self.skip(ftype)
             else:
-                if field is not None and ftype == field[1]:
-                    fname = field[2]
-                    fspec = field[3]
-                    val = self.readFieldByTType(ftype, fspec)
-                    setattr(obj, fname, val)
+                spec = thrift_spec[fid]
+                spec_type, spec_name, container_spec = self._parse_spec(spec)
+                if spec_type == ftype:
+                    setattr(obj, spec_name,
+                            self.readFieldByTType(ftype, container_spec))
                 else:
                     self.skip(ftype)
             self.readFieldEnd()
@@ -363,15 +364,20 @@ class TBinaryProtocol(object):
         val.write(self)
 
     def writeContainerList(self, val, spec):
-        self.writeListBegin(spec[0], len(val))
-        r_handler, w_handler, is_container = self._TTYPE_HANDLERS[spec[0]]
-        e_writer = getattr(self, w_handler)
-        if not is_container:
-            for elem in val:
-                e_writer(elem)
+        if isinstance(spec, int):
+            ttype, tspec = spec, None
         else:
-            for elem in val:
-                e_writer(elem, spec[1])
+            ttype, tspec = spec[0], spec[1]
+
+        self.writeListBegin(ttype, len(val))
+        w_handler = self._TTYPE_HANDLERS[ttype][1]
+        writer = getattr(self, w_handler)
+        if tspec is None:
+            for e in val:
+                writer(e)
+        else:
+            for e in val:
+                writer(e, tspec)
         self.writeListEnd()
 
     def writeContainerSet(self, val, spec):
@@ -411,7 +417,7 @@ class TBinaryProtocol(object):
         self.writeStructBegin(obj.__class__.__name__)
         # for field in thrift_spec:
         for fid, spec in thrift_spec.items():
-            spec_type, spec_name, container_spec, _none = spec
+            spec_type, spec_name, container_spec = self._parse_spec(spec)
             val = getattr(obj, spec_name)
             if val is None:
                 continue
@@ -423,7 +429,7 @@ class TBinaryProtocol(object):
         self.writeStructEnd()
 
     def writeFieldByTType(self, ttype, val, spec):
-        r_handler, w_handler, is_container = self._TTYPE_HANDLERS[ttype]
+        _, w_handler, is_container = self._TTYPE_HANDLERS[ttype]
         writer = getattr(self, w_handler)
         if is_container:
             writer(val, spec)
