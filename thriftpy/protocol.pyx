@@ -326,6 +326,12 @@ cdef class TBinaryProtocol:
 
     cpdef readStruct(self, obj, thrift_spec):
         self.readStructBegin()
+
+        cdef int fid
+        cdef tuple spec
+        cdef unsigned char spec_type
+        cdef str spec_name
+
         while True:
             _, ftype, fid = self.readFieldBegin()
             if ftype == TType.STOP:
@@ -382,6 +388,12 @@ cdef class TBinaryProtocol:
 
     cpdef writeStruct(self, obj, thrift_spec):
         self.writeStructBegin(obj.__class__.__name__)
+
+        cdef int fid
+        cdef tuple spec
+        cdef unsigned char spec_type
+        cdef str spec_name
+
         # for field in thrift_spec:
         for fid, spec in thrift_spec.items():
             spec_type, spec_name, container_spec = self._parse_spec(spec)
