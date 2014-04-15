@@ -188,7 +188,7 @@ cdef class TBinaryProtocol:
         val, = struct.unpack('!h', buff)
         return val
 
-    cdef int readI32(self):
+    cdef int readI32(self) except *:
         buff = self.trans.readAll(4)
         val, = struct.unpack('!i', buff)
         return val
