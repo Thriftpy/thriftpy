@@ -71,34 +71,48 @@ cdef bytes write_list_begin(TType e_type, int32_t size):
 cdef bytes write_map_begin(TType k_type, TType v_type, int32_t size):
     return struct.pack("!bbi", k_type, v_type, size)
 
-cpdef bytes write_output(TType ttype, val, spec=None):
-
+cdef tuple write_prepare(TType ttype, val, spec):
     cdef TType e_type, k_type, v_type
     cdef int32_t i, val_len
-    cdef bytes res
     cdef tuple e_spec
     cdef str e_name
 
+    cdef str _fmt
+    cdef str fmt = ''
+    cdef list vals = []
+
     if ttype == BOOL:
-        return write_bool(val)
+        fmt += 'b'
+        if val:
+            vals.append(1)
+        else:
+            vals.append(0)
 
     elif ttype == BYTE:
-        return write_int8(val)
-
-    elif ttype == DOUBLE:
-        return write_double(val)
+        fmt += 'b'
+        vals.append(val)
 
     elif ttype == I16:
-        return write_i16(val)
+        fmt += 'd'
+        vals.append(val)
 
     elif ttype == I32:
-        return write_i32(val)
+        fmt += 'i'
+        vals.append(val)
 
     elif ttype == I64:
-        return write_i64(val)
+        fmt += 'q'
+        vals.append(val)
+
+    elif ttype == DOUBLE:
+        fmt += 'd'
+        vals.append(val)
 
     elif ttype == STRING:
-        return write_string(val)
+        val_len = len(val)
+        fmt += "i%ss" % val_len
+        vals.append(val_len)
+        vals.append(val)
 
     elif ttype == SET or ttype == LIST:
         if isinstance(spec, tuple):
@@ -107,10 +121,15 @@ cpdef bytes write_output(TType ttype, val, spec=None):
             e_type, t_spec = spec, None
 
         val_len = len(val)
-        res = write_list_begin(e_type, val_len)
+
+        fmt += 'bh'
+        vals.append(e_type)
+        vals.append(val_len)
+
         for i in range(val_len):
-            res += write_output(e_type, val[i], t_spec)
-        return res
+            _fmt, _vals = write_prepare(e_type, val[i], t_spec)
+            fmt += _fmt
+            vals.extend(_vals)
 
     elif ttype == MAP:
         if isinstance(spec[0], int):
@@ -125,15 +144,16 @@ cpdef bytes write_output(TType ttype, val, spec=None):
         else:
             v_type, v_spec = spec[1]
 
-        res = write_map_begin(k_type, v_type, len(val))
+        fmt += 'bbi'
+        vals.extend([k_type, v_type, len(val)])
+
         for k in iter(val):
             v = val[k]
-            res += write_output(k_type, k, k_spec) 
-            res += write_output(v_type, v, v_spec)
-        return res
+            _fmt, _vals = write_prepare(k_type, k, k_spec)
+            fmt += _fmt
+            vals.extend(_vals)
 
     elif ttype == STRUCT:
-        res = b''
 
         for i in iter(spec):
             e_spec = spec[i]
@@ -146,11 +166,23 @@ cpdef bytes write_output(TType ttype, val, spec=None):
             v = getattr(val, e_name)
             if v is None:
                 continue
+            fmt += 'bh'
+            vals.extend([e_type, i])
+            _fmt, _vals = write_prepare(e_type, v, e_container_spec)
+            fmt += _fmt
+            vals.extend(_vals)
+        fmt += 'b'
+        vals.extend([STOP])
 
-            res += write_field_begin(e_type, i)
-            res += write_output(e_type, v, e_container_spec)
-        res += write_field_stop()
-        return res
+    return fmt, vals
+
+
+cpdef bytes write(TType ttype, val, spec=None):
+    cdef str fmt
+    cdef list vals
+    fmt, vals = write_prepare(ttype, val, spec)
+    return struct.pack('!' + fmt, *vals)
+
 
 cpdef bytes write_message_begin(bytes name, TType ttype, int32_t seqid):
     cdef int32_t name_len = len(name)
