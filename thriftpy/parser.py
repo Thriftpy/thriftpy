@@ -106,7 +106,7 @@ def load(thrift_file):
     def _ttype(t):
         if isinstance(t, str):
             if t in struct_names:
-                return TType.STRUCT, getattr(thrift_schema, t)
+                return TType.STRUCT, getattr(thrift_schema, t).thrift_spec
             elif t in result["enums"]:
                 return TType.I32
             elif t in result["typedefs"]:
