@@ -27,9 +27,10 @@ cdef public enum TType:
     UTF16 = 17
 
 
-cdef int VERSION_MASK = 0xffff0000
-cdef int VERSION_1 = 0x80010000
-cdef int TYPE_MASK = 0x000000ff
+cdef:
+    int VERSION_MASK = 0xffff0000
+    int VERSION_1 = 0x80010000
+    int TYPE_MASK = 0x000000ff
 
 
 cdef bytes write_int8(int8_t val):
@@ -54,8 +55,9 @@ cdef bytes write_double(double val):
     return struct.pack("!d", val)
 
 cdef bytes write_string(bytes val):
-    cdef int32_t length = len(val)
-    cdef str fmt
+    cdef:
+        int32_t length = len(val)
+        str fmt
     fmt = "!i%ds" % length
     return struct.pack(fmt, length, val)
 
@@ -72,12 +74,12 @@ cdef bytes write_map_begin(TType k_type, TType v_type, int32_t size):
     return struct.pack("!bbi", k_type, v_type, size)
 
 cpdef bytes write_output(TType ttype, val, spec=None):
-
-    cdef TType e_type, k_type, v_type
-    cdef int32_t i, val_len
-    cdef bytes res
-    cdef tuple e_spec
-    cdef str e_name
+    cdef:
+        TType e_type, k_type, v_type
+        int32_t i, val_len
+        bytes res
+        tuple e_spec
+        str e_name
 
     if ttype == BOOL:
         return write_bool(val)
@@ -153,7 +155,8 @@ cpdef bytes write_output(TType ttype, val, spec=None):
         return res
 
 cpdef bytes write_message_begin(bytes name, TType ttype, int32_t seqid):
-    cdef int32_t name_len = len(name)
-    cdef str fmt
+    cdef:
+        str fmt
+        int32_t name_len = len(name)
     fmt = "!ii%dsi" % name_len
     return struct.pack(fmt, VERSION_1 | ttype, name_len, name, seqid)
