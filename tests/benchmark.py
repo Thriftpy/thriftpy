@@ -22,7 +22,7 @@ for i in range(10000):
     ab = addressbook.AddressBook()
     ab.people = {person.name: person}
 
-    binary.write(binary.STRUCT, ab, ab.thrift_spec)
+    binary.write_output(binary.STRUCT, ab, ab.thrift_spec)
 
 end = time.time()
 
