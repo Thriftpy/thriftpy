@@ -1,5 +1,4 @@
-from cpython.array cimport array, clone
-
+from libc.stdlib cimport malloc
 from libc.string cimport memcmp, memcpy
 from libc.stdint cimport (
     int8_t,
@@ -40,7 +39,6 @@ cdef:
     int VERSION_MASK = 0xffff0000
     int VERSION_1 = 0x80010000
     int TYPE_MASK = 0x000000ff
-    array stringtemplate = array('B')
 
 
 cdef void _revert_memcpy(char* outbuf, void* x, int sz):
@@ -54,9 +52,9 @@ cdef void _revert_memcpy(char* outbuf, void* x, int sz):
 
 cdef bytes _write_num(num val):
     cdef int32_t sz = sizeof(val)
-    cdef array output = clone(stringtemplate, sz, False)
-    _revert_memcpy(output.data.as_chars, &val, sz)
-    return output.data.as_chars[:sz]
+    cdef char* outbuf = <char*>malloc(sz)
+    _revert_memcpy(outbuf, &val, sz)
+    return outbuf[:sz]
 
 cpdef bytes write_i8(int8_t val):
     return _write_num(val)
@@ -83,10 +81,10 @@ cpdef bytes write_string(bytes val):
     cdef:
         int32_t sz = sizeof(int32_t)
         int32_t val_len = len(val)
-        array output = clone(stringtemplate, sz + val_len, True)
-    _revert_memcpy(output.data.as_chars, &val_len, sz)
-    memcpy(output.data.as_chars + sz, <char*>val, val_len)
-    return output.data.as_chars[:sz + val_len]
+        cdef char* outbuf = <char*>malloc(sz + val_len)
+    _revert_memcpy(outbuf, &val_len, sz)
+    memcpy(outbuf + sz, <char*>val, val_len)
+    return outbuf[:sz + val_len]
 
 cdef bytes write_field_begin(TType ttype, int32_t fid):
     return write_i8(ttype) + write_i32(fid)
