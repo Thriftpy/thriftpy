@@ -40,67 +40,91 @@ cdef:
     int VERSION_1 = 0x80010000
     int TYPE_MASK = 0x000000ff
 
+cdef:
+    int8_t int8_sz = sizeof(int8_t)
+    int8_t int16_sz = sizeof(int16_t)
+    int8_t int32_sz = sizeof(int32_t)
 
-cdef void _revert_memcpy(char* outbuf, void* x, int sz):
+
+cdef void _revert_memcpy(char* buf, void* x, int sz):
     cdef:
         int i
         char* s = <char*> x
 
     for i in range(sz):
-        outbuf[i] = s[sz-1-i]
+        buf[i] = s[sz-1-i]
 
 
-cdef bytes _write_num(num val):
-    cdef int32_t sz = sizeof(val)
-    cdef char* outbuf = <char*>malloc(sz)
-    _revert_memcpy(outbuf, &val, sz)
-    return outbuf[:sz]
+cdef void _write_num(char* buf, num val):
+    _revert_memcpy(buf, &val, sizeof(val))
 
-cpdef bytes write_i8(int8_t val):
-    return _write_num(val)
-
-cpdef bytes write_i16(int16_t val):
-    return _write_num(val)
-
-cpdef bytes write_i32(int32_t val):
-    return _write_num(val)
-
-cpdef bytes write_i64(int64_t val):
-    return _write_num(val)
-
-cpdef bytes write_bool(int8_t bool_):
-    if bool_:
-        return write_i8(1)
-    else:
-        return write_i8(0)
-
-cpdef bytes write_double(double val):
-    return _write_num(val)
-
-cpdef bytes write_string(bytes val):
+cdef void _write_string(char* buf, bytes val):
     cdef:
-        int32_t sz = sizeof(int32_t)
         int32_t val_len = len(val)
-        cdef char* outbuf = <char*>malloc(sz + val_len)
-    _revert_memcpy(outbuf, &val_len, sz)
-    memcpy(outbuf + sz, <char*>val, val_len)
-    return outbuf[:sz + val_len]
+    _revert_memcpy(buf, &val_len, int32_sz)
+    memcpy(buf + int32_sz, <char*>val, val_len)
 
-cdef bytes write_field_begin(TType ttype, int32_t fid):
-    return write_i8(ttype) + write_i32(fid)
-
-cdef bytes write_field_stop():
-    return write_i8(STOP)
-
-cdef bytes write_list_begin(TType e_type, int32_t size):
-    return write_i8(e_type) + write_i32(size)
-
-cdef bytes write_map_begin(TType k_type, TType v_type, int32_t size):
-    return write_i8(k_type) + write_i8(v_type) + write_i32(size)
-
-cpdef bytes write_output(TType ttype, val, spec=None):
+cdef bytes _pack_num(num val):
     cdef:
-        TType e_type, k_type, v_type
+        int sz = sizeof(val)
+        char* buf = <char*>malloc(sz)
+    _revert_memcpy(buf, &val, sz)
+    return buf[:sz]
+
+cpdef bytes pack_i8(int8_t val):
+    return _pack_num(val)
+
+cpdef bytes pack_i16(int16_t val):
+    return _pack_num(val)
+
+cpdef bytes pack_i32(int32_t val):
+    return _pack_num(val)
+
+cpdef bytes pack_i64(int64_t val):
+    return _pack_num(val)
+
+cpdef bytes pack_bool(int8_t bool_):
+    if bool_:
+        return pack_i8(1)
+    else:
+        return pack_i8(0)
+
+cpdef bytes pack_double(double val):
+    return _pack_num(val)
+
+cpdef bytes pack_string(bytes val):
+    cdef:
+        int val_len = len(val)
+        int sz = sizeof(val_len)
+    cdef char* buf = <char*>malloc(sz + val_len)
+    _write_string(buf, val)
+    return buf[:sz + val_len]
+
+cpdef write_field_begin(outbuf, int8_t ttype, int16_t fid):
+    cdef char* buf = <char*>malloc(int8_sz + int16_sz)
+    _write_num(buf, ttype)
+    _write_num(buf + int8_sz, fid)
+    outbuf.write(buf[:int8_sz + int16_sz])
+
+cpdef write_field_stop(outbuf):
+    outbuf.write(pack_i8(STOP))
+
+cpdef write_list_begin(outbuf, int8_t e_type, int32_t size):
+    cdef char* buf = <char*>malloc(int8_sz + int32_sz)
+    _write_num(buf, e_type)
+    _write_num(buf + int8_sz, size)
+    outbuf.write(buf[:int8_sz + int32_sz])
+
+cpdef write_map_begin(outbuf, int8_t k_type, int8_t v_type, int32_t size):
+    cdef char* buf = <char*>malloc(int8_sz * 2 + int32_sz)
+    _write_num(buf, k_type)
+    _write_num(buf + int8_sz, v_type)
+    _write_num(buf + int8_sz * 2, size)
+    outbuf.write(buf[:int8_sz * 2 + int32_sz])
+
+cpdef write_output(outbuf, int8_t ttype, val, spec=None):
+    cdef:
+        int8_t e_type, k_type, v_type
         int32_t i, val_len
         bytes res = b''
         tuple e_spec
@@ -108,27 +132,27 @@ cpdef bytes write_output(TType ttype, val, spec=None):
 
     if ttype == BOOL:
         if val:
-            return write_i8(1)
+            outbuf.write(pack_i8(1))
         else:
-            return write_i8(0)
+            outbuf.write(pack_i8(0))
 
     elif ttype == BYTE:
-        return write_i8(val)
-
-    elif ttype == DOUBLE:
-        return write_double(val)
+        outbuf.write(pack_i8(val))
 
     elif ttype == I16:
-        return write_i16(val)
+        outbuf.write(pack_i16(val))
 
     elif ttype == I32:
-        return write_i32(val)
+        outbuf.write(pack_i32(val))
 
     elif ttype == I64:
-        return write_i64(val)
+        outbuf.write(pack_i64(val))
+
+    elif ttype == DOUBLE:
+        outbuf.write(pack_double(val))
 
     elif ttype == STRING:
-        return write_string(val)
+        outbuf.write(pack_string(val))
 
     elif ttype == SET or ttype == LIST:
         if isinstance(spec, tuple):
@@ -137,10 +161,9 @@ cpdef bytes write_output(TType ttype, val, spec=None):
             e_type, t_spec = spec, None
 
         val_len = len(val)
-        res = write_list_begin(e_type, val_len)
+        write_list_begin(outbuf, e_type, val_len)
         for i in range(val_len):
-            res += write_output(e_type, val[i], t_spec)
-        return res
+            write_output(outbuf, e_type, val[i], t_spec)
 
     elif ttype == MAP:
         if isinstance(spec[0], int):
@@ -155,12 +178,10 @@ cpdef bytes write_output(TType ttype, val, spec=None):
         else:
             v_type, v_spec = spec[1]
 
-        res = write_map_begin(k_type, v_type, len(val))
+        write_map_begin(outbuf, k_type, v_type, len(val))
         for k in iter(val):
-            v = val[k]
-            res += write_output(k_type, k, k_spec) 
-            res += write_output(v_type, v, v_spec)
-        return res
+            write_output(outbuf, k_type, k, k_spec) 
+            write_output(outbuf, v_type, val[k], v_spec)
 
     elif ttype == STRUCT:
         for i in iter(spec):
@@ -175,10 +196,13 @@ cpdef bytes write_output(TType ttype, val, spec=None):
             if v is None:
                 continue
 
-            res += write_field_begin(e_type, i)
-            res += write_output(e_type, v, e_container_spec)
-        res += write_field_stop()
-        return res
+            write_field_begin(outbuf, e_type, i)
+            write_output(outbuf, e_type, v, e_container_spec)
+        write_field_stop(outbuf)
 
-cpdef bytes write_message_begin(bytes name, TType ttype, int32_t seqid):
-    return write_string(name) + write_i8(ttype) + write_i32(seqid)
+cpdef write_message_begin(outbuf, bytes name, int8_t ttype, int32_t seqid):
+    cdef char* buf = <char*>malloc(len(name) + int8_sz + int32_sz * 2)
+    _write_string(buf, name)
+    _write_num(buf + int32_sz + len(name), ttype)
+    _write_num(buf + int32_sz + len(name) + int8_sz, seqid)
+    outbuf.write(buf[:len(name) + int8_sz + int32_sz * 2])
