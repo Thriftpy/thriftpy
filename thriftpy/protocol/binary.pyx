@@ -1,5 +1,5 @@
 from libc.stdlib cimport malloc
-from libc.string cimport memcmp, memcpy
+from libc.string cimport memcpy
 from libc.stdint cimport (
     int8_t,
     int16_t,
@@ -44,31 +44,34 @@ cdef:
     int8_t int8_sz = sizeof(int8_t)
     int8_t int16_sz = sizeof(int16_t)
     int8_t int32_sz = sizeof(int32_t)
+    int8_t int64_sz = sizeof(int64_t)
+    int8_t double_sz = sizeof(double)
 
 
-cdef void _revert_memcpy(char* buf, void* x, int sz):
+##########
+# fast pack
+
+cdef void _revert_pack(char* buf, num* x, int8_t sz):
     cdef:
         int i
         char* s = <char*> x
-
     for i in range(sz):
         buf[i] = s[sz-1-i]
 
-
 cdef void _write_num(char* buf, num val):
-    _revert_memcpy(buf, &val, sizeof(val))
+    _revert_pack(buf, &val, sizeof(val))
 
 cdef void _write_string(char* buf, bytes val):
     cdef:
         int32_t val_len = len(val)
-    _revert_memcpy(buf, &val_len, int32_sz)
+    _revert_pack(buf, &val_len, int32_sz)
     memcpy(buf + int32_sz, <char*>val, val_len)
 
 cdef bytes _pack_num(num val):
     cdef:
         int sz = sizeof(val)
         char* buf = <char*>malloc(sz)
-    _revert_memcpy(buf, &val, sz)
+    _revert_pack(buf, &val, sz)
     return buf[:sz]
 
 cpdef bytes pack_i8(int8_t val):
@@ -99,6 +102,60 @@ cpdef bytes pack_string(bytes val):
     cdef char* buf = <char*>malloc(sz + val_len)
     _write_string(buf, val)
     return buf[:sz + val_len]
+
+
+##########
+# fast unpack
+
+
+cdef void _revert_unpack(char* buf, num* x, int8_t sz):
+    cdef:
+        int i
+        char tmp
+
+    for i in range(sz / 2):
+        tmp = buf[i]
+        buf[i] = buf[sz-1-i]
+        buf[sz-1-i] = tmp
+
+    memcpy(x, buf, sz)
+
+
+cpdef int8_t unpack_i8(bytes buf):
+    cdef:
+        char* read = buf
+        int8_t x
+    memcpy(&x, read, int8_sz)
+    return x
+
+cpdef int16_t unpack_i16(bytes buf):
+    cdef:
+        char* read = buf
+        int16_t x
+    _revert_unpack(read, &x, int16_sz)
+    return x
+
+cpdef int32_t unpack_i32(bytes buf):
+    cdef:
+        char* read = buf
+        int32_t x
+    _revert_unpack(read, &x, int32_sz)
+    return x
+
+cpdef int64_t unpack_i64(bytes buf):
+    cdef:
+        char* read = buf
+        int64_t x
+    _revert_unpack(read, &x, int64_sz)
+    return x
+
+cpdef double unpack_double(bytes buf):
+    cdef:
+        char* read = buf
+        double x
+    _revert_unpack(read, &x, double_sz)
+    return x
+
 
 cpdef write_field_begin(outbuf, int8_t ttype, int16_t fid):
     cdef char* buf = <char*>malloc(int8_sz + int16_sz)
