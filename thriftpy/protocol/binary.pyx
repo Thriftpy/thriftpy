@@ -42,14 +42,14 @@ cdef:
     int TYPE_MASK = 0x000000ff
 
 cdef:
-    int8_t int8_sz = sizeof(int8_t)
-    int8_t int16_sz = sizeof(int16_t)
-    int8_t int32_sz = sizeof(int32_t)
-    int8_t int64_sz = sizeof(int64_t)
-    int8_t double_sz = sizeof(double)
+    size_t int8_sz = sizeof(int8_t)
+    size_t int16_sz = sizeof(int16_t)
+    size_t int32_sz = sizeof(int32_t)
+    size_t int64_sz = sizeof(int64_t)
+    size_t double_sz = sizeof(double)
 
 # memprint is a helper to print memory buf in hex code
-cdef void memprint(char* buf, int sz):
+cdef void memprint(char* buf, size_t sz):
     cdef int i
     for i in range(sz):
         printf("%x ", <unsigned char> buf[i])
@@ -59,7 +59,7 @@ cdef void memprint(char* buf, int sz):
 ##########
 # fast pack
 
-cdef void _revert_pack(char* buf, num* x, int8_t sz):
+cdef void _revert_pack(char* buf, num* x, size_t sz):
     cdef:
         int i
         char* s = <char*> x
@@ -77,7 +77,7 @@ cdef void _write_string(char* buf, bytes val):
 
 cdef bytes _pack_num(num val):
     cdef:
-        int sz = sizeof(val)
+        size_t sz = sizeof(val)
         char* buf = <char*>malloc(sz)
     _revert_pack(buf, &val, sz)
     return buf[:sz]
@@ -106,7 +106,7 @@ cpdef bytes pack_double(double val):
 cpdef bytes pack_string(bytes val):
     cdef:
         int val_len = len(val)
-        int sz = sizeof(val_len)
+        size_t sz = sizeof(val_len)
     cdef char* buf = <char*>malloc(sz + val_len)
     _write_string(buf, val)
     return buf[:sz + val_len]
@@ -116,7 +116,7 @@ cpdef bytes pack_string(bytes val):
 # fast unpack
 
 
-cdef void _revert_unpack(num* x, char* buf, int8_t sz):
+cdef void _revert_unpack(num* x, char* buf, size_t sz):
     cdef:
         int i
         char tmp
