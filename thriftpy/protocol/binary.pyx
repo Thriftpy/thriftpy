@@ -116,7 +116,7 @@ cpdef bytes pack_string(bytes val):
 # fast unpack
 
 
-cdef void _revert_unpack(char* buf, num* x, int8_t sz):
+cdef void _revert_unpack(num* x, char* buf, int8_t sz):
     cdef:
         int i
         char tmp
@@ -140,28 +140,28 @@ cpdef int16_t unpack_i16(bytes buf):
     cdef:
         char* read = buf
         int16_t x
-    _revert_unpack(read, &x, int16_sz)
+    _revert_unpack(&x, read, int16_sz)
     return x
 
 cpdef int32_t unpack_i32(bytes buf):
     cdef:
         char* read = buf
         int32_t x
-    _revert_unpack(read, &x, int32_sz)
+    _revert_unpack(&x, read, int32_sz)
     return x
 
 cpdef int64_t unpack_i64(bytes buf):
     cdef:
         char* read = buf
         int64_t x
-    _revert_unpack(read, &x, int64_sz)
+    _revert_unpack(&x, read, int64_sz)
     return x
 
 cpdef double unpack_double(bytes buf):
     cdef:
         char* read = buf
         double x
-    _revert_unpack(read, &x, double_sz)
+    _revert_unpack(&x, read, double_sz)
     return x
 
 
