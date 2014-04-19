@@ -1,3 +1,4 @@
+from libc.stdio cimport printf
 from libc.stdlib cimport malloc
 from libc.string cimport memcpy
 from libc.stdint cimport (
@@ -46,6 +47,13 @@ cdef:
     int8_t int32_sz = sizeof(int32_t)
     int8_t int64_sz = sizeof(int64_t)
     int8_t double_sz = sizeof(double)
+
+# memprint is a helper to print memory buf in hex code
+cdef void memprint(char* buf, int sz):
+    cdef int i
+    for i in range(sz):
+        printf("%x ", <unsigned char> buf[i])
+    printf("\n")
 
 
 ##########
