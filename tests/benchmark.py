@@ -1,33 +1,55 @@
 import time
 
+from io import BytesIO
+
 from thriftpy.protocol import binary
 
 import addressbook_thrift as addressbook
 # import addressbook
 
 
+def make_addressbook():
+    phone1 = addressbook.PhoneNumber()
+    phone1.type = addressbook.PhoneType.MOBILE
+    phone1.number = b'555-1212'
+    phone2 = addressbook.PhoneNumber()
+    phone2.type = addressbook.PhoneType.HOME
+    phone2.number = b'555-1234'
+    person = addressbook.Person()
+    person.name = b"Alice"
+    person.phones = [phone1, phone2]
+    person.created_at = 1400000000
+
+    ab = addressbook.AddressBook()
+    ab.people = {person.name: person}
+    return ab
+
+
 def encode(n):
     for i in range(n):
-        phone1 = addressbook.PhoneNumber()
-        phone1.type = addressbook.PhoneType.MOBILE
-        phone1.number = b'555-1212'
-        phone2 = addressbook.PhoneNumber()
-        phone2.type = addressbook.PhoneType.HOME
-        phone2.number = b'555-1234'
-        person = addressbook.Person()
-        person.name = b"Alice"
-        person.phones = [phone1, phone2]
-        person.created_at = int(time.time())
+        ab = make_addressbook()
+        b = BytesIO()
+        binary.write_val(b, binary.STRUCT, ab)
 
-        ab = addressbook.AddressBook()
-        ab.people = {person.name: person}
 
-        binary.write_output(binary.STRUCT, ab, ab.thrift_spec)
+def decode(n):
+    b = BytesIO()
+    ab = make_addressbook()
+    binary.write_val(b, binary.STRUCT, ab)
+    encoded = b.getvalue()
+    for i in range(n):
+        b = BytesIO(encoded)
+        binary.read_val(b, binary.STRUCT, addressbook.AddressBook)
 
 
 def main():
     start = time.time()
     encode(10000)
+    end = time.time()
+    print(end - start)
+
+    start = time.time()
+    decode(10000)
     end = time.time()
     print(end - start)
 

@@ -26,15 +26,15 @@ class PhoneNumber(TPayload):
 class Person(TPayload):
     thrift_spec = {
         1: (TType.STRING, "name"),
-        2: (TType.LIST, "phones", (TType.STRUCT, PhoneNumber.thrift_spec)),
-        3: (TType.I32, "created_at"),
+        2: (TType.LIST, "phones", (TType.STRUCT, PhoneNumber)),
+        4: (TType.I32, "created_at"),
     }
 
 
 class AddressBook(TPayload):
     thrift_spec = {
         1: (TType.MAP, "people",
-            (TType.STRING, (TType.STRUCT, Person.thrift_spec)))
+            (TType.STRING, (TType.STRUCT, Person)))
     }
 
 
@@ -65,7 +65,7 @@ class AddressBookService(object):
 
     class add_args(TPayload):
         thrift_spec = {
-            1: (TType.STRUCT, "person", Person.thrift_spec),
+            1: (TType.STRUCT, "person", Person),
         }
 
     class add_result(TPayload):
@@ -81,7 +81,7 @@ class AddressBookService(object):
     class remove_result(TPayload):
         thrift_spec = {
             0: (TType.BOOL, "success"),
-            1: (TType.STRUCT, "not_exists", PersonNotExistsError.thrift_spec)
+            1: (TType.STRUCT, "not_exists", PersonNotExistsError)
         }
 
     class get_args(TPayload):
@@ -91,7 +91,7 @@ class AddressBookService(object):
 
     class get_result(TPayload):
         thrift_spec = {
-            0: (TType.STRUCT, "success", Person.thrift_spec),
+            0: (TType.STRUCT, "success", Person),
         }
 
     class book_args(TPayload):
@@ -99,7 +99,7 @@ class AddressBookService(object):
 
     class book_result(TPayload):
         thrift_spec = {
-            0: (TType.STRUCT, "success", AddressBook.thrift_spec),
+            0: (TType.STRUCT, "success", AddressBook),
         }
 
     class get_phones_args(TPayload):
