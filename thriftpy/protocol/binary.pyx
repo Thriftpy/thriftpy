@@ -115,7 +115,6 @@ cpdef bytes pack_string(bytes val):
 ##########
 # fast unpack
 
-
 cdef void _revert_unpack(num* x, char* buf, size_t sz):
     cdef:
         int i
@@ -127,7 +126,6 @@ cdef void _revert_unpack(num* x, char* buf, size_t sz):
         buf[sz-1-i] = tmp
 
     memcpy(x, buf, sz)
-
 
 cpdef int8_t unpack_i8(bytes buf):
     cdef:
@@ -165,6 +163,16 @@ cpdef double unpack_double(bytes buf):
     return x
 
 
+##########
+# thrift binary write
+
+cpdef write_message_begin(outbuf, bytes name, int8_t ttype, int32_t seqid):
+    cdef char* buf = <char*>malloc(len(name) + int8_sz + int32_sz * 2)
+    _write_string(buf, name)
+    _write_num(buf + int32_sz + len(name), ttype)
+    _write_num(buf + int32_sz + len(name) + int8_sz, seqid)
+    outbuf.write(buf[:len(name) + int8_sz + int32_sz * 2])
+
 cpdef write_field_begin(outbuf, int8_t ttype, int16_t fid):
     cdef char* buf = <char*>malloc(int8_sz + int16_sz)
     _write_num(buf, ttype)
@@ -187,13 +195,13 @@ cpdef write_map_begin(outbuf, int8_t k_type, int8_t v_type, int32_t size):
     _write_num(buf + int8_sz * 2, size)
     outbuf.write(buf[:int8_sz * 2 + int32_sz])
 
-cpdef write_output(outbuf, int8_t ttype, val, spec=None):
+cpdef write_val(outbuf, int8_t ttype, val, spec=None):
     cdef:
-        int8_t e_type, k_type, v_type
-        int32_t i, val_len
+        int8_t e_type, k_type, v_type, f_type
+        int32_t i, val_len, fid
         bytes res = b''
         tuple e_spec
-        str e_name
+        str f_name
 
     if ttype == BOOL:
         if val:
@@ -228,7 +236,7 @@ cpdef write_output(outbuf, int8_t ttype, val, spec=None):
         val_len = len(val)
         write_list_begin(outbuf, e_type, val_len)
         for i in range(val_len):
-            write_output(outbuf, e_type, val[i], t_spec)
+            write_val(outbuf, e_type, val[i], t_spec)
 
     elif ttype == MAP:
         if isinstance(spec[0], int):
@@ -245,29 +253,157 @@ cpdef write_output(outbuf, int8_t ttype, val, spec=None):
 
         write_map_begin(outbuf, k_type, v_type, len(val))
         for k in iter(val):
-            write_output(outbuf, k_type, k, k_spec) 
-            write_output(outbuf, v_type, val[k], v_spec)
+            write_val(outbuf, k_type, k, k_spec)
+            write_val(outbuf, v_type, val[k], v_spec)
 
     elif ttype == STRUCT:
-        for i in iter(spec):
-            e_spec = spec[i]
-            if len(e_spec) == 2:
-                e_type, e_name = e_spec
-                e_container_spec = None
+        for fid in iter(val.thrift_spec):
+            f_spec = val.thrift_spec[fid]
+            if len(f_spec) == 2:
+                f_type, f_name = f_spec
+                f_container_spec = None
             else:
-                e_type, e_name, e_container_spec = e_spec
+                f_type, f_name, f_container_spec = f_spec
 
-            v = getattr(val, e_name)
+            v = getattr(val, f_name)
             if v is None:
                 continue
 
-            write_field_begin(outbuf, e_type, i)
-            write_output(outbuf, e_type, v, e_container_spec)
+            write_field_begin(outbuf, f_type, fid)
+            write_val(outbuf, f_type, v, f_container_spec)
         write_field_stop(outbuf)
 
-cpdef write_message_begin(outbuf, bytes name, int8_t ttype, int32_t seqid):
-    cdef char* buf = <char*>malloc(len(name) + int8_sz + int32_sz * 2)
-    _write_string(buf, name)
-    _write_num(buf + int32_sz + len(name), ttype)
-    _write_num(buf + int32_sz + len(name) + int8_sz, seqid)
-    outbuf.write(buf[:len(name) + int8_sz + int32_sz * 2])
+
+##########
+# thrift binary read
+
+cpdef read_message_begin(inbuf):
+    cdef:
+        bytes buf, name
+        size_t sz
+        int32_t seqid
+
+    buf = inbuf.read(8)
+    sz = unpack_i32(buf[:4])
+
+    if sz & VERSION_MASK != VERSION_1:
+        raise Exception("Bad Version")
+
+    name_sz = unpack_i32(buf[4:])
+    name = inbuf.read(name_sz)
+
+    seqid = unpack_i32(inbuf.read(4))
+    return name, sz & TYPE_MASK, seqid
+
+cpdef read_field_begin(inbuf):
+    cdef int8_t ttype = unpack_i8(inbuf.read(1))
+    if ttype == STOP:
+        return ttype, 0
+
+    return ttype, unpack_i16(inbuf.read(2))
+
+cpdef read_list_begin(inbuf):
+    cdef bytes buf = inbuf.read(int8_sz + int32_sz)
+    return unpack_i8(buf[:1]), unpack_i32(buf[1:])
+
+cpdef read_map_begin(inbuf):
+    cdef bytes buf = inbuf.read(int8_sz * 2 + int32_sz)
+    return unpack_i8(buf[:1]), unpack_i8(buf[1:2]), unpack_i32(buf[2:])
+
+cpdef read_val(inbuf, int8_t ttype, spec=None):
+    cdef:
+        size_t sz
+        int8_t f_type, k_type, v_type, sk_type, sv_type, sf_type
+        int32_t i, fid
+        str f_name
+
+    if ttype == BOOL:
+        return bool(unpack_i8(inbuf.read(1)))
+
+    elif ttype == BYTE:
+        return unpack_i8(inbuf.read(int8_sz))
+
+    elif ttype == I16:
+        return unpack_i16(inbuf.read(int16_sz))
+
+    elif ttype == I32:
+        return unpack_i32(inbuf.read(int32_sz))
+
+    elif ttype == I64:
+        return unpack_i64(inbuf.read(int64_sz))
+
+    elif ttype == DOUBLE:
+        return unpack_double(inbuf.read(double_sz))
+
+    elif ttype == STRING:
+        sz = unpack_i32(inbuf.read(int32_sz))
+        return inbuf.read(sz)
+
+    elif ttype == SET or ttype == LIST:
+        if isinstance(spec, tuple):
+            v_type, v_spec = spec[0], spec[1]
+        else:
+            v_type, v_spec = spec, None
+
+        result = []
+        r_type, sz = read_list_begin(inbuf)
+        # the v_type is useless here since we already get it from spec
+        if r_type != v_type:
+            raise Exception("Message Corrupt")
+
+        for i in range(sz):
+            result.append(read_val(inbuf, v_type, v_spec))
+        return result
+
+    elif ttype == MAP:
+        if isinstance(spec[0], int):
+            k_type = spec[0]
+            k_spec = None
+        else:
+            k_type, k_spec = spec[0]
+
+        if isinstance(spec[1], int):
+            v_type = spec[1]
+            v_spec = None
+        else:
+            v_type, v_spec = spec[1]
+
+        result = {}
+        sk_type, sv_type, sz = read_map_begin(inbuf)
+        if sk_type != k_type or sv_type != v_type:
+            raise Exception("Message Corrupt")
+
+        for i in range(sz):
+            k_val = read_val(inbuf, k_type, k_spec)
+            v_val = read_val(inbuf, v_type, v_spec)
+            result[k_val] = v_val
+
+        return result
+
+    elif ttype == STRUCT:
+        # In this case, the spec should be a cls
+        obj = spec()
+        # The max loop count equals field count + a final stop byte.
+        for i in range(len(spec.thrift_spec) + 1):
+            f_type, fid = read_field_begin(inbuf)
+            if f_type == STOP:
+                break
+
+            if not fid in spec.thrift_spec:
+                # TODO use skip here.
+                raise Exception("Field id not exists!")
+
+            if len(spec.thrift_spec[fid]) == 2:
+                sf_type, f_name = spec.thrift_spec[fid]
+                f_container_spec = None
+            else:
+                sf_type, f_name, f_container_spec = spec.thrift_spec[fid]
+
+            # it really should equal here. but since we already wasted
+            # space storing the duplicate info, let's check it.
+            if f_type != sf_type:
+                raise Exception("Message Corrupt")
+
+            setattr(obj, f_name,
+                    read_val(inbuf, f_type, f_container_spec))
+        return obj
