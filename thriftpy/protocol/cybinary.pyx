@@ -82,28 +82,28 @@ cdef bytes _pack_num(num val):
     _revert_pack(buf, &val, sz)
     return buf[:sz]
 
-cpdef bytes pack_i8(int8_t val):
+cdef bytes pack_i8(int8_t val):
     return _pack_num(val)
 
-cpdef bytes pack_i16(int16_t val):
+cdef bytes pack_i16(int16_t val):
     return _pack_num(val)
 
-cpdef bytes pack_i32(int32_t val):
+cdef bytes pack_i32(int32_t val):
     return _pack_num(val)
 
-cpdef bytes pack_i64(int64_t val):
+cdef bytes pack_i64(int64_t val):
     return _pack_num(val)
 
-cpdef bytes pack_bool(int8_t bool_):
+cdef bytes pack_bool(int8_t bool_):
     if bool_:
         return pack_i8(1)
     else:
         return pack_i8(0)
 
-cpdef bytes pack_double(double val):
+cdef bytes pack_double(double val):
     return _pack_num(val)
 
-cpdef bytes pack_string(bytes val):
+cdef bytes pack_string(bytes val):
     cdef:
         int val_len = len(val)
         size_t sz = sizeof(val_len)
@@ -127,35 +127,35 @@ cdef void _revert_unpack(num* x, char* buf, size_t sz):
 
     memcpy(x, buf, sz)
 
-cpdef int8_t unpack_i8(bytes buf):
+cdef int8_t unpack_i8(bytes buf):
     cdef:
         char* read = buf
         int8_t x
     memcpy(&x, read, int8_sz)
     return x
 
-cpdef int16_t unpack_i16(bytes buf):
+cdef int16_t unpack_i16(bytes buf):
     cdef:
         char* read = buf
         int16_t x
     _revert_unpack(&x, read, int16_sz)
     return x
 
-cpdef int32_t unpack_i32(bytes buf):
+cdef int32_t unpack_i32(bytes buf):
     cdef:
         char* read = buf
         int32_t x
     _revert_unpack(&x, read, int32_sz)
     return x
 
-cpdef int64_t unpack_i64(bytes buf):
+cdef int64_t unpack_i64(bytes buf):
     cdef:
         char* read = buf
         int64_t x
     _revert_unpack(&x, read, int64_sz)
     return x
 
-cpdef double unpack_double(bytes buf):
+cdef double unpack_double(bytes buf):
     cdef:
         char* read = buf
         double x
@@ -166,36 +166,36 @@ cpdef double unpack_double(bytes buf):
 ##########
 # thrift binary write
 
-cpdef write_message_begin(outbuf, bytes name, int8_t ttype, int32_t seqid):
+cdef write_message_begin(outbuf, bytes name, int8_t ttype, int32_t seqid):
     cdef char* buf = <char*>malloc(len(name) + int8_sz + int32_sz * 2)
     _write_string(buf, name)
     _write_num(buf + int32_sz + len(name), ttype)
     _write_num(buf + int32_sz + len(name) + int8_sz, seqid)
     outbuf.write(buf[:len(name) + int8_sz + int32_sz * 2])
 
-cpdef write_field_begin(outbuf, int8_t ttype, int16_t fid):
+cdef write_field_begin(outbuf, int8_t ttype, int16_t fid):
     cdef char* buf = <char*>malloc(int8_sz + int16_sz)
     _write_num(buf, ttype)
     _write_num(buf + int8_sz, fid)
     outbuf.write(buf[:int8_sz + int16_sz])
 
-cpdef write_field_stop(outbuf):
+cdef write_field_stop(outbuf):
     outbuf.write(pack_i8(STOP))
 
-cpdef write_list_begin(outbuf, int8_t e_type, int32_t size):
+cdef write_list_begin(outbuf, int8_t e_type, int32_t size):
     cdef char* buf = <char*>malloc(int8_sz + int32_sz)
     _write_num(buf, e_type)
     _write_num(buf + int8_sz, size)
     outbuf.write(buf[:int8_sz + int32_sz])
 
-cpdef write_map_begin(outbuf, int8_t k_type, int8_t v_type, int32_t size):
+cdef write_map_begin(outbuf, int8_t k_type, int8_t v_type, int32_t size):
     cdef char* buf = <char*>malloc(int8_sz * 2 + int32_sz)
     _write_num(buf, k_type)
     _write_num(buf + int8_sz, v_type)
     _write_num(buf + int8_sz * 2, size)
     outbuf.write(buf[:int8_sz * 2 + int32_sz])
 
-cpdef write_val(outbuf, int8_t ttype, val, spec=None):
+cdef void write_val(outbuf, int8_t ttype, val, spec=None):
     cdef:
         int8_t e_type, k_type, v_type, f_type
         int32_t i, val_len, fid
@@ -277,7 +277,7 @@ cpdef write_val(outbuf, int8_t ttype, val, spec=None):
 ##########
 # thrift binary read
 
-cpdef read_message_begin(inbuf):
+cdef tuple read_message_begin(inbuf):
     cdef:
         bytes buf, name
         size_t sz
@@ -295,22 +295,22 @@ cpdef read_message_begin(inbuf):
     seqid = unpack_i32(inbuf.read(4))
     return name, sz & TYPE_MASK, seqid
 
-cpdef read_field_begin(inbuf):
+cdef tuple read_field_begin(inbuf):
     cdef int8_t ttype = unpack_i8(inbuf.read(1))
     if ttype == STOP:
         return ttype, 0
 
     return ttype, unpack_i16(inbuf.read(2))
 
-cpdef read_list_begin(inbuf):
+cdef tuple read_list_begin(inbuf):
     cdef bytes buf = inbuf.read(int8_sz + int32_sz)
     return unpack_i8(buf[:1]), unpack_i32(buf[1:])
 
-cpdef read_map_begin(inbuf):
+cdef tuple read_map_begin(inbuf):
     cdef bytes buf = inbuf.read(int8_sz * 2 + int32_sz)
     return unpack_i8(buf[:1]), unpack_i8(buf[1:2]), unpack_i32(buf[2:])
 
-cpdef read_val(inbuf, int8_t ttype, spec=None):
+cdef read_val(inbuf, int8_t ttype, spec=None):
     cdef:
         size_t sz
         int8_t f_type, k_type, v_type, sk_type, sv_type, sf_type
@@ -407,3 +407,28 @@ cpdef read_val(inbuf, int8_t ttype, spec=None):
             setattr(obj, f_name,
                     read_val(inbuf, f_type, f_container_spec))
         return obj
+
+
+
+cdef class TCyBinaryProtocol:
+    cdef public object trans
+
+    def __init__(self, object trans):
+        self.trans = trans
+
+    def __cinit__(self, object trans):
+        self.trans = trans
+
+    cpdef write_message_begin(self, name, ttype, seqid):
+        write_message_begin(self.trans, name, ttype, seqid)
+
+    cpdef read_struct(self, obj_cls):
+        return read_val(self.trans, STRUCT, obj_cls)
+
+    cpdef write_struct(self, obj):
+        write_val(self.trans, STRUCT, obj)
+
+
+cdef class TCyBinaryProtocolFactory:
+    cpdef TCyBinaryProtocol get_protocol(self, object trans):
+        return TCyBinaryProtocol.__new__(TCyBinaryProtocol, trans)

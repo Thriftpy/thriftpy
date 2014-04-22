@@ -72,18 +72,14 @@ class TPayload(object):
             setattr(self, k, kwargs.get(k, None))
 
     def read(self, iprot):
-        iprot.readStruct(self, self.thrift_spec)
+        self = iprot.read_struct(self.__class__)
 
     def write(self, oprot):
-        oprot.writeStruct(self, self.thrift_spec)
-
-    def validate(self):
-        pass
+        oprot.write_struct(self)
 
     def __repr__(self):
-        L = ['%s=%r' % (key, value)
-             for key, value in self.__dict__.items()]
-        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+        l = ['%s=%r' % (key, value) for key, value in self.__dict__.items()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(l))
 
     def __str__(self):
         return repr(self)
@@ -93,7 +89,7 @@ class TPayload(object):
             self.__dict__ == other.__dict__
 
     def __ne__(self, other):
-        return not (self == other)
+        return self != other
 
 
 class TClient(object):

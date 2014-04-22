@@ -1,8 +1,6 @@
 import time
 
-from io import BytesIO
-
-from thriftpy.protocol import cybinary
+from thriftpy.utils import serialize, deserialize
 
 import addressbook_thrift as addressbook
 # import addressbook
@@ -28,18 +26,14 @@ def make_addressbook():
 def encode(n):
     for i in range(n):
         ab = make_addressbook()
-        b = BytesIO()
-        cybinary.write_val(b, cybinary.STRUCT, ab)
+        serialize(ab)
 
 
 def decode(n):
-    b = BytesIO()
     ab = make_addressbook()
-    cybinary.write_val(b, cybinary.STRUCT, ab)
-    encoded = b.getvalue()
+    encoded = serialize(ab)
     for i in range(n):
-        b = BytesIO(encoded)
-        cybinary.read_val(b, cybinary.STRUCT, addressbook.AddressBook)
+        deserialize(ab, encoded)
 
 
 def main():
