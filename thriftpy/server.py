@@ -1,7 +1,7 @@
 import logging
 import threading
 
-from thriftpy.protocol import TCyBinaryProtocolFactory
+from thriftpy.protocol import TBinaryProtocolFactory
 from thriftpy.transport import (
     TBufferedTransportFactory,
     TTransportException
@@ -16,7 +16,7 @@ class TServer(object):
         self.trans = trans
 
         self.itrans_factory = itrans_factory or TBufferedTransportFactory()
-        self.iprot_factory = iprot_factory or TCyBinaryProtocolFactory()
+        self.iprot_factory = iprot_factory or TBinaryProtocolFactory()
         self.otrans_factory = otrans_factory or self.itrans_factory
         self.oprot_factory = oprot_factory or self.iprot_factory
 

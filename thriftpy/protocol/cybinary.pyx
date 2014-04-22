@@ -303,11 +303,11 @@ cdef tuple read_message_begin(inbuf):
     return name, sz & TYPE_MASK, seqid
 
 cdef tuple read_field_begin(inbuf):
-    cdef int8_t ttype = unpack_i8(inbuf.read(1))
+    cdef int8_t ftype = unpack_i8(inbuf.read(1))
     if ttype == STOP:
-        return ttype, 0
+        return ftype, 0
 
-    return ttype, unpack_i16(inbuf.read(2))
+    return ftype, unpack_i16(inbuf.read(2))
 
 cdef tuple read_list_begin(inbuf):
     cdef bytes buf = inbuf.read(int8_sz + int32_sz)
@@ -396,7 +396,7 @@ cdef read_val(inbuf, int8_t ttype, spec=None):
             if f_type == STOP:
                 break
 
-            if not fid in spec.thrift_spec:
+            if fid not in spec.thrift_spec:
                 # TODO use skip here.
                 raise Exception("Field id not exists!")
 

@@ -1,15 +1,15 @@
 from .transport import TMemoryBuffer
-from .protocol import TCyBinaryProtocolFactory
+from .protocol import TBinaryProtocolFactory
 
 
-def serialize(thrift_object, proto_factory=TCyBinaryProtocolFactory()):
+def serialize(thrift_object, proto_factory=TBinaryProtocolFactory()):
     transport = TMemoryBuffer()
     protocol = proto_factory.get_protocol(transport)
     thrift_object.write(protocol)
     return transport.getvalue()
 
 
-def deserialize(thrift_object, buf, proto_factory=TCyBinaryProtocolFactory()):
+def deserialize(thrift_object, buf, proto_factory=TBinaryProtocolFactory()):
     transport = TMemoryBuffer(buf)
     protocol = proto_factory.get_protocol(transport)
     thrift_object.read(protocol)

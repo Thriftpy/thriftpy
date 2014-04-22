@@ -1,4 +1,6 @@
-__all__ = ['TCyBinaryProtocol', 'TCyBinaryProtocolFactory']
+__all__ = ['TBinaryProtocol', 'TBinaryProtocolFactory',
+           'TCyBinaryProtocol', 'TCyBinaryProtocolFactory']
 
 
+from .binary import TBinaryProtocol, TBinaryProtocolFactory
 from .cybinary import TCyBinaryProtocol, TCyBinaryProtocolFactory
