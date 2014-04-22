@@ -2,7 +2,7 @@ import time
 
 from io import BytesIO
 
-from thriftpy.protocol import binary
+from thriftpy.protocol import cybinary
 
 import addressbook_thrift as addressbook
 # import addressbook
@@ -29,17 +29,17 @@ def encode(n):
     for i in range(n):
         ab = make_addressbook()
         b = BytesIO()
-        binary.write_val(b, binary.STRUCT, ab)
+        cybinary.write_val(b, cybinary.STRUCT, ab)
 
 
 def decode(n):
     b = BytesIO()
     ab = make_addressbook()
-    binary.write_val(b, binary.STRUCT, ab)
+    cybinary.write_val(b, cybinary.STRUCT, ab)
     encoded = b.getvalue()
     for i in range(n):
         b = BytesIO(encoded)
-        binary.read_val(b, binary.STRUCT, addressbook.AddressBook)
+        cybinary.read_val(b, cybinary.STRUCT, addressbook.AddressBook)
 
 
 def main():
