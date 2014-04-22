@@ -29,7 +29,7 @@ setup(name="thriftpy",
       extras_require={
           "dev": dev_requires,
       },
-      ext_modules=cythonize(["thriftpy/protocol/binary.pyx"]),
+      ext_modules=cythonize(["thriftpy/protocol/cybinary.pyx"]),
       classifiers=[
           "Topic :: Software Development"
           "Development Status :: 3 - Alpha",
