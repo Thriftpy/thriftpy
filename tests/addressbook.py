@@ -27,13 +27,14 @@ class Person(TPayload):
     thrift_spec = {
         1: (TType.STRING, "name"),
         2: (TType.LIST, "phones", (TType.STRUCT, PhoneNumber)),
-        3: (TType.I32, "created_at"),
+        4: (TType.I32, "created_at"),
     }
 
 
 class AddressBook(TPayload):
     thrift_spec = {
-        1: (TType.MAP, "people", (TType.STRING, (TType.STRUCT, Person)))
+        1: (TType.MAP, "people",
+            (TType.STRING, (TType.STRUCT, Person)))
     }
 
 

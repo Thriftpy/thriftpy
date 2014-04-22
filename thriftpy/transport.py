@@ -43,9 +43,9 @@ class TMemoryBuffer(TTransportBase):
     """Wraps a BytesIO object as a TTransport.
 
     NOTE: Unlike the C++ version of this class, you cannot write to it
-                then immediately read from it.    If you want to read from a
-                TMemoryBuffer, you must either pass a string to the
-                constructor.
+          then immediately read from it.
+          If you want to read from a TMemoryBuffer, you must either pass
+          a string to the constructor.
     TODO(dreiss): Make this work like the C++ version.
     """
 
@@ -122,7 +122,7 @@ class TBufferedTransport(TTransportBase):
 
 
 class TBufferedTransportFactory(object):
-    def getTransport(self, trans):
+    def get_transport(self, trans):
         return TBufferedTransport(trans)
 
 

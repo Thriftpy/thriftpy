@@ -34,10 +34,10 @@ class TSimpleServer(TServer):
         self.trans.listen()
         while True:
             client = self.trans.accept()
-            itrans = self.itrans_factory.getTransport(client)
-            otrans = self.otrans_factory.getTransport(client)
-            iprot = self.iprot_factory.getProtocol(itrans)
-            oprot = self.oprot_factory.getProtocol(otrans)
+            itrans = self.itrans_factory.get_transport(client)
+            otrans = self.otrans_factory.get_transport(client)
+            iprot = self.iprot_factory.get_protocol(itrans)
+            oprot = self.oprot_factory.get_protocol(otrans)
             try:
                 while True:
                     self.processor.process(iprot, oprot)
@@ -71,10 +71,10 @@ class TThreadedServer(TServer):
                 logging.exception(x)
 
     def handle(self, client):
-        itrans = self.itrans_factory.getTransport(client)
-        otrans = self.otrans_factory.getTransport(client)
-        iprot = self.iprot_factory.getProtocol(itrans)
-        oprot = self.oprot_factory.getProtocol(otrans)
+        itrans = self.itrans_factory.get_transport(client)
+        otrans = self.otrans_factory.get_transport(client)
+        iprot = self.iprot_factory.get_protocol(itrans)
+        oprot = self.oprot_factory.get_protocol(otrans)
         try:
             while True:
                 self.processor.process(iprot, oprot)

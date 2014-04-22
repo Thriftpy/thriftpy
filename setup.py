@@ -1,9 +1,12 @@
 from setuptools import setup, find_packages
 
+from Cython.Build import cythonize
+
 version = "0.1.0"
 
 install_requires = [
-    "pyparsing==2.0.1",
+    "cython>=0.20.1",
+    "pyparsing>=2.0.1",
 ]
 
 dev_requires = [
@@ -26,6 +29,7 @@ setup(name="thriftpy",
       extras_require={
           "dev": dev_requires,
       },
+      ext_modules=cythonize(["thriftpy/protocol/cybinary.pyx"]),
       classifiers=[
           "Topic :: Software Development"
           "Development Status :: 3 - Alpha",

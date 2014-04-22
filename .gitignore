@@ -3,6 +3,8 @@
 *.py[cod]
 
 # C extensions
+*.h
+*.c
 *.so
 
 # Packages
