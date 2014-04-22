@@ -122,7 +122,7 @@ class TBufferedTransport(TTransportBase):
 
 
 class TBufferedTransportFactory(object):
-    def getTransport(self, trans):
+    def get_transport(self, trans):
         return TBufferedTransport(trans)
 
 

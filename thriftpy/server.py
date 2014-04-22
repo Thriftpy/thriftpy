@@ -1,7 +1,7 @@
 import logging
 import threading
 
-from thriftpy.protocol import TBinaryProtocolFactory
+from thriftpy.protocol import TCyBinaryProtocolFactory
 from thriftpy.transport import (
     TBufferedTransportFactory,
     TTransportException
@@ -16,7 +16,7 @@ class TServer(object):
         self.trans = trans
 
         self.itrans_factory = itrans_factory or TBufferedTransportFactory()
-        self.iprot_factory = iprot_factory or TBinaryProtocolFactory()
+        self.iprot_factory = iprot_factory or TCyBinaryProtocolFactory()
         self.otrans_factory = otrans_factory or self.itrans_factory
         self.oprot_factory = oprot_factory or self.iprot_factory
 
@@ -34,10 +34,10 @@ class TSimpleServer(TServer):
         self.trans.listen()
         while True:
             client = self.trans.accept()
-            itrans = self.itrans_factory.getTransport(client)
-            otrans = self.otrans_factory.getTransport(client)
-            iprot = self.iprot_factory.getProtocol(itrans)
-            oprot = self.oprot_factory.getProtocol(otrans)
+            itrans = self.itrans_factory.get_transport(client)
+            otrans = self.otrans_factory.get_transport(client)
+            iprot = self.iprot_factory.get_protocol(itrans)
+            oprot = self.oprot_factory.get_protocol(otrans)
             try:
                 while True:
                     self.processor.process(iprot, oprot)
@@ -71,10 +71,10 @@ class TThreadedServer(TServer):
                 logging.exception(x)
 
     def handle(self, client):
-        itrans = self.itrans_factory.getTransport(client)
-        otrans = self.otrans_factory.getTransport(client)
-        iprot = self.iprot_factory.getProtocol(itrans)
-        oprot = self.oprot_factory.getProtocol(otrans)
+        itrans = self.itrans_factory.get_transport(client)
+        otrans = self.otrans_factory.get_transport(client)
+        iprot = self.iprot_factory.get_protocol(itrans)
+        oprot = self.oprot_factory.get_protocol(otrans)
         try:
             while True:
                 self.processor.process(iprot, oprot)

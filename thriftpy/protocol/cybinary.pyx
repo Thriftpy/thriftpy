@@ -52,7 +52,7 @@ cdef:
 cdef void memprint(char* buf, size_t sz):
     cdef int i
     for i in range(sz):
-        printf("%x ", <unsigned char> buf[i])
+        printf("%02x ", <unsigned char> buf[i])
     printf("\n")
 
 
@@ -166,12 +166,16 @@ cdef double unpack_double(bytes buf):
 ##########
 # thrift binary write
 
-cdef write_message_begin(outbuf, bytes name, int8_t ttype, int32_t seqid):
-    cdef char* buf = <char*>malloc(len(name) + int8_sz + int32_sz * 2)
-    _write_string(buf, name)
-    _write_num(buf + int32_sz + len(name), ttype)
-    _write_num(buf + int32_sz + len(name) + int8_sz, seqid)
-    outbuf.write(buf[:len(name) + int8_sz + int32_sz * 2])
+cdef void write_message_begin(outbuf, str name, int8_t ttype, int32_t seqid):
+    cdef:
+        bytes bytes_name = name.encode('utf-8')
+        char* buf = <char*>malloc(len(name) + int8_sz + int32_sz * 2)
+        int32_t i = VERSION_1 | ttype
+
+    _write_num(buf, i)
+    _write_string(buf + int32_sz, bytes_name)
+    _write_num(buf + len(name) + int32_sz * 2, seqid)
+    outbuf.write(buf[:len(name) + int32_sz * 3])
 
 cdef write_field_begin(outbuf, int8_t ttype, int16_t fid):
     cdef char* buf = <char*>malloc(int8_sz + int16_sz)
@@ -195,7 +199,7 @@ cdef write_map_begin(outbuf, int8_t k_type, int8_t v_type, int32_t size):
     _write_num(buf + int8_sz * 2, size)
     outbuf.write(buf[:int8_sz * 2 + int32_sz])
 
-cdef void write_val(outbuf, int8_t ttype, val, spec=None):
+cdef void write_val(outbuf, int8_t ttype, val, spec=None) except *:
     cdef:
         int8_t e_type, k_type, v_type, f_type
         int32_t i, val_len, fid
@@ -225,6 +229,8 @@ cdef void write_val(outbuf, int8_t ttype, val, spec=None):
         outbuf.write(pack_double(val))
 
     elif ttype == STRING:
+        if isinstance(val, str):
+            val = val.encode('utf-8')
         outbuf.write(pack_string(val))
 
     elif ttype == SET or ttype == LIST:
@@ -279,7 +285,8 @@ cdef void write_val(outbuf, int8_t ttype, val, spec=None):
 
 cdef tuple read_message_begin(inbuf):
     cdef:
-        bytes buf, name
+        bytes buf
+        str name
         size_t sz
         int32_t seqid
 
@@ -290,7 +297,7 @@ cdef tuple read_message_begin(inbuf):
         raise Exception("Bad Version")
 
     name_sz = unpack_i32(buf[4:])
-    name = inbuf.read(name_sz)
+    name = inbuf.read(name_sz).decode('utf-8')
 
     seqid = unpack_i32(inbuf.read(4))
     return name, sz & TYPE_MASK, seqid
@@ -337,7 +344,7 @@ cdef read_val(inbuf, int8_t ttype, spec=None):
 
     elif ttype == STRING:
         sz = unpack_i32(inbuf.read(int32_sz))
-        return inbuf.read(sz)
+        return inbuf.read(sz).decode('utf-8')
 
     elif ttype == SET or ttype == LIST:
         if isinstance(spec, tuple):
@@ -419,8 +426,18 @@ cdef class TCyBinaryProtocol:
     def __cinit__(self, object trans):
         self.trans = trans
 
+    cpdef read_message_begin(self):
+        api, ttype, seqid = read_message_begin(self.trans)
+        return api, ttype, seqid
+
+    cpdef read_message_end(self):
+        pass
+
     cpdef write_message_begin(self, name, ttype, seqid):
         write_message_begin(self.trans, name, ttype, seqid)
+
+    cpdef write_message_end(self):
+        pass
 
     cpdef read_struct(self, obj_cls):
         return read_val(self.trans, STRUCT, obj_cls)

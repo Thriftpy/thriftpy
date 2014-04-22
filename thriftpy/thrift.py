@@ -72,7 +72,9 @@ class TPayload(object):
             setattr(self, k, kwargs.get(k, None))
 
     def read(self, iprot):
-        self = iprot.read_struct(self.__class__)
+        obj = iprot.read_struct(self.__class__)
+        self.__dict__.update(obj.__dict__)
+        del obj
 
     def write(self, oprot):
         oprot.write_struct(self)
@@ -115,24 +117,24 @@ class TClient(object):
         return self._recv(api)
 
     def _send(self, api, **kwargs):
-        self._oprot.writeMessageBegin(api, TMessageType.CALL, self._seqid)
+        self._oprot.write_message_begin(api, TMessageType.CALL, self._seqid)
         args = getattr(self._service, api + "_args")()
         for k, v in kwargs.items():
             setattr(args, k, v)
         args.write(self._oprot)
-        self._oprot.writeMessageEnd()
+        self._oprot.write_message_end()
         self._oprot.trans.flush()
 
     def _recv(self, api):
-        fname, mtype, rseqid = self._iprot.readMessageBegin()
+        fname, mtype, rseqid = self._iprot.read_message_begin()
         if mtype == TMessageType.EXCEPTION:
             x = TApplicationException()
             x.read(self._iprot)
-            self._iprot.readMessageEnd()
+            self._iprot.read_message_end()
             raise x
         result = getattr(self._service, api + "_result")()
         result.read(self._iprot)
-        self._iprot.readMessageEnd()
+        self._iprot.read_message_end()
 
         if result.success:
             return result.success
@@ -153,20 +155,21 @@ class TProcessor(object):
         self._handler = handler
 
     def process(self, iprot, oprot):
-        api, type, seqid = iprot.readMessageBegin()
+        api, type, seqid = iprot.read_message_begin()
         if api not in self._service.thrift_services:
+            print(api)
             iprot.skip(TType.STRUCT)
-            iprot.readMessageEnd()
+            iprot.read_message_end()
             exc = TApplicationException(TApplicationException.UNKNOWN_METHOD)
-            oprot.writeMessageBegin(api, TMessageType.EXCEPTION, seqid)
+            oprot.write_message_begin(api, TMessageType.EXCEPTION, seqid)
             exc.write(oprot)
-            oprot.writeMessageEnd()
+            oprot.write_message_end()
             oprot.trans.flush()
 
         else:
             args = getattr(self._service, api + "_args")()
             args.read(iprot)
-            iprot.readMessageEnd()
+            iprot.read_message_end()
             result = getattr(self._service, api + "_result")()
             try:
                 result.success = getattr(self._handler, api)(**args.__dict__)
@@ -191,9 +194,9 @@ class TProcessor(object):
                 if not catched:
                     raise
 
-            oprot.writeMessageBegin(api, TMessageType.REPLY, seqid)
+            oprot.write_message_begin(api, TMessageType.REPLY, seqid)
             result.write(oprot)
-            oprot.writeMessageEnd()
+            oprot.write_message_end()
             oprot.trans.flush()
 
 
