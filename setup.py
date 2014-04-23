@@ -7,11 +7,11 @@ from Cython.Build import cythonize
 version = "0.1.0"
 
 install_requires = [
-    "cython>=0.20.1",
     "pyparsing>=2.0.1",
 ]
 
 dev_requires = [
+    "cython>=0.20.1",
     "flake8>=2.1.0",
 ]
 
