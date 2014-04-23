@@ -1,6 +1,7 @@
 import time
 
 from thriftpy.utils import serialize, deserialize
+from thriftpy.protocol import TBinaryProtocolFactory, TCyBinaryProtocolFactory
 
 import addressbook_thrift as addressbook
 # import addressbook
@@ -23,20 +24,22 @@ def make_addressbook():
     return ab
 
 
-def encode(n):
+def encode(n, proto_factory=TBinaryProtocolFactory()):
     for i in range(n):
         ab = make_addressbook()
-        serialize(ab)
+        serialize(ab, proto_factory)
 
 
-def decode(n):
+def decode(n, proto_factory=TBinaryProtocolFactory()):
     ab = make_addressbook()
     encoded = serialize(ab)
     for i in range(n):
-        deserialize(ab, encoded)
+        deserialize(ab, encoded, proto_factory)
 
 
 def main():
+    print("TBinaryProtocol:")
+
     start = time.time()
     encode(10000)
     end = time.time()
@@ -44,6 +47,18 @@ def main():
 
     start = time.time()
     decode(10000)
+    end = time.time()
+    print(end - start)
+
+    print("\nTCyBinaryProtocol:")
+
+    start = time.time()
+    encode(10000, TCyBinaryProtocolFactory())
+    end = time.time()
+    print(end - start)
+
+    start = time.time()
+    decode(10000, TCyBinaryProtocolFactory())
     end = time.time()
     print(end - start)
 
