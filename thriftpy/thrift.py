@@ -160,7 +160,6 @@ class TProcessor(object):
     def process(self, iprot, oprot):
         api, type, seqid = iprot.read_message_begin()
         if api not in self._service.thrift_services:
-            print(api)
             iprot.skip(TType.STRUCT)
             iprot.read_message_end()
             exc = TApplicationException(TApplicationException.UNKNOWN_METHOD)
