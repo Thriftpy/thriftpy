@@ -1,4 +1,4 @@
-from libc.stdio cimport printf
+from libc.stdio cimport printf, puts
 from libc.stdlib cimport malloc
 from libc.string cimport memcpy
 from libc.stdint cimport (
@@ -53,7 +53,7 @@ cdef void memprint(char* buf, size_t sz):
     cdef int i
     for i in range(sz):
         printf("%02x ", <unsigned char> buf[i])
-    printf("\n")
+    puts("\n")
 
 
 ##########
