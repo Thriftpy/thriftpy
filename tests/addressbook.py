@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """This file is a demo for what the dynamiclly generated code would be like.
 """
 

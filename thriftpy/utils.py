@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from .transport import TMemoryBuffer
 from .protocol import TBinaryProtocolFactory
 

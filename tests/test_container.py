@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from thriftpy.utils import serialize, deserialize
 
 import container_thrift as container

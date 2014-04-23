@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import contextlib
 
 from thriftpy.protocol import TCyBinaryProtocolFactory

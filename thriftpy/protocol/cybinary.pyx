@@ -166,9 +166,9 @@ cdef double unpack_double(bytes buf):
 ##########
 # thrift binary write
 
-cdef void write_message_begin(outbuf, str name, int8_t ttype, int32_t seqid):
+cdef void write_message_begin(outbuf, bytes name, int8_t ttype, int32_t seqid):
     cdef:
-        bytes bytes_name = name.encode('utf-8')
+        bytes bytes_name = name
         char* buf = <char*>malloc(len(name) + int8_sz + int32_sz * 2)
         int32_t i = VERSION_1 | ttype
 
@@ -229,7 +229,7 @@ cdef void write_val(outbuf, int8_t ttype, val, spec=None) except *:
         outbuf.write(pack_double(val))
 
     elif ttype == STRING:
-        if isinstance(val, str):
+        if not isinstance(val, bytes):
             val = val.encode('utf-8')
         outbuf.write(pack_string(val))
 
@@ -285,8 +285,7 @@ cdef void write_val(outbuf, int8_t ttype, val, spec=None) except *:
 
 cdef tuple read_message_begin(inbuf):
     cdef:
-        bytes buf
-        str name
+        bytes buf, name
         size_t sz
         int32_t seqid
 
@@ -297,7 +296,7 @@ cdef tuple read_message_begin(inbuf):
         raise Exception("Bad Version")
 
     name_sz = unpack_i32(buf[4:])
-    name = inbuf.read(name_sz).decode('utf-8')
+    name = inbuf.read(name_sz)
 
     seqid = unpack_i32(inbuf.read(4))
     return name, sz & TYPE_MASK, seqid
@@ -471,13 +470,13 @@ cdef class TCyBinaryProtocol:
 
     cpdef read_message_begin(self):
         api, ttype, seqid = read_message_begin(self.trans)
-        return api, ttype, seqid
+        return api.decode('utf-8'), ttype, seqid
 
     cpdef read_message_end(self):
         pass
 
     cpdef write_message_begin(self, name, ttype, seqid):
-        write_message_begin(self.trans, name, ttype, seqid)
+        write_message_begin(self.trans, name.encode('utf-8'), ttype, seqid)
 
     cpdef write_message_end(self):
         pass

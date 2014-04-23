@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import struct
 
 from ..thrift import TType
@@ -32,6 +34,8 @@ def pack_double(dub):
 
 
 def pack_string(string):
+    print(string)
+    print(type(string))
     return struct.pack("!i%ds" % len(string), len(string), string)
 
 
@@ -100,7 +104,7 @@ def write_val(outbuf, ttype, val, spec=None):
         outbuf.write(pack_double(val))
 
     elif ttype == TType.STRING:
-        if isinstance(val, str):
+        if not isinstance(val, bytes):
             val = val.encode('utf-8')
         outbuf.write(pack_string(val))
 
