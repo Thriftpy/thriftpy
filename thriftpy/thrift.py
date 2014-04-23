@@ -136,6 +136,9 @@ class TClient(object):
         result.read(self._iprot)
         self._iprot.read_message_end()
 
+        if not hasattr(result, "success"):
+            return
+
         if result.success:
             return result.success
 

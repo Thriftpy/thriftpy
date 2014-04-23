@@ -55,13 +55,10 @@ class AddressBookService(object):
     ]
 
     class ping_args(TPayload):
-        thrift_spec = {
-        }
+        thrift_spec = {}
 
     class ping_result(TPayload):
-        thrift_spec = {
-            0: (TType.BOOL, "success"),
-        }
+        thrift_spec = {}
 
     class add_args(TPayload):
         thrift_spec = {

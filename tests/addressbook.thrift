@@ -30,7 +30,7 @@ exception PersonNotExistsError {
 }
 
 service AddressBookService {
-    bool ping();
+    void ping();
     bool add(1: Person person);
     bool remove(1: string name) throws (1: PersonNotExistsError not_exists);
     Person get(1: string name) throws (1: PersonNotExistsError not_exists);

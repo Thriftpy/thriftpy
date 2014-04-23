@@ -80,7 +80,7 @@ def parse(schema):
     result["exceptions"] = [s for s, _, _ in exception.scanString(schema)]
 
     # service parser
-    ftype = _or(ttype, pa.Keyword("oneway"), pa.Keyword("void"))
+    ftype = _or(ttype, pa.Keyword("void"))
     api_param = pa.Group(integer_("id") + COLON + ttype("ttype") + identifier("name") + pa.Optional(COMMA))
     api_params = pa.Group(pa.ZeroOrMore(api_param))
     service_api = pa.Group(ftype("ttype") + identifier("name") + LPAR + api_params("params") + RPAR + pa.Optional(pa.Keyword("throws") + LPAR + api_params("throws") + RPAR) + pa.Optional(SEMI | COMMA))
@@ -180,7 +180,10 @@ def load(thrift_file):
 
             # result payload
             api_result_cls = type("%s_result" % api.name, (TPayload, ), {})
-            api_result_spec = {0: _ttype_spec(api.ttype, "success")}
+            if api.ttype == "void":
+                api_result_spec = {}
+            else:
+                api_result_spec = {0: _ttype_spec(api.ttype, "success")}
 
             if hasattr(api, "throws"):
                 for t in api.throws:
