@@ -304,7 +304,7 @@ cdef tuple read_message_begin(inbuf):
 
 cdef tuple read_field_begin(inbuf):
     cdef int8_t ftype = unpack_i8(inbuf.read(1))
-    if ttype == STOP:
+    if ftype == STOP:
         return ftype, 0
 
     return ftype, unpack_i16(inbuf.read(2))
@@ -325,7 +325,7 @@ cdef read_val(inbuf, int8_t ttype, spec=None):
         str f_name
 
     if ttype == BOOL:
-        return bool(unpack_i8(inbuf.read(1)))
+        return bool(unpack_i8(inbuf.read(int8_sz)))
 
     elif ttype == BYTE:
         return unpack_i8(inbuf.read(int8_sz))
@@ -397,8 +397,7 @@ cdef read_val(inbuf, int8_t ttype, spec=None):
                 break
 
             if fid not in spec.thrift_spec:
-                # TODO use skip here.
-                raise Exception("Field id not exists!")
+                skip(inbuf, f_type)
 
             if len(spec.thrift_spec[fid]) == 2:
                 sf_type, f_name = spec.thrift_spec[fid]
@@ -415,6 +414,50 @@ cdef read_val(inbuf, int8_t ttype, spec=None):
                     read_val(inbuf, f_type, f_container_spec))
         return obj
 
+
+##########
+# skip field
+
+cdef void skip(inbuf, int8_t ftype):
+    cdef:
+        int8_t f_type, k_type, v_type
+        int32_t sz, fid
+
+    if ftype == BOOL or ftype == BYTE:
+        inbuf.read(int8_sz)
+
+    elif ftype == I16:
+        inbuf.read(int16_sz)
+
+    elif ftype == I32:
+        inbuf.read(int32_sz)
+
+    elif ftype == I64:
+        inbuf.read(int64_sz)
+
+    elif ftype == DOUBLE:
+        inbuf.read(double_sz)
+
+    elif ftype == STRING:
+        inbuf.read(unpack_i32(inbuf.read(int32_sz)))
+
+    elif ftype == SET or LIST:
+        v_type, sz = read_list_begin(inbuf)
+        for i in range(sz):
+            skip(inbuf, v_type)
+
+    elif ftype == MAP:
+        k_type, v_type, sz = read_map_begin(inbuf)
+        for i in range(sz):
+            skip(inbuf, k_type)
+            skip(inbuf, v_type)
+
+    elif ftype == STRUCT:
+        while True:
+            f_type, fid = read_field_begin(inbuf)
+            if f_type == STOP:
+                break
+            skip(inbuf, f_type)
 
 
 cdef class TCyBinaryProtocol:

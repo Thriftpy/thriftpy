@@ -261,8 +261,7 @@ def read_val(inbuf, ttype, spec):
                 break
 
             if fid not in spec.thrift_spec:
-                # TODO use skip here.
-                raise Exception("Field id not exists!")
+                skip(inbuf, f_type)
 
             if len(spec.thrift_spec[fid]) == 2:
                 sf_type, f_name = spec.thrift_spec[fid]
@@ -278,6 +277,44 @@ def read_val(inbuf, ttype, spec):
             setattr(obj, f_name,
                     read_val(inbuf, f_type, f_container_spec))
         return obj
+
+
+def skip(inbuf, ftype):
+    if ftype == TType.BOOL or ftype == TType.BYTE:
+        inbuf.read(1)
+
+    elif ftype == TType.I16:
+        inbuf.read(2)
+
+    elif ftype == TType.I32:
+        inbuf.read(4)
+
+    elif ftype == TType.I64:
+        inbuf.read(8)
+
+    elif ftype == TType.DOUBLE:
+        inbuf.read(8)
+
+    elif ftype == TType.STRING:
+        inbuf.read(unpack_i32(inbuf.read(4)))
+
+    elif ftype == TType.SET or TType.LIST:
+        v_type, sz = read_list_begin(inbuf)
+        for i in range(sz):
+            skip(inbuf, v_type)
+
+    elif ftype == TType.MAP:
+        k_type, v_type, sz = read_map_begin(inbuf)
+        for i in range(sz):
+            skip(inbuf, k_type)
+            skip(inbuf, v_type)
+
+    elif ftype == TType.STRUCT:
+        while True:
+            f_type, fid = read_field_begin(inbuf)
+            if f_type == TType.STOP:
+                break
+            skip(inbuf, f_type)
 
 
 class TBinaryProtocol(object):
@@ -304,44 +341,6 @@ class TBinaryProtocol(object):
 
     def write_struct(self, obj):
         write_val(self.trans, TType.STRUCT, obj)
-
-    def skip(self, _type):
-        if _type == TType.STOP:
-            return
-        elif _type == TType.BOOL:
-            self.read_bool()
-        elif _type == TType.BYTE:
-            self.read_byte()
-        elif _type == TType.I16:
-            self.read_i16()
-        elif _type == TType.I32:
-            self.read_i32()
-        elif _type == TType.I64:
-            self.read_i64()
-        elif _type == TType.DOUBLE:
-            self.read_double()
-        elif _type == TType.STRING:
-            self.read_string()
-        elif _type == TType.STRUCT:
-            while True:
-                f_type, fid = self.read_field_begin()
-                if f_type == TType.STOP:
-                    break
-                self.skip(f_type)
-        elif _type == TType.MAP:
-            ktype, vtype, size = self.read_map_begin()
-            for i in range(size):
-                self.skip(ktype)
-                self.skip(vtype)
-        elif _type == TType.SET:
-            etype, size = self.read_set_begin()
-            for i in range(size):
-                self.skip(etype)
-            self.readSetEnd()
-        elif _type == TType.LIST:
-            etype, size = self.read_list_begin()
-            for i in range(size):
-                self.skip(etype)
 
 
 class TBinaryProtocolFactory(object):
