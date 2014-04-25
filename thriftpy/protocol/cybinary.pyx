@@ -417,7 +417,7 @@ cdef read_val(inbuf, int8_t ttype, spec=None):
 ##########
 # skip field
 
-cdef void skip(inbuf, int8_t ftype):
+cdef void skip(inbuf, int8_t ftype) except *:
     cdef:
         int8_t f_type, k_type, v_type
         int32_t sz, fid
