@@ -8,15 +8,11 @@ from thriftpy.transport import TSocket, TBufferedTransport, TServerSocket
 from thriftpy.server import TThreadedServer
 
 
-@contextlib.contextmanager
 def make_client(service, host, port, proto_factory=TCyBinaryProtocolFactory()):
-    try:
-        transport = TBufferedTransport(TSocket(host, port))
-        protocol = proto_factory.get_protocol(transport)
-        transport.open()
-        yield TClient(service, protocol)
-    finally:
-        transport.close()
+    transport = TBufferedTransport(TSocket(host, port))
+    protocol = proto_factory.get_protocol(transport)
+    transport.open()
+    return TClient(service, protocol)
 
 
 def make_server(service, handler, host, port,
@@ -26,3 +22,15 @@ def make_server(service, handler, host, port,
     server = TThreadedServer(processor, transport,
                              iprot_factory=proto_factory)
     return server
+
+
+@contextlib.contextmanager
+def client_context(service, host, port,
+                   proto_factory=TCyBinaryProtocolFactory()):
+    try:
+        transport = TBufferedTransport(TSocket(host, port))
+        protocol = proto_factory.get_protocol(transport)
+        transport.open()
+        yield TClient(service, protocol)
+    finally:
+        transport.close()
