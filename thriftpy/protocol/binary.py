@@ -34,8 +34,6 @@ def pack_double(dub):
 
 
 def pack_string(string):
-    print(string)
-    print(type(string))
     return struct.pack("!i%ds" % len(string), len(string), string)
 
 
