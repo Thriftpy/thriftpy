@@ -2,13 +2,13 @@
 
 import contextlib
 
-from thriftpy.protocol import TCyBinaryProtocolFactory
+from thriftpy.protocol import TBinaryProtocolFactory
 from thriftpy.thrift import TProcessor, TClient
 from thriftpy.transport import TSocket, TBufferedTransport, TServerSocket
 from thriftpy.server import TThreadedServer
 
 
-def make_client(service, host, port, proto_factory=TCyBinaryProtocolFactory()):
+def make_client(service, host, port, proto_factory=TBinaryProtocolFactory()):
     transport = TBufferedTransport(TSocket(host, port))
     protocol = proto_factory.get_protocol(transport)
     transport.open()
@@ -16,7 +16,7 @@ def make_client(service, host, port, proto_factory=TCyBinaryProtocolFactory()):
 
 
 def make_server(service, handler, host, port,
-                proto_factory=TCyBinaryProtocolFactory()):
+                proto_factory=TBinaryProtocolFactory()):
     processor = TProcessor(service, handler)
     transport = TServerSocket(host=host, port=port)
     server = TThreadedServer(processor, transport,
@@ -26,7 +26,7 @@ def make_server(service, handler, host, port,
 
 @contextlib.contextmanager
 def client_context(service, host, port,
-                   proto_factory=TCyBinaryProtocolFactory()):
+                   proto_factory=TBinaryProtocolFactory()):
     try:
         transport = TBufferedTransport(TSocket(host, port))
         protocol = proto_factory.get_protocol(transport)
