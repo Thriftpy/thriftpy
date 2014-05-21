@@ -3,7 +3,7 @@
 import time
 import multiprocessing
 
-from thriftpy.rpc import make_server, make_client
+from thriftpy.rpc import make_server, client_context
 
 import addressbook_thrift as addressbook
 
@@ -51,7 +51,7 @@ def serve():
 
 
 def client():
-    return make_client(addressbook.AddressBookService, '127.0.0.1', 8000)
+    return client_context(addressbook.AddressBookService, '127.0.0.1', 8000)
 
 
 def test_rpc():
