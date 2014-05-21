@@ -199,7 +199,7 @@ cdef write_map_begin(outbuf, int8_t k_type, int8_t v_type, int32_t size):
     _write_num(buf + int8_sz * 2, size)
     outbuf.write(buf[:int8_sz * 2 + int32_sz])
 
-cdef void write_val(outbuf, int8_t ttype, val, spec=None) except *:
+cpdef write_val(outbuf, int8_t ttype, val, spec=None):
     cdef:
         int8_t e_type, k_type, v_type, f_type
         int32_t i, val_len, fid
@@ -316,7 +316,7 @@ cdef tuple read_map_begin(inbuf):
     cdef bytes buf = inbuf.read(int8_sz * 2 + int32_sz)
     return unpack_i8(buf[:1]), unpack_i8(buf[1:2]), unpack_i32(buf[2:])
 
-cdef read_val(inbuf, int8_t ttype, spec=None):
+cpdef read_val(inbuf, int8_t ttype, spec=None):
     cdef:
         size_t sz
         int8_t f_type, k_type, v_type, sk_type, sv_type, sf_type

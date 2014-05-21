@@ -189,7 +189,7 @@ def read_map_begin(inbuf):
     return k_type, v_type, sz
 
 
-def read_val(inbuf, ttype, spec):
+def read_val(inbuf, ttype, spec=None):
     if ttype == TType.BOOL:
         return bool(unpack_i8(inbuf.read(1)))
 
@@ -203,10 +203,10 @@ def read_val(inbuf, ttype, spec):
         return unpack_i32(inbuf.read(4))
 
     elif ttype == TType.I64:
-        return unpack_i64(inbuf.read(4))
+        return unpack_i64(inbuf.read(8))
 
     elif ttype == TType.DOUBLE:
-        return unpack_double(inbuf.read(4))
+        return unpack_double(inbuf.read(8))
 
     elif ttype == TType.STRING:
         sz = unpack_i32(inbuf.read(4))
