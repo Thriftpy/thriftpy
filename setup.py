@@ -52,7 +52,7 @@ setup(name="thriftpy",
       cmdclass=cmdclass,
       ext_modules=ext_modules,
       classifiers=[
-          "Topic :: Software Development"
+          "Topic :: Software Development",
           "Development Status :: 3 - Alpha",
           "Intended Audience :: Developers",
           "License :: OSI Approved :: MIT License",
