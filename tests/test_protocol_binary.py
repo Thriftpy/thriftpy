@@ -4,6 +4,7 @@ from io import BytesIO
 
 from nose.tools import assert_equal
 
+from thriftpy._compat import u
 from thriftpy.thrift import TType, TPayload
 from thriftpy.utils import hexlify
 from thriftpy.protocol import binary as proto
@@ -78,7 +79,7 @@ def test_pack_string():
                  hexlify(b.getvalue()))
 
     b = BytesIO()
-    proto.write_val(b, TType.STRING, "你好世界")
+    proto.write_val(b, TType.STRING, u("你好世界"))
     assert_equal("00 00 00 0c e4 bd a0 e5 a5 bd e4 b8 96 e7 95 8c",
                  hexlify(b.getvalue()))
 
@@ -86,7 +87,7 @@ def test_pack_string():
 def test_unpack_string():
     b = BytesIO(b'\x00\x00\x00\x0c'
                 b'\xe4\xbd\xa0\xe5\xa5\xbd\xe4\xb8\x96\xe7\x95\x8c')
-    assert_equal("你好世界", proto.read_val(b, TType.STRING))
+    assert_equal(u("你好世界"), proto.read_val(b, TType.STRING))
 
 
 def test_write_message_begin():
