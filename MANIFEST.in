@@ -1,0 +1,3 @@
+include README.rst
+include thriftpy/protocol/*.pyx
+include thriftpy/protocol/*.c thriftpy/protocol/*.h

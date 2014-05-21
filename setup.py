@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from setuptools import setup, find_packages
-
-from Cython.Build import cythonize
+from setuptools.extension import Extension
 
 version = "0.1.0"
 
@@ -15,13 +14,32 @@ dev_requires = [
     "flake8>=2.1.0",
 ]
 
+
+try:
+    from Cython.Distutils import build_ext
+    cython = True
+except ImportError:
+    cython = False
+
+cmdclass = {}
+ext_modules = []
+
+if cython:
+    ext_modules.append(Extension("thriftpy.protocol.cybinary",
+                                 ["thriftpy/protocol/cybinary.pyx"]))
+    cmdclass["build_ext"] = build_ext
+else:
+    ext_modules.append(Extension("thriftpy.protocol.cybinary",
+                                 ["thriftpy/protocol/cybinary.c"]))
+
+
 setup(name="thriftpy",
       version=version,
       description="Pure python implemention of Apache Thrift.",
       keywords="thrift python thriftpy",
       author="Lx Yu",
       author_email="i@lxyu.net",
-      packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+      packages=find_packages(exclude=['benchmark', 'docs', 'tests']),
       entry_points={},
       url="http://lxyu.github.io/thriftpy/",
       license="MIT",
@@ -31,7 +49,8 @@ setup(name="thriftpy",
       extras_require={
           "dev": dev_requires,
       },
-      ext_modules=cythonize(["thriftpy/protocol/cybinary.pyx"]),
+      cmdclass=cmdclass,
+      ext_modules=ext_modules,
       classifiers=[
           "Topic :: Software Development"
           "Development Status :: 3 - Alpha",
