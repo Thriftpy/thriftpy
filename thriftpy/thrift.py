@@ -64,10 +64,15 @@ class TMessageType(object):
 
 class TPayload(object):
     thrift_spec = {}
+    default_spec = {}
 
     def __init__(self, *args, **kwargs):
         _kw = args2kwargs(self.thrift_spec, *args)
         kwargs.update(_kw)
+
+        for k, v in self.default_spec.items():
+            if k not in kwargs:
+                kwargs[k] = v
 
         for _, v in self.thrift_spec.items():
             k = v[1]

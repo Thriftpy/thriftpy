@@ -70,7 +70,7 @@ def parse(schema):
 
     # struct parser
     category = _or(*map(pa.Literal, ("required", "optional")))
-    struct_field = pa.Group(integer_("id") + COLON + pa.Optional(category) + ttype("ttype") + identifier("name") + pa.Optional(COMMA))
+    struct_field = pa.Group(integer_("id") + COLON + pa.Optional(category) + ttype("ttype") + identifier("name") + pa.Optional(EQ + value("value")) + pa.Optional(COMMA))
     struct_members = pa.Group(pa.OneOrMore(struct_field))("members")
     struct = _struct + identifier("name") + LBRACE + struct_members + RBRACE
     struct.ignore(single_line_comment)
@@ -140,7 +140,7 @@ def load(thrift_file):
         enum_cls = type(name, (object, ), {})
         value = 0
         for m in enum.members:
-            if m.value:
+            if m.value is not None:
                 value = int(m.value)
             else:
                 value += 1
@@ -151,18 +151,26 @@ def load(thrift_file):
     for struct in result["structs"]:
         struct_cls = type(struct.name, (TPayload, ), {})
         thrift_spec = {}
+        default_spec = {}
         for m in struct.members:
             thrift_spec[int(m.id)] = _ttype_spec(m.ttype, m.name)
+            if m.value is not None and m.value != '':
+                default_spec[m.name] = m.value
         setattr(struct_cls, "thrift_spec", thrift_spec)
+        setattr(struct_cls, "default_spec", default_spec)
         setattr(thrift_schema, struct.name, struct_cls)
 
     # load exceptions
     for exc in result["exceptions"]:
         exc_cls = type(exc.name, (TException, ), {})
         thrift_spec = {}
+        default_spec = {}
         for m in exc.members:
             thrift_spec[int(m.id)] = _ttype_spec(m.ttype, m.name)
+            if m.value is not None and m.value != '':
+                default_spec[m.name] = m.value
         setattr(exc_cls, "thrift_spec", thrift_spec)
+        setattr(exc_cls, "default_spec", default_spec)
         setattr(thrift_schema, exc.name, exc_cls)
 
     # load services
