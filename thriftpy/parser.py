@@ -140,7 +140,7 @@ def load(thrift_file):
         enum_cls = type(name, (object, ), {})
         value = 0
         for m in enum.members:
-            if m.value is not None:
+            if m.value != '':
                 value = int(m.value)
             else:
                 value += 1
@@ -167,7 +167,7 @@ def load(thrift_file):
         default_spec = {}
         for m in exc.members:
             thrift_spec[int(m.id)] = _ttype_spec(m.ttype, m.name)
-            if m.value is not None and m.value != '':
+            if m.value != '':
                 default_spec[m.name] = m.value
         setattr(exc_cls, "thrift_spec", thrift_spec)
         setattr(exc_cls, "default_spec", default_spec)
