@@ -34,10 +34,12 @@ def parse(schema):
 
     # general value
     value = pa.Forward()
-    integer_ = pa.Word(pa.nums)
-    string_ = pa.quotedString
-    list_ = LBRACK + pa.Group(value + pa.ZeroOrMore(COMMA + value)) + RBRACK
-    value << _or(integer_, string_, list_)
+    nums_ = pa.Word(pa.nums)
+    integer_ = nums_.setParseAction(lambda s, l, t: [int(t[0])])
+    double_ = pa.Combine(nums_ + '.' + nums_).setParseAction(lambda s, l, t: [float(t[0])])
+    string_ = pa.quotedString.setParseAction(pa.removeQuotes)
+    list_ = pa.Group(LBRACK + pa.delimitedList(value) + RBRACK).setParseAction(lambda s, l, t: t.asList())
+    value << _or(double_, integer_, string_, list_)
 
     # scan for possible user defined types
     _typedef_prefix = _typedef + identifier + pa.Optional(pa.nestedExpr(opener='<', closer='>'))
