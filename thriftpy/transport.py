@@ -39,6 +39,7 @@ class TTransportException(TException):
     def __init__(self, type=UNKNOWN, message=None):
         TException.__init__(self, message)
         self.type = type
+        self.message = message
 
 
 class TMemoryBuffer(TTransportBase):
