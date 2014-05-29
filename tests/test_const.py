@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-# flake8: noqa
 
 from nose.tools import (
     assert_equal,
     assert_list_equal
 )
 
-import thriftpy
+import thriftpy   # noqa
 
 import const_thrift as const
 
