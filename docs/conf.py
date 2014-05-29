@@ -13,7 +13,7 @@
 # serve to show the default.
 
 # import sys
-# import os
+import os
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -109,6 +109,13 @@ html_theme = 'default'
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
+
+# import and set the theme if we're building docs locally
+if os.environ.get('READTHEDOCS', None) != 'True':
+    html_theme = 'sphinx_rtd_theme'
+
+    import sphinx_rtd_theme
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
