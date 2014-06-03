@@ -2,7 +2,7 @@
 
 from thriftpy.rpc import make_server
 
-import pingpong_thrift as pingpong
+import pingpong
 
 
 class Dispatcher(object):

@@ -95,16 +95,19 @@ def parse(schema):
 
     return result
 
+def load_thrift(module_name, filename, file=None):
+    if file is None:
+        file = open(filename, 'r')
 
-def load(thrift_file):
-    module_name = thrift_file[:thrift_file.find('.')]
-    with open(thrift_file, 'r') as f:
-        result = parse(f.read())
+    result = parse(file.read())
+    file.close()
+
     struct_names = [s.name for s in itertools.chain(result["structs"],
                                                     result["exceptions"])]
 
     # load thrift schema as module
     thrift_schema = types.ModuleType(module_name)
+    thrift_schema.__file__ = filename
 
     def _ttype(t):
         if isinstance(t, str):
@@ -207,40 +210,3 @@ def load(thrift_file):
         setattr(thrift_schema, service.name, service_cls)
 
     return thrift_schema
-
-
-class ThriftImporter(object):
-    def __init__(self, extension="_thrift"):
-        self.extension = extension
-
-    def __eq__(self, other):
-        return self.__class__.__module__ == other.__class__.__module__ and \
-            self.__class__.__name__ == other.__class__.__name__ and \
-            self.extension == other.extension
-
-    def install(self):
-        sys.meta_path[:] = [x for x in sys.meta_path if self != x] + [self]
-
-    def find_module(self, fullname, path=None):
-        if fullname.endswith(self.extension):
-            return self
-
-    def load_module(self, fullname):
-        if '.' in fullname:
-            module_name, thrift_file = fullname.rsplit('.', 1)
-            module = self._import_module(module_name)
-            path_prefix = os.path.dirname(os.path.abspath(module.__file__))
-            path = os.path.join(path_prefix, thrift_file)
-        else:
-            path = fullname
-        filename = path.replace('_', '.', 1)
-        thrift = load(filename)
-        sys.modules[fullname] = thrift
-        return thrift
-
-    def _import_module(self, import_name):
-        if '.' in import_name:
-            module, obj = import_name.rsplit('.', 1)
-            return getattr(__import__(module, None, None, [obj]), obj)
-        else:
-            return __import__(import_name)

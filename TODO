@@ -1,0 +1,1 @@
+1. Use Servers/Clients/transport code from thrift upstream, this project should only contain codes concerning protocol and magic importer

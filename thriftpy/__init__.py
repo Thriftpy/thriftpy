@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from thrift_importer import install as enable_thrift_import
 
-def setup():
-    from .parser import ThriftImporter
-    ThriftImporter().install()
-
-setup()
-del setup
+#TODO: Should actually disable thrift import by default, leave this option to actual users.
+enable_thrift_import()
