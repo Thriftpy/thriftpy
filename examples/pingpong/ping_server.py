@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import thriftpy
-thriftpy.install_import_hook()
-
 from thriftpy.rpc import make_server
 
-import pingpong_thrift as pingpong
+pingpong = thriftpy.load("pingpong.thrift")
 
 
 class Dispatcher(object):
