@@ -13,6 +13,9 @@ ThriftPy helps that, it's compatiable with Apache Thrift so you no longer need
 to install 'thrift' package, it can import thrift file on the fly so you
 no longer need to re-generate the sdk again and again and again.
 
+Github: https://github.com/Eleme/thriftpy
+
+
 Code Demo
 =========
 
