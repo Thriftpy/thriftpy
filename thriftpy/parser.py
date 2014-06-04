@@ -105,6 +105,7 @@ def load(thrift_file):
 
     # load thrift schema as module
     thrift_schema = types.ModuleType(module_name)
+    _type = lambda n, o: type(n, (o, ), {"__module__": module_name})
 
     def _ttype(t):
         if isinstance(t, str):
@@ -137,19 +138,18 @@ def load(thrift_file):
 
     # load enums
     for name, enum in result["enums"].items():
-        enum_cls = type(name, (object, ), {})
+        enum_cls = _type(name, object)
         value = 0
         for m in enum.members:
             if m.value != '':
                 value = int(m.value)
-            else:
-                value += 1
             setattr(enum_cls, m.name, value)
+            value += 1
         setattr(thrift_schema, enum.name, enum_cls)
 
     # load structs
     for struct in result["structs"]:
-        struct_cls = type(struct.name, (TPayload, ), {})
+        struct_cls = _type(struct.name, TPayload)
         thrift_spec = {}
         default_spec = {}
         for m in struct.members:
@@ -162,7 +162,7 @@ def load(thrift_file):
 
     # load exceptions
     for exc in result["exceptions"]:
-        exc_cls = type(exc.name, (TException, ), {})
+        exc_cls = _type(exc.name, TException)
         thrift_spec = {}
         default_spec = {}
         for m in exc.members:
@@ -175,13 +175,13 @@ def load(thrift_file):
 
     # load services
     for service in result["services"]:
-        service_cls = type(service.name, (object, ), {})
+        service_cls = _type(service.name, object)
         thrift_services = []
         for api in service.apis:
             thrift_services.append(api.name)
 
             # args payload
-            api_args_cls = type("%s_args" % api.name, (TPayload, ), {})
+            api_args_cls = _type("%s_args" % api.name, TPayload)
             api_args_spec = {}
             for param in api.params:
                 api_args_spec[int(param.id)] = _ttype_spec(param.ttype,
@@ -190,7 +190,7 @@ def load(thrift_file):
             setattr(service_cls, "%s_args" % api.name, api_args_cls)
 
             # result payload
-            api_result_cls = type("%s_result" % api.name, (TPayload, ), {})
+            api_result_cls = _type("%s_result" % api.name, TPayload)
             if api.ttype == "void":
                 api_result_spec = {}
             else:
