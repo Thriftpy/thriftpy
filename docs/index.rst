@@ -99,7 +99,7 @@ python lib):
 Installation
 ============
 
-Install while pip
+Install with pip
 
 .. code:: bash
 
