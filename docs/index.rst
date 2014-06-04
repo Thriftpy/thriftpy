@@ -4,7 +4,7 @@ ThriftPy
 
 ThriftPy is a pure python implemention of Apache Thrift in a pythonic way.
 
-The official thrift python lib is not pythonic at all, it needs a complicate
+The official thrift python lib is not pythonic at all, it needs a complicated
 process of installation, and the generated sdk is very ugly. Everytime the
 thrift file changed you have to re-generate the sdk which causes more pain
 in development.
