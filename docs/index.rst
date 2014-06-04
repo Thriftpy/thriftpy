@@ -38,7 +38,7 @@ Then we can make a server:
     import thriftpy
     from thriftpy.rpc import make_server
 
-    pingpong = thriftpy.load("pingpong.thrift")
+    pingpong = thriftpy.parser.load("pingpong.thrift")
 
     class Dispatcher(object):
         def ping(self):
@@ -52,9 +52,9 @@ And a client:
 .. code:: python
 
     import thriftpy
-    from thrift.rpc import make_client
+    from thriftpy.rpc import make_client
 
-    pingpong = thriftpy.load("pingpong.thrift")
+    pingpong = thriftpy.parser.load("pingpong.thrift")
 
     client = make_client(pingpong.PingPong, '127.0.0.1', 6000)
     client.ping()
