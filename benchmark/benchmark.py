@@ -1,5 +1,8 @@
 import time
 
+import thriftpy
+thriftpy.install_import_hook()
+
 from thriftpy.utils import serialize, deserialize
 from thriftpy.protocol import TBinaryProtocolFactory, TCyBinaryProtocolFactory
 
