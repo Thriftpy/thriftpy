@@ -107,7 +107,7 @@ TODOS
 =====
 
 Currently ThriftPy is not fully compatiable with thrift, I only implemented
-the features we need in *ele.me*.
+the features we need at *ele.me*.
 
 These todos need to be done, but may not be completed by me in near future,
 so contributions are very welcome!
