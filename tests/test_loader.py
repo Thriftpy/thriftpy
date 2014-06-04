@@ -7,7 +7,9 @@ from nose.tools import (
     assert_true,
 )
 
-import thriftpy  # noqa
+import thriftpy
+thriftpy.install_import_hook()
+
 from thriftpy.thrift import TPayload, TException
 
 import addressbook as ab

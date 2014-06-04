@@ -3,6 +3,9 @@
 import time
 import multiprocessing
 
+import thriftpy
+thriftpy.install_import_hook()
+
 from thriftpy.rpc import make_server, client_context
 
 import addressbook_thrift as addressbook

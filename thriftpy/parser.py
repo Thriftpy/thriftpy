@@ -3,8 +3,6 @@
 
 import functools
 import itertools
-import os
-import sys
 import types
 
 import pyparsing as pa
@@ -207,40 +205,3 @@ def load(thrift_file):
         setattr(thrift_schema, service.name, service_cls)
 
     return thrift_schema
-
-
-class ThriftImporter(object):
-    def __init__(self, extension="_thrift"):
-        self.extension = extension
-
-    def __eq__(self, other):
-        return self.__class__.__module__ == other.__class__.__module__ and \
-            self.__class__.__name__ == other.__class__.__name__ and \
-            self.extension == other.extension
-
-    def install(self):
-        sys.meta_path[:] = [x for x in sys.meta_path if self != x] + [self]
-
-    def find_module(self, fullname, path=None):
-        if fullname.endswith(self.extension):
-            return self
-
-    def load_module(self, fullname):
-        if '.' in fullname:
-            module_name, thrift_file = fullname.rsplit('.', 1)
-            module = self._import_module(module_name)
-            path_prefix = os.path.dirname(os.path.abspath(module.__file__))
-            path = os.path.join(path_prefix, thrift_file)
-        else:
-            path = fullname
-        filename = path.replace('_', '.', 1)
-        thrift = load(filename)
-        sys.modules[fullname] = thrift
-        return thrift
-
-    def _import_module(self, import_name):
-        if '.' in import_name:
-            module, obj = import_name.rsplit('.', 1)
-            return getattr(__import__(module, None, None, [obj]), obj)
-        else:
-            return __import__(import_name)

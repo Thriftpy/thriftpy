@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import thriftpy
+thriftpy.install_import_hook()
+
 from thriftpy.utils import serialize, deserialize
 
 import container_thrift as container

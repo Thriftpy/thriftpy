@@ -5,7 +5,8 @@ from nose.tools import (
     assert_list_equal
 )
 
-import thriftpy   # noqa
+import thriftpy
+thriftpy.install_import_hook()
 
 import const_thrift as const
 

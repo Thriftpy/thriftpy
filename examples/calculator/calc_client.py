@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import thriftpy
+thriftpy.install_import_hook()
+
 from thriftpy.protocol import TCyBinaryProtocolFactory
 from thriftpy.rpc import client_context
 import calc_thrift as calc

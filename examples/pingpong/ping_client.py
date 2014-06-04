@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import thriftpy
+thriftpy.install_import_hook()
+
 from thriftpy.rpc import client_context
 
 import pingpong_thrift as pingpong
