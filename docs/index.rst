@@ -2,7 +2,8 @@
 ThriftPy
 ========
 
-ThriftPy is a pure python implemention of Apache Thrift in a pythonic way.
+ThriftPy is a pure python implemention of
+`Apache Thrift <http://thrift.apache.org/>`_ in a pythonic way.
 
 The official thrift python lib is not pythonic at all, it needs a complicated
 process of installation, and the generated sdk is very ugly. Everytime the

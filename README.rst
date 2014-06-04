@@ -11,7 +11,8 @@ ThriftPy
 .. image:: http://img.shields.io/pypi/dm/thriftpy.svg?style=flat
    :target: https://pypi.python.org/pypi/thriftpy
 
-ThriftPy is a pure python implemention of Apache Thrift in a pythonic way.
+ThriftPy is a pure python implemention of
+`Apache Thrift <http://thrift.apache.org/>`_ in a pythonic way.
 
 Documentation: https://thriftpy.readthedocs.org/
 
