@@ -34,24 +34,28 @@ Then we can make a server:
 
 .. code:: python
 
+    import thriftpy
     from thriftpy.rpc import make_server
-    import pingpong_thrift
+
+    pingpong = thriftpy.load("pingpong.thrift")
 
     class Dispatcher(object):
         def ping(self):
             return "pong"
 
-    server = make_server(pingpong_thrift.PingPong, Dispatcher(), '127.0.0.1', 6000)
+    server = make_server(pingpong.PingPong, Dispatcher(), '127.0.0.1', 6000)
     server.serve()
 
 And a client:
 
 .. code:: python
 
+    import thriftpy
     from thrift.rpc import make_client
-    import pingpong_thrift
 
-    client = make_client(pingpong_thrift.PingPong, '127.0.0.1', 6000)
+    pingpong = thriftpy.load("pingpong.thrift")
+
+    client = make_client(pingpong.PingPong, '127.0.0.1', 6000)
     client.ping()
 
 See, it's that easy!
@@ -75,11 +79,14 @@ python lib):
 
   (Currently only binary protocol & buffered transport were implemented.)
 
-- Can import thrift file as normal py modules. The sdk code is generated on
+- Can directly load thrift file as module, the sdk code will be generated on
   the fly.
 
-  For example, ``import pingpong_thrift`` will import the 'pingpong.thrift' file
-  as module
+  For example, ``pingpong = thriftpy.load("pingpong.thrift")`` will load
+  'pingpong.thrift' as 'pingpong' module.
+
+  Or, when import hook enabled, directly use ``import pingpong_thrift`` to
+  import the 'pingpong.thrift' file as module.
 
 - Pure python, standalone implemention. No longer need to compile & install
   the 'thrift' package. All you need is python and thrift file.
