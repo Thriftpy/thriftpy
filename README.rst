@@ -4,7 +4,7 @@ ThriftPy
 
 ThriftPy is a pure python implemention of Apache Thrift in a pythonic way.
 
-Documentation: https://thriftpy.readthedocs.org/en/latest/
+Documentation: https://thriftpy.readthedocs.org/
 
 
 Installation
