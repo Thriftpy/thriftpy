@@ -2,6 +2,15 @@
 ThriftPy
 ========
 
+.. image:: http://img.shields.io/pypi/v/thriftpy.svg?style=flat
+   :target: https://pypi.python.org/pypi/thriftpy
+
+.. image:: http://img.shields.io/travis/Eleme/thriftpy/master.svg?style=flat
+   :target: https://travis-ci.org/Eleme/thriftpy
+
+.. image:: http://img.shields.io/pypi/dm/thriftpy.svg?style=flat
+   :target: https://pypi.python.org/pypi/thriftpy
+
 ThriftPy is a pure python implemention of Apache Thrift in a pythonic way.
 
 Documentation: https://thriftpy.readthedocs.org/
@@ -92,6 +101,32 @@ python lib):
   the 'thrift' package. All you need is python and thrift file.
 
 - Easy RPC server/client setup.
+
+
+TODOS
+=====
+
+Currently ThriftPy is not fully compatiable with thrift, I only implemented
+the features we need in *ele.me*.
+
+These todos need to be done, but may not be completed by me in near future,
+so contributions are very welcome!
+
+- other protocol and transport except binary and buffered transport.
+
+- Cython binary protocol code audit & C Binary extension.
+
+  I'm not good at C or Cython programming so the cython implemention may have
+  issues and need to be audited. The cython binary protocol implemention is
+  about 2-3 times faster than the python binary protocol, but still many times
+  slower than the official C extension. A better c extension needed.
+
+- map type const.
+
+- 'namespace', 'extends', 'import', 'oneway' keywords.
+
+- the '.thrift' file parser will skip a section if it has syntax error. A
+  better warning message should be given.
 
 
 Contribute
