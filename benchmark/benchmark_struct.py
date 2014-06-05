@@ -1,13 +1,10 @@
 import time
 
 import thriftpy
-thriftpy.install_import_hook()
-
 from thriftpy.utils import serialize, deserialize
 from thriftpy.protocol import TBinaryProtocolFactory, TCyBinaryProtocolFactory
 
-import addressbook_thrift as addressbook
-# import addressbook
+addressbook = thriftpy.load("addressbook.thrift")
 
 
 def make_addressbook():
@@ -25,45 +22,37 @@ def make_addressbook():
     ab = addressbook.AddressBook()
     ab.people = {person.name: person}
     return ab
+ab_encoded = serialize(make_addressbook())
 
 
 def encode(n, proto_factory=TBinaryProtocolFactory()):
+    ab = make_addressbook()
+    start = time.time()
     for i in range(n):
-        ab = make_addressbook()
         serialize(ab, proto_factory)
+    end = time.time()
+    print("encode\t-> {}".format(end - start))
 
 
 def decode(n, proto_factory=TBinaryProtocolFactory()):
-    ab = make_addressbook()
-    encoded = serialize(ab)
+    ab = addressbook.AddressBook()
+    start = time.time()
     for i in range(n):
-        deserialize(ab, encoded, proto_factory)
+        deserialize(ab, ab_encoded, proto_factory)
+    end = time.time()
+    print("decode\t-> {}".format(end - start))
 
 
 def main():
-    print("TBinaryProtocol:")
+    n = 100000
 
-    start = time.time()
-    encode(10000)
-    end = time.time()
-    print(end - start)
+    print("binary protocol struct benchmark for {} times:".format(n))
+    encode(n)
+    decode(n)
 
-    start = time.time()
-    decode(10000)
-    end = time.time()
-    print(end - start)
-
-    print("\nTCyBinaryProtocol:")
-
-    start = time.time()
-    encode(10000, TCyBinaryProtocolFactory())
-    end = time.time()
-    print(end - start)
-
-    start = time.time()
-    decode(10000, TCyBinaryProtocolFactory())
-    end = time.time()
-    print(end - start)
+    print("\ncybinary protocol struct benchmark for {} times:".format(n))
+    encode(n, TCyBinaryProtocolFactory())
+    decode(n, TCyBinaryProtocolFactory())
 
 
 if __name__ == "__main__":
