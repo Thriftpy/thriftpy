@@ -5,8 +5,8 @@ ThriftPy
 .. image:: http://img.shields.io/pypi/v/thriftpy.svg?style=flat
    :target: https://pypi.python.org/pypi/thriftpy
 
-.. image:: http://img.shields.io/travis/Eleme/thriftpy/master.svg?style=flat
-   :target: https://travis-ci.org/Eleme/thriftpy
+.. image:: http://img.shields.io/travis/eleme/thriftpy/master.svg?style=flat
+   :target: https://travis-ci.org/eleme/thriftpy
 
 .. image:: http://img.shields.io/pypi/dm/thriftpy.svg?style=flat
    :target: https://pypi.python.org/pypi/thriftpy
@@ -68,7 +68,7 @@ And a client:
 .. code:: python
 
     import thriftpy
-    from thrift.rpc import make_client
+    from thriftpy.rpc import make_client
 
     pingpong = thriftpy.load("pingpong.thrift")
 
