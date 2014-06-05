@@ -254,30 +254,33 @@ def read_val(inbuf, ttype, spec=None):
         return result
 
     elif ttype == TType.STRUCT:
-        # In this case, the spec should be a cls
-        d = {}
-        # The max loop count equals field count + a final stop byte.
-        for i in range(len(spec.thrift_spec) + 1):
-            f_type, fid = read_field_begin(inbuf)
-            if f_type == TType.STOP:
-                break
+        obj = spec()
+        read_struct(inbuf, obj)
+        return obj
 
-            if fid not in spec.thrift_spec:
-                skip(inbuf, f_type)
 
-            if len(spec.thrift_spec[fid]) == 2:
-                sf_type, f_name = spec.thrift_spec[fid]
-                f_container_spec = None
-            else:
-                sf_type, f_name, f_container_spec = spec.thrift_spec[fid]
+def read_struct(inbuf, obj):
+    # The max loop count equals field count + a final stop byte.
+    for i in range(len(obj.thrift_spec) + 1):
+        f_type, fid = read_field_begin(inbuf)
+        if f_type == TType.STOP:
+            break
 
-            # it really should equal here. but since we already wasted
-            # space storing the duplicate info, let's check it.
-            if f_type != sf_type:
-                raise Exception("Message Corrupt")
+        if fid not in obj.thrift_spec:
+            skip(inbuf, f_type)
 
-            d[f_name] = read_val(inbuf, f_type, f_container_spec)
-        return d
+        if len(obj.thrift_spec[fid]) == 2:
+            sf_type, f_name = obj.thrift_spec[fid]
+            f_container_spec = None
+        else:
+            sf_type, f_name, f_container_spec = obj.thrift_spec[fid]
+
+        # it really should equal here. but since we already wasted
+        # space storing the duplicate info, let's check it.
+        if f_type != sf_type:
+            raise Exception("Message Corrupt")
+
+        setattr(obj, f_name, read_val(inbuf, f_type, f_container_spec))
 
 
 def skip(inbuf, ftype):
@@ -337,8 +340,8 @@ class TBinaryProtocol(object):
     def write_message_end(self):
         pass
 
-    def read_struct(self, obj_cls):
-        return read_val(self.trans, TType.STRUCT, obj_cls)
+    def read_struct(self, obj):
+        return read_struct(self.trans, obj)
 
     def write_struct(self, obj):
         write_val(self.trans, TType.STRUCT, obj)
