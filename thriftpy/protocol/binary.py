@@ -255,7 +255,7 @@ def read_val(inbuf, ttype, spec=None):
 
     elif ttype == TType.STRUCT:
         # In this case, the spec should be a cls
-        obj = spec()
+        d = {}
         # The max loop count equals field count + a final stop byte.
         for i in range(len(spec.thrift_spec) + 1):
             f_type, fid = read_field_begin(inbuf)
@@ -276,9 +276,8 @@ def read_val(inbuf, ttype, spec=None):
             if f_type != sf_type:
                 raise Exception("Message Corrupt")
 
-            setattr(obj, f_name,
-                    read_val(inbuf, f_type, f_container_spec))
-        return obj
+            d[f_name] = read_val(inbuf, f_type, f_container_spec)
+        return d
 
 
 def skip(inbuf, ftype):

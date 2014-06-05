@@ -79,9 +79,7 @@ class TPayload(object):
             setattr(self, k, kwargs.get(k, None))
 
     def read(self, iprot):
-        obj = iprot.read_struct(self.__class__)
-        self.__dict__.update(obj.__dict__)
-        del obj
+        self.__dict__.update(iprot.read_struct(self.__class__))
 
     def write(self, oprot):
         oprot.write_struct(self)

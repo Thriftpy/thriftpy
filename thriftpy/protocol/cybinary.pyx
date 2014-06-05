@@ -82,28 +82,28 @@ cdef bytes _pack_num(num val):
     _revert_pack(buf, &val, sz)
     return buf[:sz]
 
-cdef bytes pack_i8(int8_t val):
+cpdef bytes pack_i8(int8_t val):
     return _pack_num(val)
 
-cdef bytes pack_i16(int16_t val):
+cpdef bytes pack_i16(int16_t val):
     return _pack_num(val)
 
-cdef bytes pack_i32(int32_t val):
+cpdef bytes pack_i32(int32_t val):
     return _pack_num(val)
 
-cdef bytes pack_i64(int64_t val):
+cpdef bytes pack_i64(int64_t val):
     return _pack_num(val)
 
-cdef bytes pack_bool(int8_t bool_):
+cpdef bytes pack_bool(int8_t bool_):
     if bool_:
         return pack_i8(1)
     else:
         return pack_i8(0)
 
-cdef bytes pack_double(double val):
+cpdef bytes pack_double(double val):
     return _pack_num(val)
 
-cdef bytes pack_string(bytes val):
+cpdef bytes pack_string(bytes val):
     cdef:
         int val_len = len(val)
         size_t sz = sizeof(val_len)
@@ -127,35 +127,35 @@ cdef void _revert_unpack(num* x, char* buf, size_t sz):
 
     memcpy(x, buf, sz)
 
-cdef int8_t unpack_i8(bytes buf):
+cpdef int8_t unpack_i8(bytes buf):
     cdef:
         char* read = buf
         int8_t x
     memcpy(&x, read, int8_sz)
     return x
 
-cdef int16_t unpack_i16(bytes buf):
+cpdef int16_t unpack_i16(bytes buf):
     cdef:
         char* read = buf
         int16_t x
     _revert_unpack(&x, read, int16_sz)
     return x
 
-cdef int32_t unpack_i32(bytes buf):
+cpdef int32_t unpack_i32(bytes buf):
     cdef:
         char* read = buf
         int32_t x
     _revert_unpack(&x, read, int32_sz)
     return x
 
-cdef int64_t unpack_i64(bytes buf):
+cpdef int64_t unpack_i64(bytes buf):
     cdef:
         char* read = buf
         int64_t x
     _revert_unpack(&x, read, int64_sz)
     return x
 
-cdef double unpack_double(bytes buf):
+cpdef double unpack_double(bytes buf):
     cdef:
         char* read = buf
         double x
@@ -388,7 +388,7 @@ cpdef read_val(inbuf, int8_t ttype, spec=None):
 
     elif ttype == STRUCT:
         # In this case, the spec should be a cls
-        obj = spec()
+        d = {}
         # The max loop count equals field count + a final stop byte.
         for i in range(len(spec.thrift_spec) + 1):
             f_type, fid = read_field_begin(inbuf)
@@ -409,9 +409,8 @@ cpdef read_val(inbuf, int8_t ttype, spec=None):
             if f_type != sf_type:
                 raise Exception("Message Corrupt")
 
-            setattr(obj, f_name,
-                    read_val(inbuf, f_type, f_container_spec))
-        return obj
+            d[f_name] = read_val(inbuf, f_type, f_container_spec)
+        return d
 
 
 ##########
