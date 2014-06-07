@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
 
-version = "0.1.1"
+version = "0.1.2"
 
 install_requires = [
     "pyparsing==2.0.2",

@@ -1,0 +1,19 @@
+ThriftPy Changelog
+==================
+
+Version 0.1.2
+-------------
+
+Released on June 7, 2014.
+
+- disabled the magic import hook by default. and add install/remove function
+  to switch the hook on and off.
+- reworked benchmark suit and add benchmark results.
+- new `__init__` function code generator. get a noticable speed boost.
+- bug fixes
+
+
+Version 0.1.1
+-------------
+
+First public release.
