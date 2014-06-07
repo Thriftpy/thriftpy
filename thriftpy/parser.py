@@ -149,11 +149,11 @@ def load(thrift_file):
     for struct in result["structs"]:
         struct_cls = _type(struct.name, TPayload)
         thrift_spec = {}
-        default_spec = {}
+        default_spec = []
         for m in struct.members:
             thrift_spec[int(m.id)] = _ttype_spec(m.ttype, m.name)
-            if m.value is not None and m.value != '':
-                default_spec[m.name] = m.value
+            m.value = m.value or None
+            default_spec.append((m.name, m.value))
         setattr(struct_cls, "thrift_spec", thrift_spec)
         setattr(struct_cls, "default_spec", default_spec)
         setattr(thrift_schema, struct.name, struct_cls)
@@ -162,11 +162,11 @@ def load(thrift_file):
     for exc in result["exceptions"]:
         exc_cls = _type(exc.name, TException)
         thrift_spec = {}
-        default_spec = {}
+        default_spec = []
         for m in exc.members:
             thrift_spec[int(m.id)] = _ttype_spec(m.ttype, m.name)
-            if m.value != '':
-                default_spec[m.name] = m.value
+            m.value = m.value or None
+            default_spec.append((m.name, m.value))
         setattr(exc_cls, "thrift_spec", thrift_spec)
         setattr(exc_cls, "default_spec", default_spec)
         setattr(thrift_schema, exc.name, exc_cls)

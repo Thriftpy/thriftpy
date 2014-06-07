@@ -15,6 +15,7 @@ class TItem(TPayload):
         1: (TType.I32, "id"),
         2: (TType.LIST, "phones", (TType.STRING)),
     }
+    default_spec = [("id", None), ("phones", None)]
 
 
 def test_pack_i8():
@@ -116,4 +117,6 @@ def test_read_struct():
     b = BytesIO(b'\x08\x00\x01\x00\x00\x00{\x0f\x00\x02\x0b\x00\x00\x00'
                 b'\x02\x00\x00\x00\x06123456\x00\x00\x00\x06abcdef\x00')
     _item = TItem(id=123, phones=['123456', 'abcdef'])
-    assert_equal(_item, proto.TCyBinaryProtocol(b).read_struct(TItem))
+    _item2 = TItem()
+    proto.TCyBinaryProtocol(b).read_struct(_item2)
+    assert_equal(_item, _item2)

@@ -9,6 +9,8 @@
 
 import functools
 
+from ._compat import init_func_generator
+
 
 def args2kwargs(thrift_spec, *args):
     arg_names = [item[1][1] for item in sorted(thrift_spec.items())]
@@ -62,21 +64,15 @@ class TMessageType(object):
     ONEWAY = 4
 
 
-class TPayload(object):
-    thrift_spec = {}
-    default_spec = {}
+class TPayloadMeta(type):
+    def __new__(cls, name, bases, attrs):
+        if "default_spec" in attrs:
+            attrs["__init__"] = init_func_generator(attrs["default_spec"])
+            attrs.pop('default_spec')
+        return super(TPayloadMeta, cls).__new__(cls, name, bases, attrs)
 
-    def __init__(self, *args, **kwargs):
-        _kw = args2kwargs(self.thrift_spec, *args)
-        kwargs.update(_kw)
 
-        for k, v in self.default_spec.items():
-            if k not in kwargs:
-                kwargs[k] = v
-
-        for _, v in self.thrift_spec.items():
-            k = v[1]
-            setattr(self, k, kwargs.get(k, None))
+class TPayload(object, metaclass=TPayloadMeta):
 
     def read(self, iprot):
         iprot.read_struct(self)
