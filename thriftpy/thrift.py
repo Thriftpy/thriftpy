@@ -140,7 +140,7 @@ class TClient(object):
         if not hasattr(result, "success"):
             return
 
-        if result.success:
+        if result.success is not None:
             return result.success
 
         # check throws
