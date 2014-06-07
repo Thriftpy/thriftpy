@@ -57,11 +57,7 @@ def client():
     return client_context(addressbook.AddressBookService, '127.0.0.1', 8000)
 
 
-def test_rpc():
-    p = multiprocessing.Process(target=serve)
-    p.start()
-    time.sleep(0.1)
-
+def rpc_client():
     # test void request
     with client() as c:
         assert c.ping() is None
@@ -100,7 +96,18 @@ def test_rpc():
         except addressbook.PersonNotExistsError as e:
             print("remove({}) -> {}".format(name, e))
 
-    p.terminate()
+
+def test_rpc():
+    p = multiprocessing.Process(target=serve)
+    p.start()
+    time.sleep(0.1)
+
+    try:
+        rpc_client()
+    except:
+        raise
+    finally:
+        p.terminate()
 
 
 if __name__ == "__main__":
