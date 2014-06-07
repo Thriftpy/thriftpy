@@ -9,7 +9,7 @@ enum PhoneType {
 }
 
 struct PhoneNumber {
-    1: optional PhoneType type,
+    1: optional PhoneType type = 0,
     2: optional string number,
 }
 
@@ -26,7 +26,7 @@ struct AddressBook {
 }
 
 exception PersonNotExistsError {
-    1: optional string message,
+    1: optional string message = "Person Not Exists!",
 }
 
 service AddressBookService {

@@ -9,7 +9,7 @@
 
 import functools
 
-from ._compat import init_func_generator
+from ._compat import init_func_generator, with_metaclass
 
 
 def args2kwargs(thrift_spec, *args):
@@ -72,7 +72,7 @@ class TPayloadMeta(type):
         return super(TPayloadMeta, cls).__new__(cls, name, bases, attrs)
 
 
-class TPayload(object, metaclass=TPayloadMeta):
+class TPayload(with_metaclass(TPayloadMeta, object)):
 
     def read(self, iprot):
         iprot.read_struct(self)
