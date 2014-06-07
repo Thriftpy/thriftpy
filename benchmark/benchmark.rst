@@ -29,28 +29,28 @@ ThriftPy
 pypy2.3::
 
     binary protocol struct benchmark for 100000 times:
-    encode  -> 0.38329911232
-    decode  -> 0.773687839508
+    encode  -> 0.413738965988
+    decode  -> 0.605606079102
 
 python2.7.6::
 
     binary protocol struct benchmark for 100000 times:
-    encode  -> 3.34102606773
-    decode  -> 5.68388009071
+    encode  -> 3.356539011
+    decode  -> 4.65092682838
 
     cybinary protocol struct benchmark for 100000 times:
-    encode  -> 1.18100309372
-    decode  -> 3.16410183907
+    encode  -> 1.20373010635
+    decode  -> 2.18114209175
 
 python3.4.1 + thriftpy::
 
     binary protocol struct benchmark for 100000 times:
-    encode  -> 3.2018189430236816
-    decode  -> 5.33641505241394
+    encode  -> 3.291545867919922
+    decode  -> 4.337666034698486
 
     cybinary protocol struct benchmark for 100000 times:
-    encode  -> 1.105644941329956
-    decode  -> 2.7988200187683105
+    encode  -> 1.1233220100402832
+    decode  -> 1.9023690223693848
 
 -----------------------------------
 
