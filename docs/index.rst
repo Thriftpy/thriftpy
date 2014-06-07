@@ -74,7 +74,7 @@ python lib):
 
 - Supports python2.7 to python3.4 and pypy.
 
-- Compatiable with Apache Thirft.  You can use ThriftPy together with the
+- Compatible with Apache Thirft.  You can use ThriftPy together with the
   official implemention servers and clients, such as a upstream server with
   a thriftpy client or the opposite.
 
@@ -197,7 +197,7 @@ scores.
 TODOs
 =====
 
-Currently ThriftPy is not fully compatiable with thrift, I only implemented
+Currently ThriftPy is not fully compatible with thrift, I only implemented
 the features we need in *ele.me*.
 
 These todos need to be done, but may not be completed by me in near future,
