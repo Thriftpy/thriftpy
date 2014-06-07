@@ -66,6 +66,11 @@ def init_func_generator(spec):
 
     TODO: The `locals()` part may need refine.
     """
+    if not spec:
+        def __init__(self):
+            pass
+        return __init__
+
     varnames, defaults = zip(*spec)
     varnames = ('self', ) + varnames
 
@@ -76,9 +81,9 @@ def init_func_generator(spec):
 
     code = init.__code__
     if PY3:
-        new_code = types.CodeType(len(spec) + 1,
+        new_code = types.CodeType(len(varnames),
                                   0,
-                                  len(spec) + 2,
+                                  len(varnames),
                                   code.co_stacksize,
                                   code.co_flags,
                                   code.co_code,
@@ -92,8 +97,8 @@ def init_func_generator(spec):
                                   code.co_freevars,
                                   code.co_cellvars)
     else:
-        new_code = types.CodeType(len(spec) + 1,
-                                  len(spec) + 2,
+        new_code = types.CodeType(len(varnames),
+                                  len(varnames),
                                   code.co_stacksize,
                                   code.co_flags,
                                   code.co_code,
