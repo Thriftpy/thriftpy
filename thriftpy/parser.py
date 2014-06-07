@@ -7,7 +7,6 @@ import types
 
 import pyparsing as pa
 
-
 from .thrift import TType, TPayload, TException
 
 
@@ -136,39 +135,38 @@ def load(thrift_file):
 
     # load enums
     for name, enum in result["enums"].items():
-        enum_cls = _type(name, object)
+        attrs = {"__module__": module_name}
         value = 0
         for m in enum.members:
             if m.value != '':
                 value = int(m.value)
-            setattr(enum_cls, m.name, value)
+            attrs[m.name] = value
             value += 1
+        enum_cls = type(name, (object, ), attrs)
         setattr(thrift_schema, enum.name, enum_cls)
 
     # load structs
     for struct in result["structs"]:
-        struct_cls = _type(struct.name, TPayload)
-        thrift_spec = {}
-        default_spec = []
+        attrs = {"__module__": module_name}
+        thrift_spec, default_spec = {}, []
         for m in struct.members:
             thrift_spec[int(m.id)] = _ttype_spec(m.ttype, m.name)
-            m.value = m.value or None
-            default_spec.append((m.name, m.value))
-        setattr(struct_cls, "thrift_spec", thrift_spec)
-        setattr(struct_cls, "default_spec", default_spec)
+            default_spec.append((m.name, m.value or None))
+        attrs["thrift_spec"] = thrift_spec
+        attrs["default_spec"] = sorted(default_spec)
+        struct_cls = type(struct.name, (TPayload, ), attrs)
         setattr(thrift_schema, struct.name, struct_cls)
 
     # load exceptions
     for exc in result["exceptions"]:
-        exc_cls = _type(exc.name, TException)
-        thrift_spec = {}
-        default_spec = []
+        attrs = {"__module__": module_name}
+        thrift_spec, default_spec = {}, []
         for m in exc.members:
             thrift_spec[int(m.id)] = _ttype_spec(m.ttype, m.name)
-            m.value = m.value or None
-            default_spec.append((m.name, m.value))
-        setattr(exc_cls, "thrift_spec", thrift_spec)
-        setattr(exc_cls, "default_spec", default_spec)
+            default_spec.append((m.name, m.value or None))
+        attrs["thrift_spec"] = thrift_spec
+        attrs["default_spec"] = sorted(default_spec)
+        exc_cls = type(exc.name, (TException, ), attrs)
         setattr(thrift_schema, exc.name, exc_cls)
 
     # load services
@@ -178,28 +176,40 @@ def load(thrift_file):
         for api in service.apis:
             thrift_services.append(api.name)
 
-            # args payload
-            api_args_cls = _type("%s_args" % api.name, TPayload)
-            api_args_spec = {}
-            for param in api.params:
-                api_args_spec[int(param.id)] = _ttype_spec(param.ttype,
-                                                           param.name)
-            setattr(api_args_cls, "thrift_spec", api_args_spec)
-            setattr(service_cls, "%s_args" % api.name, api_args_cls)
+            # generate default spec from thrift spec
+            _default_spec = lambda s: [(s[k][1], None) for k in sorted(s)]
 
-            # result payload
-            api_result_cls = _type("%s_result" % api.name, TPayload)
+            # api args payload
+            args_name = "%s_args" % api.name
+            args_attrs = {"__module__": module_name}
+
+            args_thrift_spec = {}
+            for param in api.params:
+                args_thrift_spec[int(param.id)] = _ttype_spec(param.ttype,
+                                                              param.name)
+            args_attrs["thrift_spec"] = args_thrift_spec
+            args_attrs["default_spec"] = _default_spec(args_thrift_spec)
+            args_cls = type(args_name, (TPayload, ), args_attrs)
+            setattr(service_cls, args_name, args_cls)
+
+            # api result payload
+            result_name = "%s_result" % api.name
+            result_attrs = {"__module__": module_name}
+
             if api.ttype == "void":
-                api_result_spec = {}
+                result_thrift_spec = {}
             else:
-                api_result_spec = {0: _ttype_spec(api.ttype, "success")}
+                result_thrift_spec = {0: _ttype_spec(api.ttype, "success")}
 
             if hasattr(api, "throws"):
                 for t in api.throws:
-                    api_result_spec[int(t.id)] = _ttype_spec(t.ttype, t.name)
+                    result_thrift_spec[int(t.id)] = _ttype_spec(t.ttype,
+                                                                t.name)
 
-            setattr(api_result_cls, "thrift_spec", api_result_spec)
-            setattr(service_cls, "%s_result" % api.name, api_result_cls)
+            result_attrs["thrift_spec"] = result_thrift_spec
+            result_attrs["default_spec"] = _default_spec(result_thrift_spec)
+            result_cls = type(result_name, (TPayload, ), result_attrs)
+            setattr(service_cls, result_name, result_cls)
 
         setattr(service_cls, "thrift_services", thrift_services)
         setattr(thrift_schema, service.name, service_cls)
