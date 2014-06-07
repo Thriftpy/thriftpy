@@ -111,7 +111,41 @@ python lib):
 - Easy RPC server/client setup.
 
 
-TODOS
+Benchmarks
+==========
+
+Some benchmark results::
+
+    # apache thrift py binary
+    binary protocol struct benchmark for 100000 times:
+    encode  -> 3.74061203003
+    decode  -> 5.02829790115
+
+    # apache thrift c binary
+    accelerated protocol struct benchmark for 100000 times:
+    encode  -> 0.398949146271
+    decode  -> 0.536000013351
+
+    # thriftpy & pypy2.3
+    binary protocol struct benchmark for 100000 times:
+    encode  -> 0.413738965988
+    decode  -> 0.605606079102
+
+    # thriftpy & py3.4
+    binary protocol struct benchmark for 100000 times:
+    encode  -> 3.291545867919922
+    decode  -> 4.337666034698486
+
+    # thriftpy & py3.4 + cython
+    cybinary protocol struct benchmark for 100000 times:
+    encode  -> 1.1233220100402832
+    decode  -> 1.9023690223693848
+
+Checkout the `benchmark/benchmark.rst` for detailed benchmark scripts and
+scores.
+
+
+TODOs
 =====
 
 Currently ThriftPy is not fully compatiable with thrift, I only implemented
