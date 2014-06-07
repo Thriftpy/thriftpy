@@ -6,7 +6,7 @@ from setuptools.extension import Extension
 version = "0.1.1"
 
 install_requires = [
-    "pyparsing>=2.0.1",
+    "pyparsing==2.0.2",
 ]
 
 dev_requires = [
