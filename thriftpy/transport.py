@@ -13,16 +13,17 @@ from .thrift import TType, TException
 class TTransportBase(object):
     """Base class for Thrift transport layer."""
 
-    def readAll(self, sz):
+    def read(self, sz):
         buff = b''
         have = 0
         while (have < sz):
-            chunk = self.read(sz - have)
+            chunk = self._read(sz - have)
             have += len(chunk)
             buff += chunk
 
             if len(chunk) == 0:
-                raise EOFError()
+                raise TTransportException(TTransportException.END_OF_FILE,
+                                          "End of file reading from transport")
 
         return buff
 
@@ -110,7 +111,7 @@ class TBufferedTransport(TTransportBase):
     def close(self):
         return self.__trans.close()
 
-    def read(self, sz):
+    def _read(self, sz):
         ret = self.__rbuf.read(sz)
         if len(ret) != 0:
             return ret

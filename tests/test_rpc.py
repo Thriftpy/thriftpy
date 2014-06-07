@@ -41,8 +41,9 @@ class Dispatcher(object):
     def book(self):
         return self.ab
 
-    def get_phonenumbers(self, name):
-        return self.ab.people[name].phones if name in self.ab.people else []
+    def get_phonenumbers(self, name, count):
+        p = [self.ab.people[name].phones[0]] if name in self.ab.people else []
+        return p * count
 
     def get_phones(self, name):
         phone_numbers = self.ab.people[name].phones
@@ -88,13 +89,14 @@ def rpc_client():
     # test get complex struct
     with client() as c:
         # test get list
-        assert isinstance(c.get_phonenumbers("Alice"), list)
+        # assert isinstance(c.get_phonenumbers("Alice"), list)
 
         # test get empty list
-        assert c.get_phonenumbers("Bob") == []
+        assert len(c.get_phonenumbers("Alice", 0)) == 0
+        assert len(c.get_phonenumbers("Alice", 1000)) == 1000
 
-        assert isinstance(c.get_phones("Alice"), dict)
-        assert isinstance(c.book(), addressbook.AddressBook)
+        # assert isinstance(c.get_phones("Alice"), dict)
+        # assert isinstance(c.book(), addressbook.AddressBook)
 
     # test exception
     with client() as c:

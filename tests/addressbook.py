@@ -57,6 +57,7 @@ class AddressBookService(object):
         "remove",
         "get",
         "book",
+        "get_phonenumbers",
         "get_phones",
     ]
 
@@ -113,6 +114,19 @@ class AddressBookService(object):
     class book_result(TPayload):
         thrift_spec = {
             0: (TType.STRUCT, "success", AddressBook),
+        }
+        default_spec = [("success", None)]
+
+    class get_phonenumbers_args(TPayload):
+        thrift_spec = {
+            1: (TType.STRING, "name"),
+            2: (TType.I32, "count"),
+        }
+        default_spec = [("name", None), ("count", None)]
+
+    class get_phonenumbers_result(TPayload):
+        thrift_spec = {
+            0: (TType.LIST, "success", (TType.STRUCT)),
         }
         default_spec = [("success", None)]
 

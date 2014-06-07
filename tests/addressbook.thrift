@@ -35,6 +35,6 @@ service AddressBookService {
     bool remove(1: string name) throws (1: PersonNotExistsError not_exists);
     Person get(1: string name) throws (1: PersonNotExistsError not_exists);
     AddressBook book();
-    list<PhoneNumber> get_phonenumbers(1: string name);
+    list<PhoneNumber> get_phonenumbers(1: string name, 2: i32 count);
     map<PhoneType, string> get_phones(1: string name);
 }
