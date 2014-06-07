@@ -177,24 +177,21 @@ class TProcessor(object):
             try:
                 result.success = getattr(self._handler, api)(**args.__dict__)
             except Exception as e:
-                # raise if don't have throws
+                # raise if api don't have throws
                 if len(result.thrift_spec) == 1:
                     raise
 
                 # check throws
-                catched = False
-                for k, v in result.thrift_spec.items():
-                    # skip success
-                    if k == 0:
-                        continue
-                    _, exc_name, exc_cls = v
+                cached = False
+                for k in sorted(result.thrift_spec)[1:]:
+                    _, exc_name, exc_cls = result.thrift_spec[k]
                     if isinstance(e, exc_cls):
                         setattr(result, exc_name, e)
-                        catched = True
+                        cached = True
                         break
 
                 # if exc not defined in throws, raise
-                if not catched:
+                if not cached:
                     raise
 
             oprot.write_message_begin(api, TMessageType.REPLY, seqid)
@@ -225,8 +222,9 @@ class TApplicationException(TException):
     PROTOCOL_ERROR = 7
 
     def __init__(self, type=UNKNOWN, message=None):
-        super(TApplicationException, self).__init__(message)
+        super(TApplicationException, self).__init__()
         self.type = type
+        self.message = message
 
     def __str__(self):
         if self.message:

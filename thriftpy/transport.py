@@ -7,7 +7,7 @@ import sys
 
 from io import BytesIO
 
-from .thrift import TException
+from .thrift import TType, TException
 
 
 class TTransportBase(object):
@@ -30,6 +30,11 @@ class TTransportBase(object):
 class TTransportException(TException):
     """Custom Transport Exception class"""
 
+    thrift_spec = {
+        1: (TType.STRING, 'message'),
+        2: (TType.I32, 'type'),
+    }
+
     UNKNOWN = 0
     NOT_OPEN = 1
     ALREADY_OPEN = 2
@@ -37,7 +42,7 @@ class TTransportException(TException):
     END_OF_FILE = 4
 
     def __init__(self, type=UNKNOWN, message=None):
-        TException.__init__(self, message)
+        super(TTransportException, self).__init__()
         self.type = type
         self.message = message
 
