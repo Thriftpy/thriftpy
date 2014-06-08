@@ -1,3 +1,6 @@
+.. image:: https://badge.waffle.io/eleme/thriftpy.png?label=ready&title=Ready 
+ :target: https://waffle.io/eleme/thriftpy
+ :alt: 'Stories in Ready'
 ========
 ThriftPy
 ========
