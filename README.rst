@@ -2,11 +2,14 @@
 ThriftPy
 ========
 
-.. image:: http://img.shields.io/pypi/v/thriftpy.svg?style=flat
-   :target: https://pypi.python.org/pypi/thriftpy
-
 .. image:: http://img.shields.io/travis/eleme/thriftpy/master.svg?style=flat
    :target: https://travis-ci.org/eleme/thriftpy
+
+.. image:: http://img.shields.io/github/release/eleme/thriftpy.svg?style=flat
+   :target: https://github.com/eleme/thriftpy/releases
+
+.. image:: http://img.shields.io/pypi/v/thriftpy.svg?style=flat
+   :target: https://pypi.python.org/pypi/thriftpy
 
 .. image:: http://img.shields.io/pypi/dm/thriftpy.svg?style=flat
    :target: https://pypi.python.org/pypi/thriftpy
