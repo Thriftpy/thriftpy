@@ -268,6 +268,7 @@ def read_struct(inbuf, obj):
 
         if fid not in obj.thrift_spec:
             skip(inbuf, f_type)
+            continue
 
         if len(obj.thrift_spec[fid]) == 2:
             sf_type, f_name = obj.thrift_spec[fid]
