@@ -27,7 +27,7 @@ class ThriftImporter(object):
             path = os.path.join(path_prefix, thrift_file)
         else:
             path = fullname
-        filename = path.replace('_', '.', 1)
+        filename = path.replace('_thrift', '.thrift', 1)
         thrift = load(filename)
         sys.modules[fullname] = thrift
         return thrift
