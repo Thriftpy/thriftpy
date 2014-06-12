@@ -447,7 +447,7 @@ cdef void skip(inbuf, int8_t ftype) except *:
     elif ftype == STRING:
         inbuf.read(unpack_i32(inbuf.read(int32_sz)))
 
-    elif ftype == SET or LIST:
+    elif ftype == SET or ftype == LIST:
         v_type, sz = read_list_begin(inbuf)
         for i in range(sz):
             skip(inbuf, v_type)

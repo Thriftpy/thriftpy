@@ -303,7 +303,7 @@ def skip(inbuf, ftype):
     elif ftype == TType.STRING:
         inbuf.read(unpack_i32(inbuf.read(4)))
 
-    elif ftype == TType.SET or TType.LIST:
+    elif ftype == TType.SET or ftype == TType.LIST:
         v_type, sz = read_list_begin(inbuf)
         for i in range(sz):
             skip(inbuf, v_type)
