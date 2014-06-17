@@ -18,10 +18,7 @@ def _or(*iterable):
 
 
 def version_check(version):
-    if version == current_version:
-        return True
-    else:
-        return False
+    return version == current_version
 
 
 def load_from_cache(thrift_file):
