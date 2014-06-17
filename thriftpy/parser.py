@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa
 
+import hashlib
 import functools
 import itertools
 import types
 
 import pyparsing as pa
+import cPickle as pickle
 
 from .thrift import TType, TPayload, TException
 
@@ -14,14 +16,42 @@ def _or(*iterable):
     return functools.reduce(lambda x, y: x | y, iterable)
 
 
-def parse(schema):
+def load_from_cache(thrift_file):
+    with file('%s.cache' % thrift_file, 'rb') as fp:
+        cache_dict = pickle.load(fp)
+    content = file(thrift_file, 'rb').read()
+    if cache_dict['digest'] == hashlib.md5(content).digest():
+        return cache_dict['result']
+
+
+def dump_to_cache(thrift_file, result):
+    content = file(thrift_file, 'rb').read()
+    cache_dict = {
+        'digest': hashlib.md5(content).digest(),
+        'result': result,
+    }
+    with file('%s.cache' % thrift_file, 'wb') as fp:
+        pickle.dump(cache_dict, fp)
+
+
+def parse(thrift_file, cache=True):
+    if cache:
+        try:
+            return load_from_cache(thrift_file)
+        except Exception:
+            pass
+
+    with file(thrift_file, 'rb') as fp:
+        schema = fp.read()
     result = {}
 
     # constants
-    LPAR, RPAR, LBRACK, RBRACK, LBRACE, RBRACE, LABRACK, RABRACK, COLON, SEMI, COMMA, EQ = map(pa.Suppress, "()[]{}<>:;,=")
+    LPAR, RPAR, LBRACK, RBRACK, LBRACE, RBRACE, LABRACK, RABRACK, COLON, SEMI, COMMA, EQ = map(
+        pa.Suppress, "()[]{}<>:;,=")
 
     # keywords
-    _typedef, _const, _enum, _struct, _exception, _service = map(pa.Keyword, ("typedef", "const", "enum", "struct", "exception", "service"))
+    _typedef, _const, _enum, _struct, _exception, _service = map(pa.Keyword, (
+        "typedef", "const", "enum", "struct", "exception", "service"))
 
     # comment match
     single_line_comment = (pa.Suppress("//") | pa.Suppress("#")) + pa.restOfLine
@@ -33,33 +63,44 @@ def parse(schema):
     value = pa.Forward()
     nums_ = pa.Word(pa.nums)
     integer_ = nums_.setParseAction(lambda s, l, t: [int(t[0])])
-    double_ = pa.Combine(nums_ + '.' + nums_).setParseAction(lambda s, l, t: [float(t[0])])
+    double_ = pa.Combine(nums_ + '.' + nums_).setParseAction(
+        lambda s, l, t: [float(t[0])])
     string_ = pa.quotedString.setParseAction(pa.removeQuotes)
-    list_ = pa.Group(LBRACK + pa.delimitedList(value) + RBRACK).setParseAction(lambda s, l, t: t.asList())
+    list_ = pa.Group(LBRACK + pa.delimitedList(value) + RBRACK).setParseAction(
+        lambda s, l, t: t.asList())
     value << _or(double_, integer_, string_, list_)
 
     # scan for possible user defined types
-    _typedef_prefix = _typedef + identifier + pa.Optional(pa.nestedExpr(opener='<', closer='>'))
+    _typedef_prefix = _typedef + identifier + pa.Optional(
+        pa.nestedExpr(opener='<', closer='>'))
     scan_utypes = _or(_typedef_prefix, _enum, _struct, _exception) + identifier
-    utypes = map(pa.Keyword, (t[-1] for t, _, _ in scan_utypes.scanString(schema)))
+    utypes = map(pa.Keyword,
+                 (t[-1] for t, _, _ in scan_utypes.scanString(schema)))
 
     # ttypes
     ttype = pa.Forward()
-    t_list = pa.Group(pa.Keyword("list")("ttype") + LABRACK + ttype('v') + RABRACK)
-    t_map = pa.Group(pa.Keyword("map")("ttype") + LABRACK + ttype('k') + COMMA + ttype('v') + RABRACK)
-    orig_types = _or(t_list, t_map, *map(pa.Keyword, ("bool", "byte", "i16", "i32", "i64", "double", "string")))
+    t_list = pa.Group(
+        pa.Keyword("list")("ttype") + LABRACK + ttype('v') + RABRACK)
+    t_map = pa.Group(
+        pa.Keyword("map")("ttype") + LABRACK + ttype('k') + COMMA + ttype(
+            'v') + RABRACK)
+    orig_types = _or(t_list, t_map, *map(pa.Keyword, (
+        "bool", "byte", "i16", "i32", "i64", "double", "string")))
     ttype << _or(orig_types, *utypes)
 
     # typedef parser
     typedef = _typedef + orig_types("ttype") + identifier("name")
-    result["typedefs"] = {t.name: t.ttype for t, _, _ in typedef.scanString(schema)}
+    result["typedefs"] = {t.name: t.ttype for t, _, _ in
+                          typedef.scanString(schema)}
 
     # const parser
     const = _const + ttype("ttype") + identifier("name") + EQ + value("value")
     result["consts"] = {c.name: c.value for c, _, _ in const.scanString(schema)}
 
     # enum parser
-    enum_value = pa.Group(identifier('name') + pa.Optional(EQ + integer_('value')) + pa.Optional(COMMA))
+    enum_value = pa.Group(
+        identifier('name') + pa.Optional(EQ + integer_('value')) + pa.Optional(
+            COMMA))
     enum_list = pa.Group(pa.OneOrMore(enum_value))("members")
     enum = _enum + identifier("name") + LBRACE + enum_list + RBRACE
     enum.ignore(single_line_comment)
@@ -67,7 +108,10 @@ def parse(schema):
 
     # struct parser
     category = _or(*map(pa.Literal, ("required", "optional")))
-    struct_field = pa.Group(integer_("id") + COLON + pa.Optional(category) + ttype("ttype") + identifier("name") + pa.Optional(EQ + value("value")) + pa.Optional(COMMA))
+    struct_field = pa.Group(
+        integer_("id") + COLON + pa.Optional(category) + ttype(
+            "ttype") + identifier("name") + pa.Optional(
+            EQ + value("value")) + pa.Optional(COMMA))
     struct_members = pa.Group(pa.OneOrMore(struct_field))("members")
     struct = _struct + identifier("name") + LBRACE + struct_members + RBRACE
     struct.ignore(single_line_comment)
@@ -75,28 +119,36 @@ def parse(schema):
     result["structs"] = [s for s, _, _ in struct.scanString(schema)]
 
     # exception parser
-    exception = _exception + identifier("name") + LBRACE + struct_members + RBRACE
+    exception = _exception + identifier(
+        "name") + LBRACE + struct_members + RBRACE
     exception.ignore(single_line_comment)
     result["exceptions"] = [s for s, _, _ in exception.scanString(schema)]
 
     # service parser
     ftype = _or(ttype, pa.Keyword("void"))
-    api_param = pa.Group(integer_("id") + COLON + ttype("ttype") + identifier("name") + pa.Optional(COMMA))
+    api_param = pa.Group(integer_("id") + COLON + ttype("ttype") + identifier(
+        "name") + pa.Optional(COMMA))
     api_params = pa.Group(pa.ZeroOrMore(api_param))
-    service_api = pa.Group(ftype("ttype") + identifier("name") + LPAR + api_params("params") + RPAR + pa.Optional(pa.Keyword("throws") + LPAR + api_params("throws") + RPAR) + pa.Optional(SEMI | COMMA))
+    service_api = pa.Group(
+        ftype("ttype") + identifier("name") + LPAR + api_params(
+            "params") + RPAR + pa.Optional(
+            pa.Keyword("throws") + LPAR + api_params(
+                "throws") + RPAR) + pa.Optional(SEMI | COMMA))
     service_apis = pa.Group(pa.OneOrMore(service_api))("apis")
     service = _service + identifier("name") + LBRACE + service_apis + RBRACE
     service.ignore(single_line_comment)
     service.ignore(pa.cStyleComment)
     result["services"] = [s for s, _, _ in service.scanString(schema)]
 
+    if cache:
+        dump_to_cache(thrift_file, result)
+
     return result
 
 
-def load(thrift_file):
+def load(thrift_file, cache=True):
     module_name = thrift_file[:thrift_file.find('.')]
-    with open(thrift_file, 'r') as f:
-        result = parse(f.read())
+    result = parse(thrift_file, cache)
     struct_names = [s.name for s in itertools.chain(result["structs"],
                                                     result["exceptions"])]
 
