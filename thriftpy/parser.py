@@ -5,9 +5,9 @@ import hashlib
 import functools
 import itertools
 import types
+import cPickle as pickle
 
 import pyparsing as pa
-import cPickle as pickle
 
 from .thrift import TType, TPayload, TException
 
@@ -46,8 +46,8 @@ def parse(thrift_file, cache=True):
     result = {}
 
     # constants
-    LPAR, RPAR, LBRACK, RBRACK, LBRACE, RBRACE, LABRACK, RABRACK, COLON, SEMI, COMMA, EQ = map(
-        pa.Suppress, "()[]{}<>:;,=")
+    LPAR, RPAR, LBRACK, RBRACK, LBRACE, RBRACE, LABRACK, RABRACK, COLON, SEMI, \
+    COMMA, EQ = map(pa.Suppress, "()[]{}<>:;,=")
 
     # keywords
     _typedef, _const, _enum, _struct, _exception, _service = map(pa.Keyword, (
@@ -141,7 +141,10 @@ def parse(thrift_file, cache=True):
     result["services"] = [s for s, _, _ in service.scanString(schema)]
 
     if cache:
-        dump_to_cache(thrift_file, result)
+        try:
+            dump_to_cache(thrift_file, result)
+        except Exception:
+            pass
 
     return result
 
