@@ -42,7 +42,7 @@ class Grouping(TPayload):
                    4: (TType.STRUCT, 'none', NullStruct),
                    5: (TType.STRUCT, 'direct', NullStruct),
                    6: (TType.STRUCT, 'custom_object', JavaObject),
-                   7: (TType.STRING, 'custom_serialized'),
+                   7: (TType.BINARY, 'custom_serialized'),
                    8: (TType.STRUCT, 'local_or_shuffle', NullStruct)}
 
 
@@ -57,7 +57,7 @@ class ShellComponent(TPayload):
 
 
 class ComponentObject(TPayload):
-    thrift_spec = {1: (TType.STRING, 'serialized_java'),
+    thrift_spec = {1: (TType.BINARY, 'serialized_java'),
                    2: (TType.STRUCT, 'shell', ShellComponent),
                    3: (TType.STRUCT, 'java_object', JavaObject)}
 
@@ -237,7 +237,132 @@ class SubmitOptions(TPayload):
     thrift_spec = {1: (TType.I32, 'initial_status')}
 
 
-##### NIMBUS SERVICE
+class Nimbus(object):
+    ''' Nimbus service '''
+    class submitTopology_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'name'),
+                       2: (TType.STRING, 'uploadedJarLocation'),
+                       3: (TType.STRING, 'jsonConf'),
+                       4: (TType.STRUCT, 'topology', StormTopology)}
+
+    class submitTopology_result(TPayload):
+        thrift_spec = {1: (TType.STRUCT, 'e', AlreadyAliveException),
+                       2: (TType.STRUCT, 'ite', InvalidTopologyException)}
+
+    class submitTopologyWithOpts_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'name'),
+                       2: (TType.STRING, 'uploadedJarLocation'),
+                       3: (TType.STRING, 'jsonConf'),
+                       4: (TType.STRUCT, 'topology', StormTopology),
+                       5: (TType.STRUCT, 'options', SubmitOptions)}
+
+    class submitTopologyWithOpts_result(TPayload):
+        thrift_spec = {1: (TType.STRUCT, 'e', AlreadyAliveException),
+                       2: (TType.STRUCT, 'ite', InvalidTopologyException)}
+
+    class killTopology_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'name')}
+
+    class killTopology_result(TPayload):
+        thrift_spec = {1: (TType.STRUCT, 'e', NotAliveException)}
+
+    class killTopologyWithOpts_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'name'),
+                       2: (TType.STRUCT, 'options', KillOptions)}
+
+    class killTopologyWithOpts_result(TPayload):
+        thrift_spec = {1: (TType.STRUCT, 'e', NotAliveException)}
+
+    class activate_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'name')}
+
+    class activate_result(TPayload):
+        thrift_spec = {1: (TType.STRUCT, 'e', NotAliveException)}
+
+    class deactivate_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'name')}
+
+    class deactivate_result(TPayload):
+        thrift_spec = {1: (TType.STRUCT, 'e', NotAliveException)}
+
+    class rebalance_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'name'),
+                       2: (TType.STRUCT, 'options', RebalanceOptions)}
+
+    class rebalance_result(TPayload):
+        thrift_spec = {1: (TType.STRUCT, 'e', NotAliveException),
+                       2: (TType.STRUCT, 'ite', InvalidTopologyException)}
+
+    class beginFileUpload_args(TPayload):
+        thrift_spec = {}
+
+    class beginFileUpload_result(TPayload):
+        thrift_spec = {0: (TType.STRING, 'success')}
+
+    class uploadChunk_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'location'),
+                       2: (TType.BINARY, 'chunk')}
+
+    class uploadChunk_result(TPayload):
+        thrift_spec = {}
+
+    class finishFileUpload_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'location')}
+
+    class finishFileUpload_result(TPayload):
+        thrift_spec = {}
+
+    class beginFileDownload_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'file')}
+
+    class beginFileDownload_result(TPayload):
+        thrift_spec = {0: (TType.STRING, 'success')}
+
+    class downloadChunk_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'id')}
+
+    class downloadChunk_result(TPayload):
+        thrift_spec = {0: (TType.BINARY, 'success')}
+
+    class getNimbusConf_args(TPayload):
+        thrift_spec = {}
+
+    class getNimbusConf_result(TPayload):
+        thrift_spec = {0: (TType.STRING, 'success')}
+
+    class getClusterInfo_args(TPayload):
+        thrift_spec = {}
+
+    class getClusterInfo_result(TPayload):
+        thrift_spec = {0: (TType.STRUCT, 'success', ClusterSummary)}
+
+    class getTopologyInfo_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'id')}
+
+    class getTopologyInfo_result(TPayload):
+        thrift_spec = {0: (TType.STRUCT, 'success', TopologyInfo),
+                       1: (TType.STRUCT, 'e', NotAliveException)}
+
+    class getTopologyConf_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'id')}
+
+    class getTopologyConf_result(TPayload):
+        thrift_spec = {0: (TType.STRING, 'success'),
+                       1: (TType.STRUCT, 'e', NotAliveException)}
+
+    class getTopology_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'id')}
+
+    class getTopology_result(TPayload):
+        thrift_spec = {0: (TType.STRUCT, 'success', StormTopology),
+                       1: (TType.STRUCT, 'e', NotAliveException)}
+
+    class getUserTopology_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'id')}
+
+    class getUserTopology_result(TPayload):
+        thrift_spec = {0: (TType.STRUCT, 'success', StormTopology),
+                       1: (TType.STRUCT, 'e', NotAliveException)}
 
 
 class DRPCRequest(TPayload):
@@ -249,8 +374,34 @@ class DRPCExecutionException(TException):
     thrift_spec = {1: (TType.STRING, 'msg')}
 
 
+class DistributedRPC(object):
+    ''' DistributedRPC service '''
+    class execute_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'functionName'),
+                       2: (TType.STRING, 'funcArgs')}
 
-#### DistributedRPC service
+    class execute_result(TPayload):
+        thrift_spec = {0: (TType.STRING, 'success'),
+                       1: (TType.STRUCT, 'e', DRPCExecutionException)}
 
 
-#### DistributedRPCInvocations service
+class DistributedRPCInvocations(object):
+    ''' DistributedRPCInvocations service '''
+    class result_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'id'),
+                       2: (TType.STRING, 'result')}
+
+    class result_result(TPayload):
+        thrift_spec = {}
+
+    class fetchRequest_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'functionName')}
+
+    class fetchRequest_result(TPayload):
+        thrift_spec = {0: (TType.STRUCT, 'success', DRPCRequest)}
+
+    class failRequest_args(TPayload):
+        thrift_spec = {1: (TType.STRING, 'id')}
+
+    class failRequest_result(TPayload):
+        thrift_spec = {}
