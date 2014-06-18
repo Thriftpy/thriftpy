@@ -210,7 +210,12 @@ def read_val(inbuf, ttype, spec=None):
 
     elif ttype == TType.STRING:
         sz = unpack_i32(inbuf.read(4))
-        return inbuf.read(sz).decode('utf-8')
+        byte_payload = inbuf.read(sz)
+        # Since we cannot tell if we're getting STRING or BINARY, try both
+        try:
+            return byte_payload.decode('utf-8')
+        except UnicodeDecodeError:
+            return byte_payload
 
     elif ttype == TType.SET or ttype == TType.LIST:
         if isinstance(spec, tuple):

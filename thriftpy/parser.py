@@ -21,7 +21,7 @@ def parse(schema):
     LPAR, RPAR, LBRACK, RBRACK, LBRACE, RBRACE, LABRACK, RABRACK, COLON, SEMI, COMMA, EQ = map(pa.Suppress, "()[]{}<>:;,=")
 
     # keywords
-    _typedef, _const, _enum, _struct, _exception, _service = map(pa.Keyword, ("typedef", "const", "enum", "struct", "exception", "service"))
+    _typedef, _const, _enum, _struct, _union, _exception, _service = map(pa.Keyword, ("typedef", "const", "enum", "struct", "union", "exception", "service"))
 
     # comment match
     single_line_comment = (pa.Suppress("//") | pa.Suppress("#")) + pa.restOfLine
@@ -40,14 +40,14 @@ def parse(schema):
 
     # scan for possible user defined types
     _typedef_prefix = _typedef + identifier + pa.Optional(pa.nestedExpr(opener='<', closer='>'))
-    scan_utypes = _or(_typedef_prefix, _enum, _struct, _exception) + identifier
+    scan_utypes = _or(_typedef_prefix, _enum, _struct, _exception, _union) + identifier
     utypes = map(pa.Keyword, (t[-1] for t, _, _ in scan_utypes.scanString(schema)))
 
     # ttypes
     ttype = pa.Forward()
     t_list = pa.Group(pa.Keyword("list")("ttype") + LABRACK + ttype('v') + RABRACK)
     t_map = pa.Group(pa.Keyword("map")("ttype") + LABRACK + ttype('k') + COMMA + ttype('v') + RABRACK)
-    orig_types = _or(t_list, t_map, *map(pa.Keyword, ("bool", "byte", "i16", "i32", "i64", "double", "string")))
+    orig_types = _or(t_list, t_map, *map(pa.Keyword, ("bool", "byte", "i16", "i32", "i64", "double", "string", "binary")))
     ttype << _or(orig_types, *utypes)
 
     # typedef parser
@@ -60,16 +60,16 @@ def parse(schema):
 
     # enum parser
     enum_value = pa.Group(identifier('name') + pa.Optional(EQ + integer_('value')) + pa.Optional(COMMA))
-    enum_list = pa.Group(pa.OneOrMore(enum_value))("members")
+    enum_list = pa.Group(pa.ZeroOrMore(enum_value))("members")
     enum = _enum + identifier("name") + LBRACE + enum_list + RBRACE
     enum.ignore(single_line_comment)
     result["enums"] = {e.name: e for e, _, _ in enum.scanString(schema)}
 
     # struct parser
     category = _or(*map(pa.Literal, ("required", "optional")))
-    struct_field = pa.Group(integer_("id") + COLON + pa.Optional(category) + ttype("ttype") + identifier("name") + pa.Optional(EQ + value("value")) + pa.Optional(COMMA))
-    struct_members = pa.Group(pa.OneOrMore(struct_field))("members")
-    struct = _struct + identifier("name") + LBRACE + struct_members + RBRACE
+    struct_field = pa.Group(integer_("id") + COLON + pa.Optional(category) + ttype("ttype") + identifier("name") + pa.Optional(EQ + value("value")) + pa.Optional(_or(SEMI, COMMA)))
+    struct_members = pa.Group(pa.ZeroOrMore(struct_field))("members")
+    struct = _or(_struct, _union) + identifier("name") + LBRACE + struct_members + RBRACE
     struct.ignore(single_line_comment)
     # struct defines is ordered
     result["structs"] = [s for s, _, _ in struct.scanString(schema)]
@@ -81,10 +81,10 @@ def parse(schema):
 
     # service parser
     ftype = _or(ttype, pa.Keyword("void"))
-    api_param = pa.Group(integer_("id") + COLON + ttype("ttype") + identifier("name") + pa.Optional(COMMA))
+    api_param = pa.Group(integer_("id") + COLON + ttype("ttype") + identifier("name") + pa.Optional(_or(SEMI, COMMA)))
     api_params = pa.Group(pa.ZeroOrMore(api_param))
-    service_api = pa.Group(ftype("ttype") + identifier("name") + LPAR + api_params("params") + RPAR + pa.Optional(pa.Keyword("throws") + LPAR + api_params("throws") + RPAR) + pa.Optional(SEMI | COMMA))
-    service_apis = pa.Group(pa.OneOrMore(service_api))("apis")
+    service_api = pa.Group(ftype("ttype") + identifier("name") + LPAR + api_params("params") + RPAR + pa.Optional(pa.Keyword("throws") + LPAR + api_params("throws") + RPAR) + pa.Optional(_or(SEMI, COMMA)))
+    service_apis = pa.Group(pa.ZeroOrMore(service_api))("apis")
     service = _service + identifier("name") + LBRACE + service_apis + RBRACE
     service.ignore(single_line_comment)
     service.ignore(pa.cStyleComment)
@@ -145,7 +145,7 @@ def load(thrift_file):
         enum_cls = type(name, (object, ), attrs)
         setattr(thrift_schema, enum.name, enum_cls)
 
-    # load structs
+    # load structs/unions
     for struct in result["structs"]:
         attrs = {"__module__": module_name}
         thrift_spec, default_spec = {}, []
