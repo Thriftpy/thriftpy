@@ -14,7 +14,7 @@ ThriftPy helps that, it's compatible with Apache Thrift so you no longer need
 to install 'thrift' package, it can import thrift file on the fly so you
 no longer need to re-generate the sdk again and again and again.
 
-Github: https://github.com/Eleme/thriftpy
+Github: https://github.com/eleme/thriftpy
 
 
 Code Demo
@@ -52,7 +52,7 @@ And a client:
 .. code:: python
 
     import thriftpy
-    from thrift.rpc import make_client
+    from thriftpy.rpc import make_client
 
     pingpong = thriftpy.load("pingpong.thrift")
 
@@ -198,7 +198,7 @@ TODOs
 =====
 
 Currently ThriftPy is not fully compatible with thrift, I only implemented
-the features we need in *ele.me*.
+the features we need in ele.me.
 
 These todos need to be done, but may not be completed by me in near future,
 so contributions are very welcome!
@@ -214,10 +214,16 @@ so contributions are very welcome!
 
 - map type const.
 
-- 'namespace', 'extends', 'import', 'oneway' keywords.
+- 'namespace', 'extends', 'import', 'oneway' etc keywords.
 
 - the '.thrift' file parser will skip a section if it has syntax error. A
   better warning message should be given.
+
+
+Changelogs
+==========
+
+https://github.com/eleme/thriftpy/blob/master/CHANGES
 
 
 Contribute
@@ -230,3 +236,9 @@ Contribute
 3. Make sure travis-ci test succeed.
 
 4. Send pull request.
+
+
+Contributors
+============
+
+https://github.com/eleme/thriftpy/graphs/contributors

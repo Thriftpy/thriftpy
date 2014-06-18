@@ -152,7 +152,7 @@ TODOs
 =====
 
 Currently ThriftPy is not fully compatible with thrift, I only implemented
-the features we need at *ele.me*.
+the features we need in ele.me.
 
 These todos need to be done, but may not be completed by me in near future,
 so contributions are very welcome!
@@ -168,10 +168,16 @@ so contributions are very welcome!
 
 - map type const.
 
-- 'namespace', 'extends', 'import', 'oneway' keywords.
+- 'namespace', 'extends', 'import', 'oneway' etc keywords.
 
 - the '.thrift' file parser will skip a section if it has syntax error. A
   better warning message should be given.
+
+
+Changelogs
+==========
+
+https://github.com/eleme/thriftpy/blob/master/CHANGES
 
 
 Contribute
@@ -184,3 +190,9 @@ Contribute
 3. Make sure travis-ci test succeed.
 
 4. Send pull request.
+
+
+Contributors
+============
+
+https://github.com/eleme/thriftpy/graphs/contributors
