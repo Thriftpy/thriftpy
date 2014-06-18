@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
 
-version = "0.1.3"
+from thriftpy import __version__
 
 install_requires = [
     "pyparsing==2.0.2",
@@ -37,7 +37,7 @@ else:
 
 
 setup(name="thriftpy",
-      version=version,
+      version=__version__,
       description="Pure python implemention of Apache Thrift.",
       keywords="thrift python thriftpy",
       author="Lx Yu",

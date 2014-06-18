@@ -1,59 +1,32 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa
 
-import hashlib
 import functools
+import hashlib
 import itertools
-import types
 import pickle
+import types
 
 import pyparsing as pa
 
 from .thrift import TType, TPayload, TException
-from . import __version__ as current_version
+from . import __version__, __python__
 
 
 def _or(*iterable):
     return functools.reduce(lambda x, y: x | y, iterable)
 
 
-def version_check(version):
-    return version == current_version
-
-
-def load_from_cache(thrift_file):
-    with open('%s.cache' % thrift_file, 'rb') as cache_fp,\
-            open(thrift_file, 'rb') as thrift_fp:
-        cache_dict = pickle.load(cache_fp)
-        content = thrift_fp.read()
-    if cache_dict['digest'] == hashlib.md5(content).digest() \
-            and version_check(cache_dict['version']):
-        return cache_dict['result']
-    else:
-        raise Exception('digest mismatch or version not compatible')
-
-
-def dump_to_cache(thrift_file, result):
-    content = open(thrift_file, 'rb').read()
-    cache_dict = {
-        'digest': hashlib.md5(content).digest(),
-        'version': current_version,
-        'result': result,
+def parse(schema):
+    """Tokenize thrift file and cache tokenize results.
+    """
+    # set version and schema md5 hash in result
+    result = {
+        "__version__": __version__,
+        "__python__": __python__,
+        "__hash__": hashlib.md5(schema).digest(),
     }
-    with open('%s.cache' % thrift_file, 'wb') as fp:
-        pickle.dump(cache_dict, fp)
-
-
-def parse(thrift_file, cache=True):
-    if cache:
-        try:
-            return load_from_cache(thrift_file)
-        except Exception:
-            pass
-
-    with open(thrift_file, 'rb') as fp:
-        schema = fp.read()
-    result = {}
+    schema = schema.decode("utf-8")
 
     # constants
     LPAR, RPAR, LBRACK, RBRACK, LBRACE, RBRACE, LABRACK, RABRACK, COLON, SEMI, COMMA, EQ = map(pa.Suppress, "()[]{}<>:;,=")
@@ -128,18 +101,51 @@ def parse(thrift_file, cache=True):
     service.ignore(pa.cStyleComment)
     result["services"] = [s for s, _, _ in service.scanString(schema)]
 
-    if cache:
-        try:
-            dump_to_cache(thrift_file, result)
-        except Exception:
-            pass
-
     return result
 
 
 def load(thrift_file, cache=True):
+    """Load thrift_file as a module, default use cache to accelerate
+    tokenize processing.
+
+    Set cache to False if you don't want to load from cache.
+    """
     module_name = thrift_file[:thrift_file.find('.')]
-    result = parse(thrift_file, cache)
+
+    with open(thrift_file, "rb") as fp:
+        schema = fp.read()
+
+    def _parse_and_cache(schema):
+        result = parse(schema)
+
+        # cache result with '.cache' suffix
+        with open("{}.cache".format(thrift_file), "wb") as fp:
+            pickle.dump(result, fp, protocol=1)
+
+        return result
+
+    # try load from cache first
+    if not cache:
+        result = parse(schema)
+    else:
+        try:
+            with open("{}.cache".format(thrift_file), "rb") as fp:
+                result = pickle.load(fp)
+
+        # 3 possible reasons for cache failure:
+        # - cache not exists
+        # - cache corrupt
+        # - cache protocol version not found
+        except (FileNotFoundError, pickle.UnpicklingError, ValueError):
+            result = _parse_and_cache(schema)
+
+        else:
+            # test cache versions correct
+            if result['__version__'] != __version__ or \
+                    result["__python__"] != __python__ or \
+                    result["__hash__"] != hashlib.md5(schema).digest():
+                result = _parse_and_cache(schema)
+
     struct_names = [s.name for s in itertools.chain(result["structs"],
                                                     result["exceptions"])]
 
