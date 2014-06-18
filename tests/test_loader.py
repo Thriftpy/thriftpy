@@ -14,6 +14,8 @@ from thriftpy.thrift import TPayload, TException
 
 import addressbook as ab
 import addressbook_thrift as ab_tt
+import storm
+import storm_thrift as storm_tt
 
 
 def test_load_const():
@@ -31,6 +33,10 @@ def test_load_struct():
     assert_dict_equal(ab.PhoneNumber.thrift_spec,
                       ab_tt.PhoneNumber.thrift_spec)
 
+    assert_equal(storm_tt.NullStruct.__base__, TPayload)
+    assert_dict_equal(storm.NullStruct.thrift_spec,
+                      storm_tt.NullStruct.thrift_spec)
+
     # TODO make this work
     # assert_equal(ab_tt.Person.__base__, TPayload)
     # assert_dict_equal(ab.Person.thrift_spec, ab_tt.Person.thrift_spec)
@@ -38,6 +44,12 @@ def test_load_struct():
     # assert_true(ab_tt.AddressBook.__base__, TPayload)
     # assert_dict_equal(ab.AddressBook.thrift_spec,
     #                   ab_tt.AddressBook.thrift_spec)
+
+
+def test_load_union():
+    assert_equal(storm_tt.JavaObjectArg.__base__, TPayload)
+    assert_dict_equal(storm.JavaObjectArg.thrift_spec,
+                      storm_tt.JavaObjectArg.thrift_spec)
 
 
 def test_load_exc():

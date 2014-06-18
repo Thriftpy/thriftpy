@@ -343,7 +343,12 @@ cpdef read_val(inbuf, int8_t ttype, spec=None):
 
     elif ttype == STRING:
         sz = unpack_i32(inbuf.read(int32_sz))
-        return inbuf.read(sz).decode('utf-8')
+        byte_payload = inbuf.read(sz)
+        # Since we cannot tell if we're getting STRING or BINARY, try both
+        try:
+            return byte_payload.decode('utf-8')
+        except UnicodeDecodeError:
+            return byte_payload
 
     elif ttype == SET or ttype == LIST:
         if isinstance(spec, tuple):
