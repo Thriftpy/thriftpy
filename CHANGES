@@ -1,13 +1,25 @@
 ThriftPy Changelog
 ==================
 
+Version 0.1.3
+-------------
+
+Released on June 19, 2014.
+
+- support for union, binary fields, support for empty structs,
+  support for Apache Storm thrift file, via `#14`_.
+- bugfix for import hook
+- bugfix for skip function in binary protocols
+
+.. _`#14`: https://github.com/eleme/thriftpy/pull/14
+
 Version 0.1.2
 -------------
 
 Released on June 7, 2014.
 
-- disabled the magic import hook by default. and add install/remove function
-  to switch the hook on and off.
+- disabled the magic import hook by default. and add install/remove
+  function to switch the hook on and off.
 - reworked benchmark suit and add benchmark results.
 - new `__init__` function code generator. get a noticable speed boost.
 - bug fixes
