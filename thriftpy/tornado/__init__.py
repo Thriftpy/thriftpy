@@ -1,4 +1,19 @@
 # -*- coding: utf-8 -*-
+
+"""
+>>> pingpong = thriftpy.load("pingpong.thrift")
+>>>
+>>> class Dispatcher(object):
+>>>     def ping(self):
+>>>         return "pong"
+
+>>> server = make_server(pingpong.PingPong, Dispatcher())
+>>> server.listen(6000)
+>>> client = ioloop.IOLoop.current().run_sync(lambda: make_client(pingpong.PingPong, '127.0.0.1', 6000))
+>>> ioloop.IOLoop.current().run_sync(client.ping)
+'pong'
+"""
+
 from __future__ import absolute_import
 from contextlib import contextmanager
 from tornado import tcpserver, ioloop, iostream, gen

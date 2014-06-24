@@ -34,7 +34,6 @@ else:
     ext_modules.append(Extension("thriftpy.protocol.cybin",
                                  ["thriftpy/protocol/cybin/cybin.c"]))
 
-
 setup(name="thriftpy",
       version=__import__('thriftpy').__version__,
       description="Pure python implemention of Apache Thrift.",
@@ -50,6 +49,7 @@ setup(name="thriftpy",
       install_requires=install_requires,
       extras_require={
           "dev": dev_requires,
+          "tornado": ['tornado>=4.0b1', 'toro']
       },
       cmdclass=cmdclass,
       ext_modules=ext_modules,
