@@ -90,6 +90,8 @@ class TMemoryBuffer(TTransportBase):
     def getvalue(self):
         return self._buffer.getvalue()
 
+    def setvalue(self, value):
+        self._buffer = BytesIO(value)
 
 class TBufferedTransport(TTransportBase):
     """Class that wraps another transport and buffers its I/O.
