@@ -4,6 +4,7 @@ import errno
 import os
 import socket
 import sys
+import struct
 
 from io import BytesIO
 
@@ -135,9 +136,60 @@ class TBufferedTransport(TTransportBase):
         self.__trans.flush()
 
 
+class TFramedTransport(TTransportBase):
+    """Class that wraps another transport and frames its I/O when writing."""
+    def __init__(self, trans):
+        self.__trans = trans
+        self.__rbuf = BytesIO()
+        self.__wbuf = BytesIO()
+
+    def isOpen(self):
+        return self.__trans.isOpen()
+
+    def open(self):
+        return self.__trans.open()
+
+    def close(self):
+        return self.__trans.close()
+
+    def read(self, sz):
+        ret = self.__rbuf.read(sz)
+        if len(ret) != 0:
+            return ret
+
+        self.readFrame()
+        return self.__rbuf.read(sz)
+
+    def readFrame(self):
+        buff = self.__trans.read(4)
+        sz, = struct.unpack('!i', buff)
+        self.__rbuf = BytesIO(self.__trans.read(sz))
+
+    def write(self, buf):
+        self.__wbuf.write(buf)
+
+    def flush(self):
+        wout = self.__wbuf.getvalue()
+        wsz = len(wout)
+        # reset wbuf before write/flush to preserve state on underlying failure
+        self.__wbuf = BytesIO()
+        # N.B.: Doing this string concatenation is WAY cheaper than making
+        # two separate calls to the underlying socket object. Socket writes in
+        # Python turn out to be REALLY expensive, but it seems to do a pretty
+        # good job of managing string buffer operations without excessive copies
+        buf = struct.pack("!i", wsz) + wout
+        self.__trans.write(buf)
+        self.__trans.flush()
+
+
 class TBufferedTransportFactory(object):
     def get_transport(self, trans):
         return TBufferedTransport(trans)
+
+
+class TFramedTransportFactory(object):
+    def get_transport(self, trans):
+        return TFramedTransport(trans)
 
 
 class TSocketBase(TTransportBase):
