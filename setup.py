@@ -49,8 +49,11 @@ setup(name="thriftpy",
       install_requires=install_requires,
       extras_require={
           "dev": dev_requires,
-          "tornado": ['tornado>=4.0b1', 'toro']
+          "tornado": ['tornadobeta==4.0b1', 'toro']
       },
+      dependency_links=[
+          "https://github.com/tornadoweb/tornado/archive/v4.0.0b1.tar.gz#egg=tornadobeta-4.0b1"
+      ],
       cmdclass=cmdclass,
       ext_modules=ext_modules,
       classifiers=[
