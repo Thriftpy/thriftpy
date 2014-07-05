@@ -1,20 +1,58 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa
 
+import hashlib
 import functools
 import itertools
 import types
+import pickle
 
 import pyparsing as pa
 
 from .thrift import TType, TPayload, TException
+from . import __version__ as current_version
 
 
 def _or(*iterable):
     return functools.reduce(lambda x, y: x | y, iterable)
 
 
-def parse(schema):
+def version_check(version):
+    return version == current_version
+
+
+def load_from_cache(thrift_file):
+    with open('%s.cache' % thrift_file, 'rb') as cache_fp,\
+            open(thrift_file, 'rb') as thrift_fp:
+        cache_dict = pickle.load(cache_fp)
+        content = thrift_fp.read()
+    if cache_dict['digest'] == hashlib.md5(content).digest() \
+            and version_check(cache_dict['version']):
+        return cache_dict['result']
+    else:
+        raise Exception('digest mismatch or version not compatible')
+
+
+def dump_to_cache(thrift_file, result):
+    content = open(thrift_file, 'rb').read()
+    cache_dict = {
+        'digest': hashlib.md5(content).digest(),
+        'version': current_version,
+        'result': result,
+    }
+    with open('%s.cache' % thrift_file, 'wb') as fp:
+        pickle.dump(cache_dict, fp)
+
+
+def parse(thrift_file, cache=True):
+    if cache:
+        try:
+            return load_from_cache(thrift_file)
+        except Exception:
+            pass
+
+    with open(thrift_file, 'rb') as fp:
+        schema = fp.read()
     result = {}
 
     # constants
@@ -90,13 +128,18 @@ def parse(schema):
     service.ignore(pa.cStyleComment)
     result["services"] = [s for s, _, _ in service.scanString(schema)]
 
+    if cache:
+        try:
+            dump_to_cache(thrift_file, result)
+        except Exception:
+            pass
+
     return result
 
 
-def load(thrift_file):
+def load(thrift_file, cache=True):
     module_name = thrift_file[:thrift_file.find('.')]
-    with open(thrift_file, 'r') as f:
-        result = parse(f.read())
+    result = parse(thrift_file, cache)
     struct_names = [s.name for s in itertools.chain(result["structs"],
                                                     result["exceptions"])]
 

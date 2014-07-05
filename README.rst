@@ -1,3 +1,10 @@
+this is a temp fix for parse cache.
+to gain startup speed.
+and there are some bug in py3 need fix
+py2 pypy is ok...
+wait to merged...
+
+
 ========
 ThriftPy
 ========
