@@ -24,9 +24,8 @@ def parse(schema):
     result = {
         "__version__": __version__,
         "__python__": __python__,
-        "__hash__": hashlib.md5(schema).digest(),
+        "__hash__": hashlib.md5(schema.encode('utf-8')).digest(),
     }
-    schema = schema.decode("utf-8")
 
     # constants
     LPAR, RPAR, LBRACK, RBRACK, LBRACE, RBRACE, LABRACK, RABRACK, COLON, SEMI, COMMA, EQ = map(pa.Suppress, "()[]{}<>:;,=")
@@ -112,7 +111,7 @@ def load(thrift_file, cache=True):
     """
     module_name = thrift_file[:thrift_file.find('.')]
 
-    with open(thrift_file, "rb") as fp:
+    with open(thrift_file, "r") as fp:
         schema = fp.read()
 
     def _parse_and_cache(schema):
@@ -143,7 +142,8 @@ def load(thrift_file, cache=True):
             # test cache versions correct
             if result['__version__'] != __version__ or \
                     result["__python__"] != __python__ or \
-                    result["__hash__"] != hashlib.md5(schema).digest():
+                    result["__hash__"] != hashlib.md5(
+                        schema.encode("utf-8")).digest():
                 result = _parse_and_cache(schema)
 
     struct_names = [s.name for s in itertools.chain(result["structs"],
