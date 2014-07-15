@@ -136,7 +136,7 @@ def load(thrift_file, cache=True):
         # - cache not exists
         # - cache corrupt
         # - cache protocol version not found
-        except (FileNotFoundError, pickle.UnpicklingError, ValueError):
+        except (IOError, ValueError, pickle.UnpicklingError):
             result = _parse_and_cache(schema)
 
         else:
