@@ -19,3 +19,13 @@ DEF T_TYPE_UTF8 = 16
 DEF T_TYPE_UTF16 = 17
 
 ctypedef unsigned char byte
+
+from libc.stdint cimport *
+
+cdef extern from 'endian.h':
+    int16_t htobe16(int16_t n)
+    int32_t htobe32(int32_t n)
+    int64_t htobe64(int64_t n)
+    int16_t be16toh(int16_t n)
+    int32_t be32toh(int32_t n)
+    int64_t be64toh(int64_t n)
