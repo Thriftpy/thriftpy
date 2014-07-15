@@ -2,12 +2,15 @@
 # flake8: noqa
 
 import functools
+import hashlib
 import itertools
+import pickle
 import types
 
 import pyparsing as pa
 
 from .thrift import TType, TPayload, TException
+from . import __version__, __python__
 
 
 def _or(*iterable):
@@ -15,7 +18,15 @@ def _or(*iterable):
 
 
 def parse(schema):
-    result = {}
+    """Tokenize thrift file and cache tokenize results.
+    """
+    # set version and schema md5 hash in result
+    result = {
+        "__version__": __version__,
+        "__python__": __python__,
+        "__hash__": hashlib.md5(schema).digest(),
+    }
+    schema = schema.decode("utf-8")
 
     # constants
     LPAR, RPAR, LBRACK, RBRACK, LBRACE, RBRACE, LABRACK, RABRACK, COLON, SEMI, COMMA, EQ = map(pa.Suppress, "()[]{}<>:;,=")
@@ -93,10 +104,48 @@ def parse(schema):
     return result
 
 
-def load(thrift_file):
+def load(thrift_file, cache=True):
+    """Load thrift_file as a module, default use cache to accelerate
+    tokenize processing.
+
+    Set cache to False if you don't want to load from cache.
+    """
     module_name = thrift_file[:thrift_file.find('.')]
-    with open(thrift_file, 'r') as f:
-        result = parse(f.read())
+
+    with open(thrift_file, "rb") as fp:
+        schema = fp.read()
+
+    def _parse_and_cache(schema):
+        result = parse(schema)
+
+        # cache result with '.cache' suffix
+        with open("{}.cache".format(thrift_file), "wb") as fp:
+            pickle.dump(result, fp, protocol=1)
+
+        return result
+
+    # try load from cache first
+    if not cache:
+        result = parse(schema)
+    else:
+        try:
+            with open("{}.cache".format(thrift_file), "rb") as fp:
+                result = pickle.load(fp)
+
+        # 3 possible reasons for cache failure:
+        # - cache not exists
+        # - cache corrupt
+        # - cache protocol version not found
+        except (FileNotFoundError, pickle.UnpicklingError, ValueError):
+            result = _parse_and_cache(schema)
+
+        else:
+            # test cache versions correct
+            if result['__version__'] != __version__ or \
+                    result["__python__"] != __python__ or \
+                    result["__hash__"] != hashlib.md5(schema).digest():
+                result = _parse_and_cache(schema)
+
     struct_names = [s.name for s in itertools.chain(result["structs"],
                                                     result["exceptions"])]
 

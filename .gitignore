@@ -1,4 +1,4 @@
-.env
+*.thrift.cache
 
 *.py[cod]
 .python-version
