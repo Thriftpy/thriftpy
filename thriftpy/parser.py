@@ -7,8 +7,6 @@ import itertools
 import pickle
 import types
 
-import pyparsing as pa
-
 from .thrift import TType, TPayload, TException
 from . import __version__, __python__
 
@@ -18,6 +16,8 @@ def _or(*iterable):
 
 
 def parse(schema):
+    import pyparsing as pa
+
     """Tokenize thrift file and cache tokenize results.
     """
     # set version and schema md5 hash in result

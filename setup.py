@@ -1,9 +1,8 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
-
-from thriftpy import __version__
 
 install_requires = [
     "pyparsing==2.0.2",
@@ -37,7 +36,7 @@ else:
 
 
 setup(name="thriftpy",
-      version=__version__,
+      version=__import__('thriftpy').__version__,
       description="Pure python implemention of Apache Thrift.",
       keywords="thrift python thriftpy",
       author="Lx Yu",
