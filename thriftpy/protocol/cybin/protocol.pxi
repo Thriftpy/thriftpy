@@ -117,17 +117,17 @@ cdef class BinaryProtocol(object):
                 v_spec = None
             else:
                 v_type, v_spec = spec[1]
-            self.rbuf.read_byte(&byte_v)
+            self.buf.read_byte(&byte_v)
             if byte_v != k_type:
                 raise ProtocolError(
                     'map key type mismatch: got %d, expected %d' % (
                         byte_v, k_type))
-            self.rbuf.read_byte(&byte_v)
+            self.buf.read_byte(&byte_v)
             if byte_v != v_type:
                 raise ProtocolError(
                     'map value type mismatch: got %d, expected %d' % (
                         byte_v, v_type))
-            self.rbuf.read_int32(int32_v)
+            self.buf.read_int32(&int32_v)
             return {self.read_val(k_type, k_spec): self.read_val(v_type, v_spec)
                 for i in range(int32_v)}
         elif field_type == T_TYPE_LIST or field_type == T_TYPE_SET:
@@ -142,7 +142,7 @@ cdef class BinaryProtocol(object):
                     'list/set item type mismatch: got %d, expected %d' % (
                         item_type, byte_v))
             return [self.read_val(byte_v, item_spec)
-                    for i in range(len(int32_v))]
+                    for i in range(int32_v)]
         elif field_type == T_TYPE_BYTE or field_type == T_TYPE_I08:
             self.buf.read_byte(&byte_v)
             return byte_v
@@ -175,9 +175,9 @@ cdef class BinaryProtocol(object):
                 v_spec = None
             else:
                 v_type, v_spec = spec[1]
-            self.rbuf.write_byte(k_type)
-            self.rbuf.write_byte(v_type)
-            self.rbuf.write_int32(len(obj))
+            self.buf.write_byte(k_type)
+            self.buf.write_byte(v_type)
+            self.buf.write_int32(len(obj))
             for k, v in obj.items():
                 self.write_val(k_type, k, k_spec)
                 self.write_val(v_type, v, v_spec)

@@ -3,6 +3,7 @@ import time
 import thriftpy
 from thriftpy.utils import serialize, deserialize
 from thriftpy.protocol import TBinaryProtocolFactory, TCyBinaryProtocolFactory
+from thriftpy.protocol.cybin import BinaryProtocolFactory
 
 addressbook = thriftpy.load("addressbook.thrift")
 
@@ -49,6 +50,10 @@ def main():
     print("binary protocol struct benchmark for {} times:".format(n))
     encode(n)
     decode(n)
+
+    print("\ncybin protocol struct benchmark for {} times:".format(n))
+    encode(n, BinaryProtocolFactory())
+    decode(n, BinaryProtocolFactory())
 
     print("\ncybinary protocol struct benchmark for {} times:".format(n))
     encode(n, TCyBinaryProtocolFactory())
