@@ -5,4 +5,4 @@ __all__ = ['TBinaryProtocol', 'TBinaryProtocolFactory',
 
 
 from .binary import TBinaryProtocol, TBinaryProtocolFactory
-from .cybinary import TCyBinaryProtocol, TCyBinaryProtocolFactory
+from .cybin import TCyBinaryProtocol, TCyBinaryProtocolFactory

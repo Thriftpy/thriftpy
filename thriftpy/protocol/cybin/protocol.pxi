@@ -5,7 +5,7 @@ class ProtocolError(Exception):
     pass
 
 
-cdef class BinaryProtocol(object):
+cdef class TCyBinaryProtocol(object):
     DEF DEFAULT_BUFFER = 4096
     DEF VERSION_MASK = -65536
     DEF VERSION_1 = -2147418112
@@ -13,8 +13,10 @@ cdef class BinaryProtocol(object):
     DEF FIELD_STOP = 0
 
     cdef BinaryRW buf
+    cdef public object trans
 
     def __init__(self, trans, int buf_size=DEFAULT_BUFFER):
+        self.trans = trans
         self.buf = BinaryRW(trans, buf_size)
 
     def read_message_begin(self):
@@ -200,6 +202,6 @@ cdef class BinaryProtocol(object):
         raise ProtocolError('skip')
 
 
-class BinaryProtocolFactory(object):
+class TCyBinaryProtocolFactory(object):
     def get_protocol(self, trans):
-        return BinaryProtocol(trans)
+        return TCyBinaryProtocol(trans)
