@@ -83,7 +83,7 @@ cdef class TCyBinaryProtocol(object):
             self.write_val(f_type, getattr(obj, f_name), f_container_spec)
         self.buf.write_byte(FIELD_STOP)
 
-    cdef read_val(self, byte field_type, spec):
+    def read_val(self, byte field_type, spec=None):
         cdef byte byte_v, k_type, v_type
         cdef int16_t int16_v
         cdef int32_t int32_v
@@ -152,7 +152,7 @@ cdef class TCyBinaryProtocol(object):
         else:
             raise ProtocolError('unsupportted field type: %d' % field_type)
 
-    cdef write_val(self, field_type, obj, spec):
+    def write_val(self, field_type, obj, spec=None):
         if field_type == T_TYPE_I32:
             self.buf.write_int32(obj)
         elif field_type == T_TYPE_STRING or field_type == T_TYPE_UTF8:
