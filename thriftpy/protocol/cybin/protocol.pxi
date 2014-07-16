@@ -67,6 +67,7 @@ cdef class BinaryProtocol(object):
                         field_type, field_type_defed))
                 val = self.read_val(field_type, container_spec)
                 setattr(obj, field_name, val)
+        return obj
 
     def write_struct(self, obj):
         for field_id, field_spec in obj.thrift_spec.items():
