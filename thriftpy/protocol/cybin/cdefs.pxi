@@ -22,13 +22,10 @@ ctypedef unsigned char byte
 
 from libc.stdint cimport *
 
-cdef extern from 'endian.h':
+cdef extern from 'endian_port.h':
     int16_t htobe16(int16_t n)
     int32_t htobe32(int32_t n)
     int64_t htobe64(int64_t n)
     int16_t be16toh(int16_t n)
     int32_t be32toh(int32_t n)
     int64_t be64toh(int64_t n)
-
-
-DEF PY2 = 0

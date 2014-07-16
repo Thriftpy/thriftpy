@@ -154,16 +154,10 @@ cdef class BinaryRW(object):
 
     cdef write_string(self, s):
         cdef bytes bs
-        IF PY2:
-            if isinstance(s, unicode):
-                bs = s.encode('utf8')
-            else:
-                bs = s
-        ELSE:
-            if isinstance(s, str):
-                bs = s.encode('utf8')
-            else:
-                bs = s
+        if isinstance(s, bytes):
+            bs = s
+        else:
+            bs = s.encode('utf8')
 
         cdef int size = len(bs)
         self.ensure_wbuf(4)
