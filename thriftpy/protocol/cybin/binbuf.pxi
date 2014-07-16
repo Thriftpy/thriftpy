@@ -47,17 +47,16 @@ cdef class BinaryRW(object):
         if size > self.rbuf.buf_size:
             raise BufferError('reader buffer out of cap')
 
-        cdef int buf_size = self.rbuf.data_size
         cdef int cap
         cdef bytes new_data
-        if buf_size == 0:
+        if self.rbuf.data_size == 0:
             self.rbuf.cur = 0
             self.rbuf.data_size = 0
-        if buf_size < size:
+        if self.rbuf.data_size < size:
             cap = self.rbuf.buf_size - self.rbuf.data_size
             if cap < 256:
                 self.rbuf.move_to_start()
-            new_data = self.trans.read(cap)
+            new_data = self.trans._read(cap)
             memcpy(self.rbuf.buf + self.rbuf.cur + self.rbuf.data_size,
                 <byte*>new_data, len(new_data))
             self.rbuf.data_size += len(new_data)
@@ -66,49 +65,58 @@ cdef class BinaryRW(object):
         self.ensure_rbuf(1)
         ret[0] = (self.rbuf.buf + self.rbuf.cur)[0]
         self.rbuf.cur += 1
+        self.rbuf.data_size -= 1
 
     cdef read_int16(self, int16_t *ret):
         self.ensure_rbuf(2)
         ret[0] = be16toh((<int16_t*>(self.rbuf.buf + self.rbuf.cur))[0])
         self.rbuf.cur += 2
+        self.rbuf.data_size -= 2
 
     cdef read_int32(self, int32_t *ret):
         self.ensure_rbuf(4)
         ret[0] = be32toh((<int32_t*>(self.rbuf.buf + self.rbuf.cur))[0])
         self.rbuf.cur += 4
+        self.rbuf.data_size -= 4
 
     cdef read_int64(self, int64_t *ret):
         self.ensure_rbuf(8)
         ret[0] = be64toh((<int64_t*>(self.rbuf.buf + self.rbuf.cur))[0])
         self.rbuf.cur += 8
+        self.rbuf.data_size -= 8
 
     cdef read_double(self, double *ret):
         self.ensure_rbuf(sizeof(double))
         cdef int64_t n = be64toh((<int64_t*>(self.rbuf.buf + self.rbuf.cur))[0])
         ret[0] = (<double*>(&n))[0]
         self.rbuf.cur += sizeof(double)
+        self.rbuf.data_size -= sizeof(double)
 
     cdef read_string(self):
         self.ensure_rbuf(4)
         cdef int32_t str_size = be32toh((<int32_t*>(self.rbuf.buf + self.rbuf.cur))[0])
         self.rbuf.cur += 4
+        self.rbuf.data_size -= 4
 
         if str_size == 0:
             return ''
         self.ensure_rbuf(str_size)
         ret_str = (self.rbuf.buf + self.rbuf.cur)[:str_size].decode('utf8')
         self.rbuf.cur += str_size
+        self.rbuf.data_size -= str_size
         return ret_str
 
     cdef read_bytes(self, int size):
         self.ensure_rbuf(size)
         cdef bytes ret_bs = (self.rbuf.buf + self.rbuf.cur)[:size]
         self.rbuf.cur += size
+        self.rbuf.data_size -= size
         return ret_bs
 
     cdef read_skip(self, int size):
         self.ensure_rbuf(size)
         self.rbuf.cur += size
+        self.rbuf.data_size -= size
 
     cdef ensure_wbuf(self, int size):
         cdef int cap = self.rbuf.buf_size - self.rbuf.data_size
