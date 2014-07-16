@@ -2,6 +2,8 @@
 
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
+import sys
+import os
 
 version = "0.1.3"
 
@@ -30,7 +32,24 @@ ext_modules = []
 if cython:
     ext_modules.append(Extension("thriftpy.protocol.cybin",
                                  ["thriftpy/protocol/cybin/cybin.pyx"]))
-    cmdclass["build_ext"] = build_ext
+
+    class ExtBuilder(build_ext, object):
+        def run(self):
+            self.generate_config()
+            super(ExtBuilder, self).run()
+
+        def generate_config(self):
+            if sys.version_info.major == 3:
+                config = 'DEF PY3=1\nDEF PY2=0\n'
+            else:
+                config = 'DEF PY3=0\nDEF PY2=1\n'
+            path = os.path.join(
+                os.path.dirname(__file__),
+                'thriftpy', 'protocol', 'cybin', 'cybin_config.pxi'
+            )
+            with open(path, 'w') as f:
+                f.write(config)
+    cmdclass["build_ext"] = ExtBuilder
 else:
     ext_modules.append(Extension("thriftpy.protocol.cybin",
                                  ["thriftpy/protocol/cybin/cybin.c"]))

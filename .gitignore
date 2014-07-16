@@ -40,3 +40,6 @@ nosetests.xml
 .project
 .pydevproject
 *.sublime-workspace
+
+#cybin config.pxi
+cybin_config.pxi

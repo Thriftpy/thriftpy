@@ -29,6 +29,3 @@ cdef extern from 'endian_port.h':
     int16_t be16toh(int16_t n)
     int32_t be32toh(int32_t n)
     int64_t be64toh(int64_t n)
-
-
-DEF PY2 = 0
