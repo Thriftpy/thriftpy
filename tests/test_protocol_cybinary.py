@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from io import BytesIO
+# from io import BytesIO
 
 from nose.tools import assert_equal
 
@@ -107,7 +107,7 @@ def test_pack_string():
 
 def test_unpack_string():
     b = TMemoryBuffer(b'\x00\x00\x00\x0c'
-                b'\xe4\xbd\xa0\xe5\xa5\xbd\xe4\xb8\x96\xe7\x95\x8c')
+                      b'\xe4\xbd\xa0\xe5\xa5\xbd\xe4\xb8\x96\xe7\x95\x8c')
     p = proto.TCyBinaryProtocol(b)
     assert_equal(u("你好世界"), p.read_val(TType.STRING))
 
@@ -140,7 +140,7 @@ def test_write_struct():
 
 def test_read_struct():
     b = TMemoryBuffer(b'\x08\x00\x01\x00\x00\x00{\x0f\x00\x02\x0b\x00\x00\x00'
-                b'\x02\x00\x00\x00\x06123456\x00\x00\x00\x06abcdef\x00')
+                      b'\x02\x00\x00\x00\x06123456\x00\x00\x00\x06abcdef\x00')
     _item = TItem(id=123, phones=['123456', 'abcdef'])
     _item2 = TItem()
     proto.TCyBinaryProtocol(b).read_struct(_item2)
