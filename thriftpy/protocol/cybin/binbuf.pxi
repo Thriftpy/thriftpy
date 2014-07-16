@@ -40,7 +40,6 @@ cdef class BinaryRW(object):
 
     def __init__(self, trans, int buf_size=DEFAULT_BUFFER):
         self.trans = trans
-        self.buf_limit = buf_size
         self.rbuf = Buffer(buf_size)
         self.wbuf = Buffer(buf_size)
 
@@ -54,13 +53,14 @@ cdef class BinaryRW(object):
         if buf_size == 0:
             self.rbuf.cur = 0
             self.rbuf.data_size = 0
-        elif buf_size < size:
+        if buf_size < size:
             cap = self.rbuf.buf_size - self.rbuf.data_size
             if cap < 256:
                 self.rbuf.move_to_start()
             new_data = self.trans.read(cap)
             memcpy(self.rbuf.buf + self.rbuf.cur + self.rbuf.data_size,
                 <byte*>new_data, len(new_data))
+            self.rbuf.data_size += len(new_data)
 
     cdef read_byte(self, byte *ret):
         self.ensure_rbuf(1)
@@ -106,6 +106,10 @@ cdef class BinaryRW(object):
         self.rbuf.cur += size
         return ret_bs
 
+    cdef read_skip(self, int size):
+        self.ensure_rbuf(size)
+        self.rbuf.cur += size
+
     cdef ensure_wbuf(self, int size):
         cdef int cap = self.rbuf.buf_size - self.rbuf.data_size
 
@@ -119,17 +123,17 @@ cdef class BinaryRW(object):
         (self.wbuf.buf + self.wbuf.data_size)[0] = n
         self.wbuf.data_size += 1
 
-    cdef write_int16(self, int n):
+    cdef write_int16(self, int16_t n):
         self.ensure_wbuf(2)
         (<int16_t*>(self.wbuf.buf + self.wbuf.data_size))[0] = htobe16(n)
         self.wbuf.data_size += 2
 
-    cdef write_int32(self, int n):
+    cdef write_int32(self, int32_t n):
         self.ensure_wbuf(4)
         (<int32_t*>(self.wbuf.buf + self.wbuf.data_size))[0] = htobe32(n)
         self.wbuf.data_size += 4
 
-    cdef write_int64(self, int n):
+    cdef write_int64(self, int64_t n):
         self.ensure_wbuf(8)
         (<int64_t*>(self.wbuf.buf + self.wbuf.data_size))[0] = htobe64(n)
         self.wbuf.data_size += 8
@@ -141,13 +145,25 @@ cdef class BinaryRW(object):
         self.wbuf.data_size += 8
 
     cdef write_string(self, s):
-        cdef int size = len(s)
+        cdef bytes bs
+        IF PY2:
+            if isinstance(s, unicode):
+                bs = s.encode('utf8')
+            else:
+                bs = s
+        ELSE:
+            if isinstance(s, str):
+                bs = s.encode('utf8')
+            else:
+                bs = s
+
+        cdef int size = len(bs)
         self.ensure_wbuf(4)
         (<int32_t*>(self.wbuf.buf + self.wbuf.data_size))[0] = htobe32(size)
         self.wbuf.data_size += 4
 
         self.ensure_wbuf(size)
-        memcpy(self.wbuf.buf + self.wbuf.data_size, <byte*>s, size)
+        memcpy(self.wbuf.buf + self.wbuf.data_size, <byte*>bs, size)
         self.wbuf.data_size += size
 
     cdef write_bytes(self, bytes bs):
@@ -159,6 +175,6 @@ cdef class BinaryRW(object):
     cdef write_flush(self):
         cdef bytes data
         if self.wbuf.data_size > 0:
-            data = (self.wbuf.buf + self.wbuf.data_size)[:self.wbuf.data_size]
+            data = self.wbuf.buf[:self.wbuf.data_size]
             self.trans.write(data)
             self.wbuf.clean()
