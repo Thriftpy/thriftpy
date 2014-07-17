@@ -78,6 +78,9 @@ class TMemoryBuffer(TTransportBase):
     def read(self, sz):
         return self._buffer.read(sz)
 
+    def _read(self, sz):
+        return self._buffer.read(sz)
+
     def write(self, buf):
         self._buffer.write(buf)
 

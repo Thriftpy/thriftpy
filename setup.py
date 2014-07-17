@@ -27,12 +27,12 @@ cmdclass = {}
 ext_modules = []
 
 if cython:
-    ext_modules.append(Extension("thriftpy.protocol.cybinary",
-                                 ["thriftpy/protocol/cybinary.pyx"]))
+    ext_modules.append(Extension("thriftpy.protocol.cybin",
+                                 ["thriftpy/protocol/cybin/cybin.pyx"]))
     cmdclass["build_ext"] = build_ext
 else:
-    ext_modules.append(Extension("thriftpy.protocol.cybinary",
-                                 ["thriftpy/protocol/cybinary.c"]))
+    ext_modules.append(Extension("thriftpy.protocol.cybin",
+                                 ["thriftpy/protocol/cybin/cybin.c"]))
 
 
 setup(name="thriftpy",
