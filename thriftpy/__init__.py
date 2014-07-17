@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '0.1.3'
+__version__ = '0.1.4'
 
 import sys
 __python__ = sys.version

@@ -9,8 +9,8 @@ install_requires = [
 ]
 
 dev_requires = [
-    "cython>=0.20.1",
-    "flake8>=2.1.0",
+    "cython>=0.20.2",
+    "flake8>=2.2.2",
     "nose>=1.3.3",
     "sphinx-rtd-theme>=0.1.6",
     "sphinx>=1.2.2",

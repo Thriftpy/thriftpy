@@ -1,6 +1,17 @@
 ThriftPy Changelog
 ==================
 
+Version 0.1.4
+-------------
+
+Released on July 17, 2014.
+
+- parser token cache, speed boost for thrift file parsing, via `#12`_.
+- new cython binary protocol with speed very close to c ext, via `#16`_.
+
+.. _`#12`: https://github.com/eleme/thriftpy/pull/14
+.. _`#16`: https://github.com/eleme/thriftpy/pull/14
+
 Version 0.1.3
 -------------
 
