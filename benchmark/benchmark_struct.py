@@ -50,7 +50,7 @@ def main():
     encode(n)
     decode(n)
 
-    print("\ncybinary protocol struct benchmark for {} times:".format(n))
+    print("\ncybin protocol struct benchmark for {} times:".format(n))
     encode(n, TCyBinaryProtocolFactory())
     decode(n, TCyBinaryProtocolFactory())
 

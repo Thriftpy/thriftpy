@@ -38,9 +38,9 @@ python2.7.6::
     encode  -> 3.356539011
     decode  -> 4.65092682838
 
-    cybinary protocol struct benchmark for 100000 times:
-    encode  -> 1.20373010635
-    decode  -> 2.18114209175
+    cybin protocol struct benchmark for 100000 times:
+    encode  -> 0.59757399559
+    decode  -> 0.74239397049
 
 python3.4.1 + thriftpy::
 
@@ -48,9 +48,9 @@ python3.4.1 + thriftpy::
     encode  -> 3.291545867919922
     decode  -> 4.337666034698486
 
-    cybinary protocol struct benchmark for 100000 times:
-    encode  -> 1.1233220100402832
-    decode  -> 1.9023690223693848
+    cybin protocol struct benchmark for 100000 times:
+    encode  -> 0.5828649997711182
+    decode  -> 0.8259570598602295
 
 -----------------------------------
 
@@ -85,18 +85,6 @@ python 3.4.1::
     pack_double     -> 0.3190128803253174
     unpack_double   -> 0.3318800926208496
 
-    cybinary protocol pack benchmark for 1000000 times.
-    pack_i8         -> 0.14059996604919434
-    unpack_i8       -> 0.0897068977355957
-    pack_i16        -> 0.16286921501159668
-    unpack_i16      -> 0.12385988235473633
-    pack_i32        -> 0.17861008644104004
-    unpack_i32      -> 0.12960481643676758
-    pack_i64        -> 0.18740415573120117
-    unpack_i64      -> 0.14306282997131348
-    pack_double     -> 0.17037487030029297
-    unpack_double   -> 0.11780405044555664
-
 
 python 2.7.6::
 
@@ -111,15 +99,3 @@ python 2.7.6::
     unpack_i64      -> 0.325259923935
     pack_double     -> 0.325922012329
     unpack_double   -> 0.330043077469
-
-    cybinary protocol pack benchmark for 1000000 times:
-    pack_i8         -> 0.134818077087
-    unpack_i8       -> 0.0831379890442
-    pack_i16        -> 0.161223888397
-    unpack_i16      -> 0.0890259742737
-    pack_i32        -> 0.179952144623
-    unpack_i32      -> 0.0975089073181
-    pack_i64        -> 0.184626102448
-    unpack_i64      -> 0.0943579673767
-    pack_double     -> 0.179758071899
-    unpack_double   -> 0.0928230285645

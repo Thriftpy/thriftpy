@@ -186,9 +186,9 @@ Some benchmark results::
     decode  -> 4.337666034698486
 
     # thriftpy & py3.4 + cython
-    cybinary protocol struct benchmark for 100000 times:
-    encode  -> 1.1233220100402832
-    decode  -> 1.9023690223693848
+    cybin protocol struct benchmark for 100000 times:
+    encode  -> 0.5828649997711182
+    decode  -> 0.8259570598602295
 
 Checkout the `benchmark/benchmark.rst` for detailed benchmark scripts and
 scores.
