@@ -6,39 +6,46 @@ class ProtocolError(Exception):
 
 
 cdef class TCyBinaryProtocol(object):
-    DEF DEFAULT_BUFFER = 4096
-    DEF VERSION_MASK = -65536
-    DEF VERSION_1 = -2147418112
-    DEF TYPE_MASK = 0x000000ff
-    DEF FIELD_STOP = 0
 
     cdef BinaryRW buf
     cdef public object trans
+    cdef public int target_version
 
     def __init__(self, trans, int buf_size=DEFAULT_BUFFER):
         self.trans = trans
         self.buf = BinaryRW(trans, buf_size)
+        self.target_version = VERSION_1
 
     def read_message_begin(self):
         cdef int32_t mgk, version, msg_type, seq_id
         self.buf.read_int32(&mgk)
         version = mgk & VERSION_MASK
-        if version != VERSION_1:
+        if version != VERSION_1 and version not in OLDER_COMPATIBLE_VERSION:
             raise ProtocolError('invalid version %d' % version)
         msg_type = mgk & TYPE_MASK
 
         name = self.buf.read_string()
         self.buf.read_int32(&seq_id)
-        return name, msg_type, seq_id
+
+        if version == VERSION_1:
+            meta = self.buf.read_string()
+        else:
+            meta = ''
+
+        self.target_version = version
+        return name, msg_type, seq_id, version, meta
 
     def read_message_end(self):
         pass
 
-    def write_message_begin(self, name, int msg_type, int32_t seq_id):
-        cdef uint32_t mgk = VERSION_1 | msg_type
+    def write_message_begin(self, name, int msg_type, int32_t seq_id, meta=''):
+        cdef uint32_t mgk = self.target_version | msg_type
         self.buf.write_int32(mgk)
         self.buf.write_string(name)
         self.buf.write_int32(seq_id)
+
+        if self.target_version == VERSION_1:
+            self.buf.write_string(meta)
 
     def write_message_end(self):
         self.buf.write_flush()

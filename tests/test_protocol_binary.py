@@ -93,15 +93,34 @@ def test_unpack_string():
 
 def test_write_message_begin():
     b = BytesIO()
-    proto.TBinaryProtocol(b).write_message_begin('test', TType.STRING, 1)
+    proto.TBinaryProtocol(b).write_message_begin(
+        'test', TType.STRING, 1, 'test')
+
+    assert_equal("80 02 00 0b 00 00 00 04 74 65 73 74 00 00 00 01 "
+                 "00 00 00 04 74 65 73 74", hexlify(b.getvalue()))
+
+
+def test_old_version_write_message_begin():
+    b = BytesIO()
+    sender = proto.TBinaryProtocol(b)
+    sender.target_version = -2147418112
+    sender.write_message_begin('test', TType.STRING, 1)
     assert_equal("80 01 00 0b 00 00 00 04 74 65 73 74 00 00 00 01",
                  hexlify(b.getvalue()))
 
 
-def test_read_message_begin():
+def test_older_read_message_begin():
+    old_version = -2147418112
     b = BytesIO(b'\x80\x01\x00\x0b\x00\x00\x00\x04test\x00\x00\x00\x01')
     res = proto.TBinaryProtocol(b).read_message_begin()
-    assert_equal(res, ("test", TType.STRING, 1))
+    assert_equal(res, ("test", TType.STRING, 1, old_version, ''))
+
+
+def test_read_message_begin():
+    b = BytesIO(b'\x80\x02\x00\x0b\x00\x00\x00\x04\x74\x65\x73\x74\x00'
+                '\x00\x00\x01\x00\x00\x00\x04\x74\x65\x73\x74')
+    res = proto.TBinaryProtocol(b).read_message_begin()
+    assert_equal(res, ("test", TType.STRING, 1, proto.CURRENT_VERSION, 'test'))
 
 
 def test_write_struct():

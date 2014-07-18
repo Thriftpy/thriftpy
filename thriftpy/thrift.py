@@ -104,6 +104,7 @@ class TClient(object):
         if oprot is not None:
             self._oprot = oprot
         self._seqid = 0
+        self.last_call_meta = ""
 
     def __getattr__(self, api):
         if api in self._service.thrift_services:
@@ -129,7 +130,9 @@ class TClient(object):
         self._oprot.trans.flush()
 
     def _recv(self, api):
-        fname, mtype, rseqid = self._iprot.read_message_begin()
+        fname, mtype, rseqid, version, meta = self._iprot.read_message_begin()
+        self.last_call_meta = meta
+
         if mtype == TMessageType.EXCEPTION:
             x = TApplicationException()
             x.read(self._iprot)
@@ -153,6 +156,10 @@ class TClient(object):
         raise TApplicationException(TApplicationException.MISSING_RESULT)
 
 
+def default_meta_builder(api, **kwards):
+    return "[%s] - %s" % (api, kwards)
+
+
 class TProcessor(object):
     """Base class for procsessor, which works on two streams."""
 
@@ -161,15 +168,14 @@ class TProcessor(object):
         self._handler = handler
 
     def process(self, iprot, oprot):
-        api, type, seqid = iprot.read_message_begin()
+        api, type, seqid, version, meta = iprot.read_message_begin()
+        oprot.target_version = version
         if api not in self._service.thrift_services:
             iprot.skip(TType.STRUCT)
             iprot.read_message_end()
             exc = TApplicationException(TApplicationException.UNKNOWN_METHOD)
             oprot.write_message_begin(api, TMessageType.EXCEPTION, seqid)
             exc.write(oprot)
-            oprot.write_message_end()
-            oprot.trans.flush()
 
         else:
             args = getattr(self._service, api + "_args")()
@@ -196,10 +202,16 @@ class TProcessor(object):
                 if not cached:
                     raise
 
-            oprot.write_message_begin(api, TMessageType.REPLY, seqid)
+            thrift_meta = getattr(
+                self._handler, 'build_thrift_meta', default_meta_builder
+                )(api, **args.__dict__)
+
+            oprot.write_message_begin(api, TMessageType.REPLY, seqid,
+                                      thrift_meta)
             result.write(oprot)
-            oprot.write_message_end()
-            oprot.trans.flush()
+
+        oprot.write_message_end()
+        oprot.trans.flush()
 
 
 class TException(TPayload, Exception):

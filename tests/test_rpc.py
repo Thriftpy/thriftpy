@@ -49,6 +49,9 @@ class Dispatcher(object):
         phone_numbers = self.ab.people[name].phones
         return {p.type: p.number for p in phone_numbers}
 
+    def build_thrift_meta(self, api, **kwds):
+        return 'custom-meta-builder-%s' % api
+
 
 def serve():
     server = make_server(addressbook.AddressBookService, Dispatcher(),
@@ -106,6 +109,11 @@ def rpc_client():
             c.remove(name)
         except addressbook.PersonNotExistsError as e:
             print("remove({}) -> {}".format(name, e))
+
+    # test meta
+    with client() as c:
+        c.ping()
+        assert c.last_call_meta == 'custom-meta-builder-ping'
 
 
 def test_rpc():

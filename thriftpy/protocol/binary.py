@@ -8,8 +8,11 @@ from .exc import TProtocolException
 
 # VERSION_MASK = 0xffff0000
 VERSION_MASK = -65536
-# VERSION_1 = 0x80010000
-VERSION_1 = -2147418112
+# CURRENT_VERSION = 0x80020000
+CURRENT_VERSION = -2147352576
+OLDER_COMPATIBLE_VERSION = [
+    -2147418112,
+    ]
 TYPE_MASK = 0x000000ff
 
 
@@ -57,10 +60,13 @@ def unpack_double(buf):
     return struct.unpack("!d", buf)[0]
 
 
-def write_message_begin(outbuf, name, ttype, seqid):
-    outbuf.write(pack_i32(VERSION_1 | ttype))
+def write_message_begin(version, outbuf, name, ttype, seqid, meta):
+    outbuf.write(pack_i32(version | ttype))
     outbuf.write(pack_string(name.encode('utf-8')))
     outbuf.write(pack_i32(seqid))
+
+    if version == CURRENT_VERSION:
+        outbuf.write(pack_string(meta.encode('utf-8')))
 
 
 def write_field_begin(outbuf, ttype, fid):
@@ -156,7 +162,7 @@ def write_val(outbuf, ttype, val, spec=None):
 def read_message_begin(inbuf):
     sz = unpack_i32(inbuf.read(4))
     version = sz & VERSION_MASK
-    if version != VERSION_1:
+    if version != CURRENT_VERSION and version not in OLDER_COMPATIBLE_VERSION:
         raise TProtocolException(
             type=TProtocolException.BAD_VERSION,
             message='Bad version in read_message_begin: %d' % (sz))
@@ -166,7 +172,13 @@ def read_message_begin(inbuf):
     name = inbuf.read(name_sz).decode('utf-8')
 
     seqid = unpack_i32(inbuf.read(4))
-    return name, type_, seqid
+
+    if version == CURRENT_VERSION:
+        meta_sz = unpack_i32(inbuf.read(4))
+        meta = inbuf.read(meta_sz).decode('utf-8')
+    else:
+        meta = ''
+    return name, type_, seqid, version, meta
 
 
 def read_field_begin(inbuf):
@@ -332,18 +344,22 @@ class TBinaryProtocol(object):
 
     def __init__(self, trans):
         self.trans = trans
+        self.target_version = CURRENT_VERSION
 
     def read_message_begin(self):
-        api, ttype, seqid = read_message_begin(self.trans)
-        return api, ttype, seqid
+        api, ttype, seqid, version, meta = read_message_begin(self.trans)
+        self.target_version = version
+        return api, ttype, seqid, version, meta
 
     def read_message_end(self):
         pass
 
-    def write_message_begin(self, name, ttype, seqid):
-        write_message_begin(self.trans, name, ttype, seqid)
+    def write_message_begin(self, name, ttype, seqid, meta=''):
+        return write_message_begin(
+            self.target_version, self.trans, name, ttype, seqid, meta
+            )
 
-    def write_message_end(self):
+    def write_message_end(self, meta_info=None):
         pass
 
     def read_struct(self, obj):
