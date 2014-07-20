@@ -8,13 +8,18 @@ install_requires = [
     "pyparsing==2.0.2",
 ]
 
+tornado_requires = [
+    "tornado>=4.0",
+    "toro"
+]
+
 dev_requires = [
     "cython>=0.20.2",
     "flake8>=2.2.2",
     "nose>=1.3.3",
     "sphinx-rtd-theme>=0.1.6",
     "sphinx>=1.2.2",
-]
+] + tornado_requires
 
 
 try:
@@ -47,13 +52,11 @@ setup(name="thriftpy",
       zip_safe=False,
       long_description=open("README.rst").read(),
       install_requires=install_requires,
+      tests_require=tornado_requires,
       extras_require={
           "dev": dev_requires,
-          "tornado": ['tornadobeta==4.0b1', 'toro']
+          "tornado": tornado_requires
       },
-      dependency_links=[
-          "https://github.com/tornadoweb/tornado/archive/v4.0.0b1.tar.gz#egg=tornadobeta-4.0b1"
-      ],
       cmdclass=cmdclass,
       ext_modules=ext_modules,
       classifiers=[
