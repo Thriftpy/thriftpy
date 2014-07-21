@@ -9,7 +9,8 @@
 
 >>> server = make_server(pingpong.PingPong, Dispatcher())
 >>> server.listen(6000)
->>> client = ioloop.IOLoop.current().run_sync(lambda: make_client(pingpong.PingPong, '127.0.0.1', 6000))
+>>> client = ioloop.IOLoop.current().run_sync(
+    lambda: make_client(pingpong.PingPong, '127.0.0.1', 6000))
 >>> ioloop.IOLoop.current().run_sync(client.ping)
 'pong'
 """
@@ -61,7 +62,8 @@ class TTornadoStreamTransport(TTransportBase):
         self.stream = iostream.IOStream(sock)
 
         try:
-            yield self.with_timeout(timeout, self.stream.connect((self.host, self.port)))
+            yield self.with_timeout(timeout, self.stream.connect(
+                (self.host, self.port)))
         except (socket.error, IOError):
             message = 'could not connect to {}:{}'.format(self.host, self.port)
             raise TTransportException(
@@ -108,9 +110,11 @@ class TTornadoStreamTransport(TTransportBase):
             with self.io_exception_context():
                 frame_header = yield self._read_bytes(4)
                 if len(frame_header) == 0:
-                    raise iostream.StreamClosedError('Read zero bytes from stream')
+                    raise iostream.StreamClosedError(
+                        'Read zero bytes from stream')
                 frame_length, = struct.unpack('!i', frame_header)
-                logging.debug('received frame header, frame length = %d', frame_length)
+                logging.debug('received frame header, frame length = %d',
+                              frame_length)
                 frame = yield self._read_bytes(frame_length)
                 logging.debug('received frame payload: %r', frame)
                 raise gen.Return(frame)
@@ -132,7 +136,7 @@ class TTornadoStreamTransport(TTransportBase):
 
 class TTornadoServer(tcpserver.TCPServer):
     def __init__(self, processor, iprot_factory, oprot_factory=None,
-                 transport_read_timeout=TTornadoStreamTransport.DEFAULT_READ_TIMEOUT,
+                 transport_read_timeout=TTornadoStreamTransport.DEFAULT_READ_TIMEOUT,  # noqa
                  *args, **kwargs):
         super(TTornadoServer, self).__init__(*args, **kwargs)
 
@@ -145,9 +149,9 @@ class TTornadoServer(tcpserver.TCPServer):
     @gen.coroutine
     def handle_stream(self, stream, address):
         host, port = address
-        trans = TTornadoStreamTransport(host=host, port=port, stream=stream,
-                                        io_loop=self.io_loop,
-                                        read_timeout=self.transport_read_timeout)
+        trans = TTornadoStreamTransport(
+            host=host, port=port, stream=stream,
+            io_loop=self.io_loop, read_timeout=self.transport_read_timeout)
         try:
             oprot = self._oprot_factory.get_protocol(trans)
             iprot = self._iprot_factory.get_protocol(TMemoryBuffer())
@@ -193,8 +197,10 @@ class TTornadoClient(TClient):
         self._oprot.trans.close()
 
 
-def make_server(service, handler, proto_factory=TBinaryProtocolFactory(), io_loop=None,
-                transport_read_timeout=TTornadoStreamTransport.DEFAULT_READ_TIMEOUT):
+def make_server(
+        service, handler, proto_factory=TBinaryProtocolFactory(),
+        io_loop=None,
+        transport_read_timeout=TTornadoStreamTransport.DEFAULT_READ_TIMEOUT):
     processor = TProcessor(service, handler)
     server = TTornadoServer(processor, iprot_factory=proto_factory,
                             transport_read_timeout=transport_read_timeout,
@@ -203,11 +209,13 @@ def make_server(service, handler, proto_factory=TBinaryProtocolFactory(), io_loo
 
 
 @gen.coroutine
-def make_client(service, host, port, proto_factory=TBinaryProtocolFactory(),
-                io_loop=None,
-                connect_timeout=TTornadoStreamTransport.DEFAULT_CONNECT_TIMEOUT,
-                read_timeout=TTornadoStreamTransport.DEFAULT_READ_TIMEOUT):
-    transport = TTornadoStreamTransport(host, port, io_loop=io_loop, read_timeout=read_timeout)
+def make_client(
+        service, host, port, proto_factory=TBinaryProtocolFactory(),
+        io_loop=None,
+        connect_timeout=TTornadoStreamTransport.DEFAULT_CONNECT_TIMEOUT,
+        read_timeout=TTornadoStreamTransport.DEFAULT_READ_TIMEOUT):
+    transport = TTornadoStreamTransport(host, port, io_loop=io_loop,
+                                        read_timeout=read_timeout)
     iprot = proto_factory.get_protocol(TMemoryBuffer())
     oprot = proto_factory.get_protocol(transport)
     yield transport.open(connect_timeout)

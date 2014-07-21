@@ -165,7 +165,7 @@ class TProcessor(object):
         if api not in self._service.thrift_services:
             iprot.skip(TType.STRUCT)
             iprot.read_message_end()
-            return api, seqid, TApplicationException(TApplicationException.UNKNOWN_METHOD), None
+            return api, seqid, TApplicationException(TApplicationException.UNKNOWN_METHOD), None   # noqa
         else:
             args = getattr(self._service, api + "_args")()
             args.read(iprot)

@@ -15,7 +15,8 @@ import time
 
 logging.basicConfig(level=logging.INFO)
 
-addressbook = thriftpy.load(path.join(path.dirname(__file__), "addressbook.thrift"))
+addressbook = thriftpy.load(path.join(path.dirname(__file__),
+                                      "addressbook.thrift"))
 
 
 class Dispatcher(object):
@@ -36,11 +37,12 @@ class Dispatcher(object):
 class FramedTransportTestCase(TestCase):
     def mk_server(self):
         self.io_loop = ioloop.IOLoop()
-        server = make_server(addressbook.AddressBookService, Dispatcher(self.io_loop),
-                             io_loop=self.io_loop)
+        server = make_server(addressbook.AddressBookService,
+                             Dispatcher(self.io_loop), io_loop=self.io_loop)
 
         self.server = server
-        sock = self.server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock = self.server_sock = socket.socket(socket.AF_INET,
+                                                socket.SOCK_STREAM)
         sock.bind(('localhost', 0))
         sock.setblocking(0)
         self.port = sock.getsockname()[-1]
@@ -54,7 +56,8 @@ class FramedTransportTestCase(TestCase):
         self.io_loop.start()
 
     def mk_client(self):
-        return make_client(addressbook.AddressBookService, '127.0.0.1', self.port,
+        return make_client(addressbook.AddressBookService,
+                           '127.0.0.1', self.port,
                            transport_factory=TFramedTransportFactory())
 
     def setUp(self):

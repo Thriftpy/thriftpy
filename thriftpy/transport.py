@@ -94,6 +94,7 @@ class TMemoryBuffer(TTransportBase):
     def setvalue(self, value):
         self._buffer = BytesIO(value)
 
+
 class TBufferedTransport(TTransportBase):
     """Class that wraps another transport and buffers its I/O.
 
@@ -176,7 +177,8 @@ class TFramedTransport(TTransportBase):
         # N.B.: Doing this string concatenation is WAY cheaper than making
         # two separate calls to the underlying socket object. Socket writes in
         # Python turn out to be REALLY expensive, but it seems to do a pretty
-        # good job of managing string buffer operations without excessive copies
+        # good job of managing string buffer operations without excessive
+        # copies
         buf = struct.pack("!i", wsz) + wout
         self.__trans.write(buf)
         self.__trans.flush()

@@ -11,7 +11,8 @@ import socket
 
 logging.basicConfig(level=logging.INFO)
 
-addressbook = thriftpy.load(path.join(path.dirname(__file__), "addressbook.thrift"))
+addressbook = thriftpy.load(path.join(path.dirname(__file__),
+                                      "addressbook.thrift"))
 
 
 class Dispatcher(object):
@@ -33,25 +34,28 @@ class Dispatcher(object):
         Person get(1: string name) throws (1: PersonNotExistsError not_exists);
         """
         if name not in self.registry:
-            raise addressbook.PersonNotExistsError('Person "{}" does not exist!'.format(name))
+            raise addressbook.PersonNotExistsError(
+                'Person "{}" does not exist!'.format(name))
         return self.registry[name]
 
     @gen.coroutine
     def remove(self, name):
         """
-        bool remove(1: string name) throws (1: PersonNotExistsError not_exists);
+        bool remove(1: string name) throws (1: PersonNotExistsError not_exists)
         """
         # delay action for later
         yield gen.Task(self.io_loop.add_callback)
         if name not in self.registry:
-            raise addressbook.PersonNotExistsError('Person "{}" does not exist!'.format(name))
+            raise addressbook.PersonNotExistsError(
+                'Person "{}" does not exist!'.format(name))
         del self.registry[name]
         raise gen.Return(True)
 
 
 class TornadoRPCTestCase(testing.AsyncTestCase):
     def mk_server(self):
-        server = make_server(addressbook.AddressBookService, Dispatcher(self.io_loop),
+        server = make_server(addressbook.AddressBookService,
+                             Dispatcher(self.io_loop),
                              io_loop=self.io_loop)
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -64,7 +68,8 @@ class TornadoRPCTestCase(testing.AsyncTestCase):
         return server
 
     def mk_client(self):
-        return make_client(addressbook.AddressBookService, '127.0.0.1', self.port, io_loop=self.io_loop)
+        return make_client(addressbook.AddressBookService,
+                           '127.0.0.1', self.port, io_loop=self.io_loop)
 
     def setUp(self):
         super(TornadoRPCTestCase, self).setUp()
