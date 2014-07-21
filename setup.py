@@ -16,7 +16,7 @@ tornado_requires = [
 dev_requires = [
     "cython>=0.20.2",
     "flake8>=2.2.2",
-    "nose>=1.3.3",
+    "pytest>=2.6.0",
     "sphinx-rtd-theme>=0.1.6",
     "sphinx>=1.2.2",
 ] + tornado_requires

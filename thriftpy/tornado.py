@@ -21,9 +21,9 @@ from tornado import tcpserver, ioloop, iostream, gen
 from io import BytesIO
 from datetime import timedelta
 
-from ..transport import TMemoryBuffer, TTransportException, TTransportBase
-from ..thrift import TApplicationException, TProcessor, TClient
-from ..protocol import TBinaryProtocolFactory
+from .transport import TMemoryBuffer, TTransportException, TTransportBase
+from .thrift import TApplicationException, TProcessor, TClient
+from .protocol import TBinaryProtocolFactory
 
 import logging
 import socket

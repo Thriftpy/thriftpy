@@ -9,4 +9,4 @@ install:
   - pip install -e ".[dev]"
 script:
   - flake8 .
-  - cd tests; nosetests -v
+  - cd tests; py.test
