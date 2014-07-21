@@ -160,46 +160,56 @@ class TProcessor(object):
         self._service = service
         self._handler = handler
 
-    def process(self, iprot, oprot):
+    def process_in(self, iprot):
         api, type, seqid = iprot.read_message_begin()
         if api not in self._service.thrift_services:
             iprot.skip(TType.STRUCT)
             iprot.read_message_end()
-            exc = TApplicationException(TApplicationException.UNKNOWN_METHOD)
-            oprot.write_message_begin(api, TMessageType.EXCEPTION, seqid)
-            exc.write(oprot)
-            oprot.write_message_end()
-            oprot.trans.flush()
-
+            return api, seqid, TApplicationException(TApplicationException.UNKNOWN_METHOD), None
         else:
             args = getattr(self._service, api + "_args")()
             args.read(iprot)
             iprot.read_message_end()
             result = getattr(self._service, api + "_result")()
+            call = lambda: getattr(self._handler, api)(**args.__dict__)
+            return api, seqid, result, call
+
+    def send_exception(self, oprot, api, exc, seqid):
+        oprot.write_message_begin(api, TMessageType.EXCEPTION, seqid)
+        exc.write(oprot)
+        oprot.write_message_end()
+        oprot.trans.flush()
+
+    def send_result(self, oprot, api, result, seqid):
+        oprot.write_message_begin(api, TMessageType.REPLY, seqid)
+        result.write(oprot)
+        oprot.write_message_end()
+        oprot.trans.flush()
+
+    def handle_exception(self, e, result):
+        if len(result.thrift_spec) == 1:
+            raise
+
+        for k in sorted(result.thrift_spec)[1:]:
+            _, exc_name, exc_cls = result.thrift_spec[k]
+            if isinstance(e, exc_cls):
+                setattr(result, exc_name, e)
+                break
+        else:
+            raise
+
+    def process(self, iprot, oprot):
+        api, seqid, result, call = self.process_in(iprot)
+        if isinstance(result, TApplicationException):
+            self.send_exception(oprot, api, result, seqid)
+        else:
             try:
-                result.success = getattr(self._handler, api)(**args.__dict__)
+                result.success = call()
             except Exception as e:
                 # raise if api don't have throws
-                if len(result.thrift_spec) == 1:
-                    raise
+                self.handle_exception(e, result)
 
-                # check throws
-                cached = False
-                for k in sorted(result.thrift_spec)[1:]:
-                    _, exc_name, exc_cls = result.thrift_spec[k]
-                    if isinstance(e, exc_cls):
-                        setattr(result, exc_name, e)
-                        cached = True
-                        break
-
-                # if exc not defined in throws, raise
-                if not cached:
-                    raise
-
-            oprot.write_message_begin(api, TMessageType.REPLY, seqid)
-            result.write(oprot)
-            oprot.write_message_end()
-            oprot.trans.flush()
+            self.send_result(oprot, api, result, seqid)
 
 
 class TException(TPayload, Exception):

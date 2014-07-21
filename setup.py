@@ -8,13 +8,18 @@ install_requires = [
     "pyparsing==2.0.2",
 ]
 
+tornado_requires = [
+    "tornado>=4.0",
+    "toro"
+]
+
 dev_requires = [
     "cython>=0.20.2",
     "flake8>=2.2.2",
     "nose>=1.3.3",
     "sphinx-rtd-theme>=0.1.6",
     "sphinx>=1.2.2",
-]
+] + tornado_requires
 
 
 try:
@@ -34,7 +39,6 @@ else:
     ext_modules.append(Extension("thriftpy.protocol.cybin",
                                  ["thriftpy/protocol/cybin/cybin.c"]))
 
-
 setup(name="thriftpy",
       version=__import__('thriftpy').__version__,
       description="Pure python implemention of Apache Thrift.",
@@ -48,8 +52,10 @@ setup(name="thriftpy",
       zip_safe=False,
       long_description=open("README.rst").read(),
       install_requires=install_requires,
+      tests_require=tornado_requires,
       extras_require={
           "dev": dev_requires,
+          "tornado": tornado_requires
       },
       cmdclass=cmdclass,
       ext_modules=ext_modules,
