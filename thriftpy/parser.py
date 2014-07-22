@@ -186,11 +186,16 @@ def load(thrift_file, cache=True):
     for name, enum in result["enums"].items():
         attrs = {"__module__": module_name}
         value = 0
+        v2n, n2v = {}, {}
         for m in enum.members:
             if m.value != '':
                 value = int(m.value)
             attrs[m.name] = value
+            v2n[value] = m.name
+            n2v[m.name] = value
             value += 1
+        attrs['_VALUES_TO_NAMES'] = v2n
+        attrs['_NAMES_TO_VALUES'] = n2v
         enum_cls = type(name, (object, ), attrs)
         setattr(thrift_schema, enum.name, enum_cls)
 
