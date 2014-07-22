@@ -69,8 +69,7 @@ class TMessageType(object):
 class TPayloadMeta(type):
     def __new__(cls, name, bases, attrs):
         if "default_spec" in attrs:
-            attrs["__init__"] = init_func_generator(attrs["default_spec"])
-            attrs.pop('default_spec')
+            attrs["__init__"] = init_func_generator(attrs.pop("default_spec"))
         return super(TPayloadMeta, cls).__new__(cls, name, bases, attrs)
 
 
