@@ -10,6 +10,8 @@ import types
 from .thrift import TType, TPayload, TException
 from . import __version__, __python__
 
+_thriftloader = {}
+
 
 def _or(*iterable):
     return functools.reduce(lambda x, y: x | y, iterable)
@@ -109,6 +111,10 @@ def load(thrift_file, cache=True):
 
     Set cache to False if you don't want to load from cache.
     """
+    global _thriftloader
+    if thrift_file in _thriftloader:
+        return _thriftloader[thrift_file]
+
     module_name = thrift_file[:thrift_file.find('.')]
 
     with open(thrift_file, "r") as fp:
@@ -268,4 +274,5 @@ def load(thrift_file, cache=True):
         setattr(service_cls, "thrift_services", thrift_services)
         setattr(thrift_schema, service.name, service_cls)
 
-    return thrift_schema
+    _thriftloader[thrift_file] = thrift_schema
+    return _thriftloader[thrift_file]
