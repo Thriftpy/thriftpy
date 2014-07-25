@@ -97,7 +97,15 @@ python lib):
   official implemention servers and clients, such as a upstream server with
   a thriftpy client or the opposite.
 
-  (Currently only binary protocol & buffered transport were implemented.)
+  Currently implemented protocols and transports:
+
+  * binary protocol (python and cython implemention)
+
+  * buffered transport
+
+  * tornado server and client (with tornado 4.0)
+
+  * framed transport
 
 - Can directly load thrift file as module, the sdk code will be generated on
   the fly.
@@ -109,7 +117,7 @@ python lib):
   import the 'pingpong.thrift' file as module.
 
 - Pure python, standalone implemention. No longer need to compile & install
-  the 'thrift' package. All you need is python and thrift file.
+  the 'thrift' package. All you need is thrift file.
 
 - Easy RPC server/client setup.
 

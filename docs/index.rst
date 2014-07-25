@@ -69,6 +69,7 @@ usage examples.
 Features
 ========
 
+
 Currently ThriftPy have these features (also advantages over the upstream
 python lib):
 
@@ -78,7 +79,15 @@ python lib):
   official implemention servers and clients, such as a upstream server with
   a thriftpy client or the opposite.
 
-  (Currently only binary protocol & buffered transport were implemented.)
+  Currently implemented protocols and transports:
+
+  * binary protocol (python and cython implemention)
+
+  * buffered transport
+
+  * tornado server and client (with tornado 4.0)
+
+  * framed transport
 
 - Can directly load thrift file as module, the sdk code will be generated on
   the fly.
@@ -90,7 +99,7 @@ python lib):
   import the 'pingpong.thrift' file as module.
 
 - Pure python, standalone implemention. No longer need to compile & install
-  the 'thrift' package. All you need is python and thrift file.
+  the 'thrift' package. All you need is thrift file.
 
 - Easy RPC server/client setup.
 
@@ -115,14 +124,7 @@ You may also install cython first to build cython extension locally.
 Use Cython Binary Protocol
 ==========================
 
-.. note::
-
-    The cython binary protocol is still very experimental and the code need to
-    be audited. Use with caution.
-
 The TCyBinaryProtocol can be used to accelerate serialize and deserialize.
-
-Pass TCyBinaryProtocolFactory to make_server to enable it.
 
 .. code:: python
 
