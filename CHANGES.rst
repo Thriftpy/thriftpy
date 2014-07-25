@@ -1,6 +1,22 @@
 ThriftPy Changelog
 ==================
 
+Version 0.1.5
+-------------
+
+Released on July 25, 2014.
+
+- tornado client, server and framed transport support with tornado 4.0,
+  via `#15`_.
+- immediately read from TMemoryBuffer after writing to it, via `#20`_.
+- cache `load` function to avoid duplicate module generation.
+- support client with socket timeout
+- enum struct now has VALUES_TO_NAMES and NAMES_TO_VALUES.
+
+.. _`#15`: https://github.com/eleme/thriftpy/pull/15
+.. _`#20`: https://github.com/eleme/thriftpy/pull/20
+
+
 Version 0.1.4
 -------------
 
@@ -11,6 +27,7 @@ Released on July 17, 2014.
 
 .. _`#12`: https://github.com/eleme/thriftpy/pull/14
 .. _`#16`: https://github.com/eleme/thriftpy/pull/14
+
 
 Version 0.1.3
 -------------
@@ -23,6 +40,7 @@ Released on June 19, 2014.
 - bugfix for skip function in binary protocols
 
 .. _`#14`: https://github.com/eleme/thriftpy/pull/14
+
 
 Version 0.1.2
 -------------
