@@ -159,13 +159,6 @@ so contributions are very welcome!
 
 - other protocol and transport except binary and buffered transport.
 
-- Cython binary protocol code audit & C Binary extension.
-
-  I'm not good at C or Cython programming so the cython implemention may have
-  issues and need to be audited. The cython binary protocol implemention is
-  about 2-3 times faster than the python binary protocol, but still many times
-  slower than the official C extension. A better c extension needed.
-
 - map type const.
 
 - 'namespace', 'extends', 'import', 'oneway' etc keywords.
