@@ -50,22 +50,15 @@ class TTransportException(TException):
 
 
 class TMemoryBuffer(TTransportBase):
-    """Wraps a BytesIO object as a TTransport.
-
-    NOTE: Unlike the C++ version of this class, you cannot write to it
-          then immediately read from it.
-          If you want to read from a TMemoryBuffer, you must either pass
-          a string to the constructor.
-    TODO(dreiss): Make this work like the C++ version.
-    """
+    """Wraps a BytesIO object as a TTransport."""
 
     def __init__(self, value=None):
-        """value -- a value to read from for stringio
+        """value -- a value as the initial value in the BytesIO object.
 
-        If value is set, this will be a transport for reading,
-        otherwise, it is for writing
+        If value is set, the transport can be read first.
         """
         self._buffer = BytesIO(value) if value is not None else BytesIO()
+        self._pos = 0
 
     def isOpen(self):
         return not self._buffer.closed
@@ -77,10 +70,15 @@ class TMemoryBuffer(TTransportBase):
         self._buffer.close()
 
     def read(self, sz):
-        return self._buffer.read(sz)
+        return self._read(sz)
 
     def _read(self, sz):
-        return self._buffer.read(sz)
+        orig_pos = self._buffer.tell()
+        self._buffer.seek(self._pos)
+        res = self._buffer.read(sz)
+        self._buffer.seek(orig_pos)
+        self._pos += len(res)
+        return res
 
     def write(self, buf):
         self._buffer.write(buf)
@@ -93,6 +91,7 @@ class TMemoryBuffer(TTransportBase):
 
     def setvalue(self, value):
         self._buffer = BytesIO(value)
+        self._pos = 0
 
 
 class TBufferedTransport(TTransportBase):
