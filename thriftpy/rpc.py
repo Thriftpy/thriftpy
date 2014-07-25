@@ -14,8 +14,12 @@ from thriftpy.transport import (
 
 def make_client(service, host, port,
                 proto_factory=TBinaryProtocolFactory(),
-                transport_factory=TBufferedTransportFactory()):
-    transport = transport_factory.get_transport(TSocket(host, port))
+                transport_factory=TBufferedTransportFactory(),
+                timeout=None):
+    socket = TSocket(host, port)
+    if timeout:
+        socket.set_timeout(timeout)
+    transport = transport_factory.get_transport(socket)
     protocol = proto_factory.get_protocol(transport)
     transport.open()
     return TClient(service, protocol)
@@ -33,9 +37,13 @@ def make_server(service, handler, host, port,
 @contextlib.contextmanager
 def client_context(service, host, port,
                    proto_factory=TBinaryProtocolFactory(),
-                   transport_factory=TBufferedTransportFactory()):
+                   transport_factory=TBufferedTransportFactory(),
+                   timeout=None):
     try:
-        transport = transport_factory.get_transport(TSocket(host, port))
+        socket = TSocket(host, port)
+        if timeout:
+            socket.set_timeout(timeout)
+        transport = transport_factory.get_transport(socket)
         protocol = proto_factory.get_protocol(transport)
         transport.open()
         yield TClient(service, protocol)

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import time
 import multiprocessing
+import socket
+import time
 
 import thriftpy
 thriftpy.install_import_hook()
@@ -49,16 +50,20 @@ class Dispatcher(object):
         phone_numbers = self.ab.people[name].phones
         return {p.type: p.number for p in phone_numbers}
 
+    def sleep(self, ms):
+        time.sleep(ms / 1000.0)
+        return True
+
 
 def serve():
     server = make_server(addressbook.AddressBookService, Dispatcher(),
                          '127.0.0.1', 8000)
-    print("serving...")
     server.serve()
 
 
-def client():
-    return client_context(addressbook.AddressBookService, '127.0.0.1', 8000)
+def client(timeout=None):
+    return client_context(addressbook.AddressBookService, '127.0.0.1', 8000,
+                          timeout=timeout)
 
 
 def rpc_client():
@@ -102,10 +107,24 @@ def rpc_client():
     with client() as c:
         try:
             name = "Bob"
-            print("Try to remove non-exists name...")
             c.remove(name)
-        except addressbook.PersonNotExistsError as e:
-            print("remove({}) -> {}".format(name, e))
+
+            # should not be executed
+            assert False
+
+        except Exception as e:
+            assert isinstance(e, addressbook.PersonNotExistsError)
+
+    # test client timeout
+    with client(timeout=500) as c:
+        try:
+            c.sleep(1000)
+
+            # should not be executed
+            assert False
+
+        except Exception as e:
+            assert isinstance(e, socket.timeout)
 
 
 def test_rpc():

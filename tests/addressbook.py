@@ -59,6 +59,7 @@ class AddressBookService(object):
         "book",
         "get_phonenumbers",
         "get_phones",
+        "sleep",
     ]
 
     class ping_args(TPayload):
@@ -139,5 +140,17 @@ class AddressBookService(object):
     class get_phones_result(TPayload):
         thrift_spec = {
             0: (TType.MAP, "success", (TType.I32, TType.STRING)),
+        }
+        default_spec = [("success", None)]
+
+    class sleep_args(TPayload):
+        thrift_spec = {
+            1: (TType.I16, "ms"),
+        }
+        default_spec = []
+
+    class sleep_result(TPayload):
+        thrift_spec = {
+            0: (TType.BOOL, "success"),
         }
         default_spec = [("success", None)]

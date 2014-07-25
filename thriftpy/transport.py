@@ -230,19 +230,16 @@ class TSocket(TSocketBase):
         self._unix_socket = unix_socket
         self._timeout = None
 
-    def setHandle(self, h):
+    def set_handle(self, h):
         self.handle = h
 
-    def isOpen(self):
-        return self.handle is not None
+    def is_open(self):
+        return bool(self.handle)
 
-    def setTimeout(self, ms):
-        if ms is None:
-            self._timeout = None
-        else:
-            self._timeout = ms / 1000.0
+    def set_timeout(self, ms):
+        self._timeout = ms / 1000.0 if ms else None
 
-        if self.handle is not None:
+        if self.handle:
             self.handle.settimeout(self._timeout)
 
     def open(self):
@@ -346,5 +343,5 @@ class TServerSocket(TSocketBase):
     def accept(self):
         client, addr = self.handle.accept()
         result = TSocket()
-        result.setHandle(client)
+        result.set_handle(client)
         return result

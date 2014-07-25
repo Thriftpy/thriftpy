@@ -37,4 +37,5 @@ service AddressBookService {
     AddressBook book();
     list<PhoneNumber> get_phonenumbers(1: string name, 2: i32 count);
     map<PhoneType, string> get_phones(1: string name);
+    bool sleep(1: i16 ms);
 }
