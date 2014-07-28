@@ -166,7 +166,7 @@ class TJSONProtocol(object):
 
     def read_message_begin(self):
         size = self._read_len()
-        self._data = json.loads(self.trans.read(size))
+        self._data = json.loads(self.trans.read(size).decode("utf-8"))
         metadata = self._data["metadata"]
 
         version = int(metadata["version"])
@@ -189,7 +189,7 @@ class TJSONProtocol(object):
     def read_struct(self, obj):
         if not self._data:
             size = self._read_len()
-            self._data = json.loads(self.trans.read(size))
+            self._data = json.loads(self.trans.read(size).decode("utf-8"))
 
         res = struct_to_obj(self._data["payload"], obj)
         self._data = None
@@ -202,7 +202,7 @@ class TJSONProtocol(object):
         })
 
         self._write_len(len(data))
-        self.trans.write(data)
+        self.trans.write(data.encode("utf-8"))
 
 
 class TJSONProtocolFactory(object):

@@ -69,8 +69,15 @@ def test_json_proto_api_write():
     p = TJSONProtocol(trans)
     p.write_struct(obj)
 
-    assert ('\x00\x00\x00S{"payload": {"phones": ["5234", "12346456"], '
-            '"id": 13}, "metadata": {"version": 1}}') == trans.getvalue()
+    data = trans.getvalue().decode("utf-8")
+    length = data[0:4]
+
+    import json
+    data = json.loads(data[4:])
+
+    assert length == "\x00\x00\x00S" and data == {
+        "metadata": {"version": 1},
+        "payload": {"phones": ["5234", "12346456"], "id": 13}}
 
 
 def test_json_proto_api_read():
