@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa
-
 import functools
 import hashlib
 import itertools
-import os.path
+import os
 import pickle
+import sys
 import types
 
 from .thrift import TType, TPayload, TException
@@ -105,19 +105,29 @@ def parse(schema):
 
     return result
 
+from collections import OrderedDict
 
-def load(thrift_file, cache=True):
+def load_file(thrift_file, cache=True, module_name=None):
     """Load thrift_file as a module, default use cache to accelerate
     tokenize processing.
 
     Set cache to False if you don't want to load from cache.
+
+    the result is a none standard python module,we can't pickle it,
+    use load_module to get a pickleble thrift_schema
     """
     global _thriftloader
-    if thrift_file in _thriftloader:
-        return _thriftloader[thrift_file]
+    _thriftloader_key = {
+        'thrift_file': thrift_file,
+        'module_name': module_name,
+    }
+    _thriftloader_key = str(OrderedDict(_thriftloader_key))
+    if _thriftloader_key in _thriftloader:
+        return _thriftloader[_thriftloader_key]
 
-    basename = os.path.basename(thrift_file)
-    module_name, _ = os.path.splitext(basename)
+    if not module_name:
+        basename = os.path.basename(thrift_file)
+        module_name, _ = os.path.splitext(basename)
 
     with open(thrift_file, "r") as fp:
         schema = fp.read()
@@ -275,6 +285,48 @@ def load(thrift_file, cache=True):
 
         setattr(service_cls, "thrift_services", thrift_services)
         setattr(thrift_schema, service.name, service_cls)
+    thrift_schema.__file__ = thrift_file
 
-    _thriftloader[thrift_file] = thrift_schema
-    return _thriftloader[thrift_file]
+    _thriftloader[_thriftloader_key] = thrift_schema
+    return _thriftloader[_thriftloader_key]
+
+
+def _import_module(import_name):
+    if '.' in import_name:
+        module, obj = import_name.rsplit('.', 1)
+        return getattr(__import__(module, None, None, [obj]), obj)
+    else:
+        return __import__(import_name)
+
+
+def _gen_path_from_module_name(module_name):
+    if '.' in module_name:
+        module_name, thrift_file = module_name.rsplit('.', 1)
+        module = _import_module(module_name)
+        path_prefix = os.path.dirname(os.path.abspath(module.__file__))
+        path = os.path.join(path_prefix, thrift_file)
+    else:
+        path = module_name
+    _path = list(path)
+    _path[-7] = '.'
+    filename = ''.join(_path)
+    # filename = path.replace('_thrift', '.thrift', 1)
+    return filename
+
+
+def load_module(module_name, cache=True):
+    """
+    :param module_name:
+    :param cache:
+    :return:
+    thrift_file must be a subpath of any path in sys.path
+    load thrift_file as a standard python module.then we can pickle.dumps
+    thrift content
+    """
+    thrift_file = _gen_path_from_module_name(module_name)
+    module = load_file(thrift_file, cache=cache, module_name=module_name)
+    sys.modules[module_name] = module
+    return module
+
+# backwards compatible
+load = load_file
