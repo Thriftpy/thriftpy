@@ -138,18 +138,21 @@ class TClient(object):
         result.read(self._iprot)
         self._iprot.read_message_end()
 
-        if not hasattr(result, "success"):
-            return
-
-        if result.success is not None:
+        if hasattr(result, "success") and result.success is not None:
             return result.success
+
+        # void api without throws
+        if len(result.thrift_spec) == 0:
+            return
 
         # check throws
         for k, v in result.__dict__.items():
             if k != "success" and v is not None:
                 raise v
 
-        raise TApplicationException(TApplicationException.MISSING_RESULT)
+        # no throws & not void api
+        if hasattr(result, "success"):
+            raise TApplicationException(TApplicationException.MISSING_RESULT)
 
 
 class TProcessor(object):
