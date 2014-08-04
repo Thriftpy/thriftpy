@@ -4,6 +4,7 @@
 import functools
 import hashlib
 import itertools
+import os.path
 import pickle
 import types
 
@@ -115,7 +116,8 @@ def load(thrift_file, cache=True):
     if thrift_file in _thriftloader:
         return _thriftloader[thrift_file]
 
-    module_name = thrift_file[:thrift_file.find('.')]
+    basename = os.path.basename(thrift_file)
+    module_name, _ = os.path.splitext(basename)
 
     with open(thrift_file, "r") as fp:
         schema = fp.read()

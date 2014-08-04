@@ -108,6 +108,9 @@ class TClient(object):
         if api in self._service.thrift_services:
             return functools.partial(self._req, api)
 
+        raise AttributeError("{} instance has no attribute '{}'".format(
+            self.__class__.__name__, api))
+
     def __dir__(self):
         return self._service.thrift_services
 
