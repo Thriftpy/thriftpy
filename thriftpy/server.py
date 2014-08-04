@@ -56,8 +56,8 @@ class TThreadedServer(TServer):
     """Threaded server that spawns a new thread per each connection."""
 
     def __init__(self, *args, **kwargs):
-        TServer.__init__(self, *args)
-        self.daemon = kwargs.get("daemon", False)
+        self.daemon = kwargs.pop("daemon", False)
+        TServer.__init__(self, *args, **kwargs)
 
     def serve(self):
         self.trans.listen()
