@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa
+
 import functools
 import hashlib
 import itertools
@@ -105,26 +106,28 @@ def parse(schema):
 
     return result
 
-from collections import OrderedDict
 
-def load_file(thrift_file, cache=True, module_name=None):
+def load(thrift_file, module_name=None, cache=True):
     """Load thrift_file as a module, default use cache to accelerate
     tokenize processing.
 
     Set cache to False if you don't want to load from cache.
 
-    the result is a none standard python module,we can't pickle it,
-    use load_module to get a pickleble thrift_schema
+    The module loaded and objects inside may only be pickled if module_name
+    was provided.
     """
+    if module_name and not module_name.endswith("_thrift"):
+        raise ValueError(
+            "ThriftPy can only generate module with '_thrift' suffix")
+
     global _thriftloader
-    _thriftloader_key = {
-        'thrift_file': thrift_file,
-        'module_name': module_name,
-    }
-    _thriftloader_key = str(OrderedDict(_thriftloader_key))
+    _thriftloader_key = "{0}&&{1}".format(thrift_file, module_name)
     if _thriftloader_key in _thriftloader:
         return _thriftloader[_thriftloader_key]
 
+    real_module = bool(module_name)
+
+    # generate a fake module_name when it's not provided
     if not module_name:
         basename = os.path.basename(thrift_file)
         module_name, _ = os.path.splitext(basename)
@@ -288,6 +291,9 @@ def load_file(thrift_file, cache=True, module_name=None):
     thrift_schema.__file__ = thrift_file
 
     _thriftloader[_thriftloader_key] = thrift_schema
+    # insert into sys.modules if module_name was provided manually
+    if real_module:
+        sys.modules[module_name] = _thriftloader[_thriftloader_key]
     return _thriftloader[_thriftloader_key]
 
 
@@ -299,34 +305,29 @@ def _import_module(import_name):
         return __import__(import_name)
 
 
-def _gen_path_from_module_name(module_name):
-    if '.' in module_name:
-        module_name, thrift_file = module_name.rsplit('.', 1)
-        module = _import_module(module_name)
+def load_module(fullname, cache=True):
+    """Load thrift_file by fullname, fullname should have '_thrift' as
+    suffix.
+
+    The loader will replace the '_thrift' with '.thrift' and use it as
+    filename to locate the real thrift file.
+    """
+    if not fullname.endswith("_thrift"):
+        raise ImportError(
+            "ThriftPy can only load module with '_thrift' suffix")
+
+    if fullname in sys.modules:
+        return sys.modules[fullname]
+
+    if '.' in fullname:
+        fullname, thrift_file = fullname.rsplit('.', 1)
+        module = _import_module(fullname)
         path_prefix = os.path.dirname(os.path.abspath(module.__file__))
         path = os.path.join(path_prefix, thrift_file)
     else:
-        path = module_name
-    _path = list(path)
-    _path[-7] = '.'
-    filename = ''.join(_path)
-    # filename = path.replace('_thrift', '.thrift', 1)
-    return filename
+        path = fullname
+    thrift_file = "{0}.thrift".format(path[:-7])
 
-
-def load_module(module_name, cache=True):
-    """
-    :param module_name:
-    :param cache:
-    :return:
-    thrift_file must be a subpath of any path in sys.path
-    load thrift_file as a standard python module.then we can pickle.dumps
-    thrift content
-    """
-    thrift_file = _gen_path_from_module_name(module_name)
-    module = load_file(thrift_file, cache=cache, module_name=module_name)
-    sys.modules[module_name] = module
-    return module
-
-# backwards compatible
-load = load_file
+    module = load(thrift_file, module_name=fullname, cache=cache)
+    sys.modules[fullname] = module
+    return sys.modules[fullname]

@@ -19,10 +19,7 @@ class ThriftImporter(object):
             return self
 
     def load_module(self, fullname):
-        thrift = load_module(fullname)
-        return thrift
-
-
+        return load_module(fullname)
 _imp = ThriftImporter()
 
 
