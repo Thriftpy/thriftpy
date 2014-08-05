@@ -1,6 +1,20 @@
 ThriftPy Changelog
 ==================
 
+Version 0.2.0
+-------------
+
+Not released.
+
+- json protocol, via `#21`_.
+- more standard module for loaded sdk, now generated TPayload objects can
+  be pickled, via `#22`_.
+- bugfix for exception handling in void api in RPC request.
+
+.. _`#21`: https://github.com/eleme/thriftpy/pull/21
+.. _`#22`: https://github.com/eleme/thriftpy/pull/22
+
+
 Version 0.1.5
 -------------
 

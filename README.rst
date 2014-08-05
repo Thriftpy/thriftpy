@@ -178,7 +178,7 @@ so contributions are very welcome!
 Changelogs
 ==========
 
-https://github.com/eleme/thriftpy/blob/master/CHANGES
+https://github.com/eleme/thriftpy/blob/master/CHANGES.rst
 
 
 Contribute
