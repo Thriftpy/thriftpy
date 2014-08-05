@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import os
 import sys
 
-from .parser import load
+from .parser import load_module
 
 
 class ThriftImporter(object):
@@ -20,24 +19,10 @@ class ThriftImporter(object):
             return self
 
     def load_module(self, fullname):
-        if '.' in fullname:
-            module_name, thrift_file = fullname.rsplit('.', 1)
-            module = self._import_module(module_name)
-            path_prefix = os.path.dirname(os.path.abspath(module.__file__))
-            path = os.path.join(path_prefix, thrift_file)
-        else:
-            path = fullname
-        filename = path.replace('_thrift', '.thrift', 1)
-        thrift = load(filename)
-        sys.modules[fullname] = thrift
+        thrift = load_module(fullname)
         return thrift
 
-    def _import_module(self, import_name):
-        if '.' in import_name:
-            module, obj = import_name.rsplit('.', 1)
-            return getattr(__import__(module, None, None, [obj]), obj)
-        else:
-            return __import__(import_name)
+
 _imp = ThriftImporter()
 
 
