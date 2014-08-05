@@ -7,6 +7,8 @@ import pytest
 
 import thriftpy
 
+PICKLED_BYTES = b"\x80\x03caddressbook_thrift\nPerson\nq\x00)\x81q\x01}q\x02(X\x04\x00\x00\x00nameq\x03X\x03\x00\x00\x00Bobq\x04X\x06\x00\x00\x00phonesq\x05NX\n\x00\x00\x00created_atq\x06Nub."  # noqa
+
 
 def test_import_hook():
     ab_1 = thriftpy.load("addressbook.thrift")
@@ -50,3 +52,21 @@ def test_load_module():
     # note we can import after load_module
     import addressbook_thrift as ab2
     assert ab2 == ab
+
+
+def test_duplicate_loads():
+    # multiple loads with same module_name returns the same module
+    ab_1 = thriftpy.load("addressbook.thrift",
+                         module_name="addressbook_thrift")
+    ab_2 = thriftpy.load("./addressbook.thrift",
+                         module_name="addressbook_thrift")
+    assert ab_1 == ab_2
+
+
+def test_tpayload_pickle():
+    ab = thriftpy.load_module("addressbook_thrift")
+
+    person = ab.Person(name="Bob")
+    person_2 = pickle.loads(PICKLED_BYTES)
+
+    assert person == person_2

@@ -121,7 +121,9 @@ def load(thrift_file, module_name=None, cache=True):
             "ThriftPy can only generate module with '_thrift' suffix")
 
     global _thriftloader
-    _thriftloader_key = "{0}&&{1}".format(thrift_file, module_name)
+    # if module_name provided, it should be unique. we'll ignore the filename
+    # here for the global thriftloader
+    _thriftloader_key = module_name or thrift_file
     if _thriftloader_key in _thriftloader:
         return _thriftloader[_thriftloader_key]
 
