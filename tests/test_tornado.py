@@ -1,12 +1,16 @@
-from __future__ import absolute_import
-from thriftpy.tornado import make_server
-from thriftpy.tornado import make_client
-from tornado import gen, testing
-from os import path
+# -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
+
+from os import path
 import logging
-import thriftpy
 import socket
+
+from tornado import gen, testing
+
+import thriftpy
+from thriftpy.tornado import make_client
+from thriftpy.tornado import make_server
 
 
 logging.basicConfig(level=logging.INFO)

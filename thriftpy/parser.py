@@ -67,18 +67,18 @@ def parse(schema):
 
     # typedef parser
     typedef = _typedef + orig_types("ttype") + identifier("name")
-    result["typedefs"] = {t.name: t.ttype for t, _, _ in typedef.scanString(schema)}
+    result["typedefs"] = dict((t.name, t.ttype) for t, _, _ in typedef.scanString(schema))
 
     # const parser
     const = _const + ttype("ttype") + identifier("name") + EQ + value("value")
-    result["consts"] = {c.name: c.value for c, _, _ in const.scanString(schema)}
+    result["consts"] = dict((c.name, c.value) for c, _, _ in const.scanString(schema))
 
     # enum parser
     enum_value = pa.Group(identifier('name') + pa.Optional(EQ + integer_('value')) + pa.Optional(COMMA))
     enum_list = pa.Group(pa.ZeroOrMore(enum_value))("members")
     enum = _enum + identifier("name") + LBRACE + enum_list + RBRACE
     enum.ignore(single_line_comment)
-    result["enums"] = {e.name: e for e, _, _ in enum.scanString(schema)}
+    result["enums"] = dict((e.name, e) for e, _, _ in enum.scanString(schema))
 
     # struct parser
     category = _or(*map(pa.Literal, ("required", "optional")))
@@ -142,7 +142,7 @@ def load(thrift_file, module_name=None, cache=True):
         result = parse(schema)
 
         # cache result with '.cache' suffix
-        with open("{}.cache".format(thrift_file), "wb") as fp:
+        with open("{0}.cache".format(thrift_file), "wb") as fp:
             pickle.dump(result, fp, protocol=1)
 
         return result

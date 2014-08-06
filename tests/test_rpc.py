@@ -32,14 +32,14 @@ class Dispatcher(object):
             return True
         except KeyError:
             raise addressbook.PersonNotExistsError(
-                "{} not exists".format(name))
+                "{0} not exists".format(name))
 
     def get(self, name):
         try:
             return self.ab.people[name]
         except KeyError:
             raise addressbook.PersonNotExistsError(
-                "{} not exists".format(name))
+                "{0} not exists".format(name))
 
     def book(self):
         return self.ab
@@ -50,7 +50,7 @@ class Dispatcher(object):
 
     def get_phones(self, name):
         phone_numbers = self.ab.people[name].phones
-        return {p.type: p.number for p in phone_numbers}
+        return dict((p.type, p.number) for p in phone_numbers)
 
     def sleep(self, ms):
         time.sleep(ms / 1000.0)
