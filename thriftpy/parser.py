@@ -323,10 +323,10 @@ def load_module(fullname, cache=True):
         return sys.modules[fullname]
 
     if '.' in fullname:
-        fullname, thrift_file = fullname.rsplit('.', 1)
-        module = _import_module(fullname)
+        module_name, thrift_module_name = fullname.rsplit('.', 1)
+        module = _import_module(module_name)
         path_prefix = os.path.dirname(os.path.abspath(module.__file__))
-        path = os.path.join(path_prefix, thrift_file)
+        path = os.path.join(path_prefix, thrift_module_name)
     else:
         path = fullname
     thrift_file = "{0}.thrift".format(path[:-7])
