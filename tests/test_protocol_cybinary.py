@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# from io import BytesIO
-
-from nose.tools import assert_equal
+from __future__ import absolute_import
 
 from thriftpy._compat import u
 from thriftpy.thrift import TType, TPayload
@@ -24,13 +22,13 @@ def test_pack_i8():
     p = proto.TCyBinaryProtocol(b)
     p.write_val(TType.I08, 123)
     p.write_message_end()
-    assert_equal("7b", hexlify(b.getvalue()))
+    assert "7b" == hexlify(b.getvalue())
 
 
 def test_unpack_i8():
     b = TMemoryBuffer(b"{")
     p = proto.TCyBinaryProtocol(b)
-    assert_equal(123, p.read_val(TType.I08))
+    assert 123 == p.read_val(TType.I08)
 
 
 def test_pack_i16():
@@ -38,13 +36,13 @@ def test_pack_i16():
     p = proto.TCyBinaryProtocol(b)
     p.write_val(TType.I16, 12345)
     p.write_message_end()
-    assert_equal("30 39", hexlify(b.getvalue()))
+    assert "30 39" == hexlify(b.getvalue())
 
 
 def test_unpack_i16():
     b = TMemoryBuffer(b"09")
     p = proto.TCyBinaryProtocol(b)
-    assert_equal(12345, p.read_val(TType.I16))
+    assert 12345 == p.read_val(TType.I16)
 
 
 def test_pack_i32():
@@ -52,13 +50,13 @@ def test_pack_i32():
     p = proto.TCyBinaryProtocol(b)
     p.write_val(TType.I32, 1234567890)
     p.write_message_end()
-    assert_equal("49 96 02 d2", hexlify(b.getvalue()))
+    assert "49 96 02 d2" == hexlify(b.getvalue())
 
 
 def test_unpack_i32():
     b = TMemoryBuffer(b'I\x96\x02\xd2')
     p = proto.TCyBinaryProtocol(b)
-    assert_equal(1234567890, p.read_val(TType.I32))
+    assert 1234567890 == p.read_val(TType.I32)
 
 
 def test_pack_i64():
@@ -66,13 +64,13 @@ def test_pack_i64():
     p = proto.TCyBinaryProtocol(b)
     p.write_val(TType.I64, 1234567890123456789)
     p.write_message_end()
-    assert_equal("11 22 10 f4 7d e9 81 15", hexlify(b.getvalue()))
+    assert "11 22 10 f4 7d e9 81 15" == hexlify(b.getvalue())
 
 
 def test_unpack_i64():
     b = TMemoryBuffer(b'\x11"\x10\xf4}\xe9\x81\x15')
     p = proto.TCyBinaryProtocol(b)
-    assert_equal(1234567890123456789, p.read_val(TType.I64))
+    assert 1234567890123456789 == p.read_val(TType.I64)
 
 
 def test_pack_double():
@@ -80,13 +78,13 @@ def test_pack_double():
     p = proto.TCyBinaryProtocol(b)
     p.write_val(TType.DOUBLE, 1234567890.1234567890)
     p.write_message_end()
-    assert_equal("41 d2 65 80 b4 87 e6 b7", hexlify(b.getvalue()))
+    assert "41 d2 65 80 b4 87 e6 b7" == hexlify(b.getvalue())
 
 
 def test_unpack_double():
     b = TMemoryBuffer(b'A\xd2e\x80\xb4\x87\xe6\xb7')
     p = proto.TCyBinaryProtocol(b)
-    assert_equal(1234567890.1234567890, p.read_val(TType.DOUBLE))
+    assert 1234567890.1234567890 == p.read_val(TType.DOUBLE)
 
 
 def test_pack_string():
@@ -94,22 +92,22 @@ def test_pack_string():
     p = proto.TCyBinaryProtocol(b)
     p.write_val(TType.STRING, "hello world!")
     p.write_message_end()
-    assert_equal("00 00 00 0c 68 65 6c 6c 6f 20 77 6f 72 6c 64 21",
-                 hexlify(b.getvalue()))
+    assert "00 00 00 0c 68 65 6c 6c 6f 20 77 6f 72 6c 64 21" == \
+        hexlify(b.getvalue())
 
     b = TMemoryBuffer()
     p = proto.TCyBinaryProtocol(b)
     p.write_val(TType.STRING, u("你好世界"))
     p.write_message_end()
-    assert_equal("00 00 00 0c e4 bd a0 e5 a5 bd e4 b8 96 e7 95 8c",
-                 hexlify(b.getvalue()))
+    assert "00 00 00 0c e4 bd a0 e5 a5 bd e4 b8 96 e7 95 8c" == \
+        hexlify(b.getvalue())
 
 
 def test_unpack_string():
     b = TMemoryBuffer(b'\x00\x00\x00\x0c'
                       b'\xe4\xbd\xa0\xe5\xa5\xbd\xe4\xb8\x96\xe7\x95\x8c')
     p = proto.TCyBinaryProtocol(b)
-    assert_equal(u("你好世界"), p.read_val(TType.STRING))
+    assert u("你好世界") == p.read_val(TType.STRING)
 
 
 def test_write_message_begin():
@@ -117,14 +115,14 @@ def test_write_message_begin():
     p = proto.TCyBinaryProtocol(b)
     p.write_message_begin('test', TType.STRING, 1)
     p.write_message_end()
-    assert_equal("80 01 00 0b 00 00 00 04 74 65 73 74 00 00 00 01",
-                 hexlify(b.getvalue()))
+    assert "80 01 00 0b 00 00 00 04 74 65 73 74 00 00 00 01" == \
+        hexlify(b.getvalue())
 
 
 def test_read_message_begin():
     b = TMemoryBuffer(b'\x80\x01\x00\x0b\x00\x00\x00\x04test\x00\x00\x00\x01')
     res = proto.TCyBinaryProtocol(b).read_message_begin()
-    assert_equal(res, ("test", TType.STRING, 1))
+    assert res == ("test", TType.STRING, 1)
 
 
 def test_write_struct():
@@ -133,9 +131,9 @@ def test_write_struct():
     p = proto.TCyBinaryProtocol(b)
     p.write_struct(item)
     p.write_message_end()
-    assert_equal("08 00 01 00 00 00 7b 0f 00 02 0b 00 00 00 02 00 00 00 "
-                 "06 31 32 33 34 35 36 00 00 00 06 61 62 63 64 65 66 00",
-                 hexlify(b.getvalue()))
+    assert ("08 00 01 00 00 00 7b 0f 00 02 0b 00 00 00 02 00 00 00 "
+            "06 31 32 33 34 35 36 00 00 00 06 61 62 63 64 65 66 00") == \
+        hexlify(b.getvalue())
 
 
 def test_read_struct():
@@ -144,4 +142,4 @@ def test_read_struct():
     _item = TItem(id=123, phones=['123456', 'abcdef'])
     _item2 = TItem()
     proto.TCyBinaryProtocol(b).read_struct(_item2)
-    assert_equal(_item, _item2)
+    assert _item == _item2

@@ -1,16 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from nose.tools import (
-    assert_dict_equal,
-    assert_equal,
-    assert_list_equal,
-    assert_true,
-)
+from __future__ import absolute_import
+
+from thriftpy.thrift import TPayload, TException
 
 import thriftpy
 thriftpy.install_import_hook()
-
-from thriftpy.thrift import TPayload, TException
 
 import addressbook as ab
 import addressbook_thrift as ab_tt
@@ -19,45 +14,42 @@ import storm_thrift as storm_tt
 
 
 def test_load_const():
-    assert_equal(ab.DEFAULT_LIST_SIZE, ab_tt.DEFAULT_LIST_SIZE)
+    assert ab.DEFAULT_LIST_SIZE == ab_tt.DEFAULT_LIST_SIZE
 
 
 def test_load_enum():
-    assert_equal(ab.PhoneType.MOBILE, ab_tt.PhoneType.MOBILE)
-    assert_equal(ab.PhoneType.HOME, ab_tt.PhoneType.HOME)
-    assert_equal(ab.PhoneType.WORK, ab_tt.PhoneType.WORK)
+    assert ab.PhoneType.MOBILE == ab_tt.PhoneType.MOBILE
+    assert ab.PhoneType.HOME == ab_tt.PhoneType.HOME
+    assert ab.PhoneType.WORK == ab_tt.PhoneType.WORK
 
 
 def test_load_struct():
-    assert_equal(ab_tt.PhoneNumber.__base__, TPayload)
-    assert_dict_equal(ab.PhoneNumber.thrift_spec,
-                      ab_tt.PhoneNumber.thrift_spec)
+    assert ab_tt.PhoneNumber.__base__ == TPayload
+    assert ab.PhoneNumber.thrift_spec == ab_tt.PhoneNumber.thrift_spec
 
-    assert_equal(storm_tt.NullStruct.__base__, TPayload)
-    assert_dict_equal(storm.NullStruct.thrift_spec,
-                      storm_tt.NullStruct.thrift_spec)
+    assert storm_tt.NullStruct.__base__ == TPayload
+    assert storm.NullStruct.thrift_spec == storm_tt.NullStruct.thrift_spec
 
     # TODO make this work
-    # assert_equal(ab_tt.Person.__base__, TPayload)
-    # assert_dict_equal(ab.Person.thrift_spec, ab_tt.Person.thrift_spec)
+    # assert ab_tt.Person.__base__ == TPayload
+    # assert ab.Person.thrift_spec == ab_tt.Person.thrift_spec
 
-    # assert_true(ab_tt.AddressBook.__base__, TPayload)
-    # assert_dict_equal(ab.AddressBook.thrift_spec,
-    #                   ab_tt.AddressBook.thrift_spec)
+    # assert ab_tt.AddressBook.__base__ == TPayload
+    # assert ab.AddressBook.thrift_spec == ab_tt.AddressBook.thrift_spec
 
 
 def test_load_union():
-    assert_equal(storm_tt.JavaObjectArg.__base__, TPayload)
-    assert_dict_equal(storm.JavaObjectArg.thrift_spec,
-                      storm_tt.JavaObjectArg.thrift_spec)
+    assert storm_tt.JavaObjectArg.__base__ == TPayload
+    assert storm.JavaObjectArg.thrift_spec == \
+        storm_tt.JavaObjectArg.thrift_spec
 
 
 def test_load_exc():
-    assert_true(ab_tt.PersonNotExistsError.__base__, TException)
-    assert_dict_equal(ab.PersonNotExistsError.thrift_spec,
-                      ab_tt.PersonNotExistsError.thrift_spec)
+    assert ab_tt.PersonNotExistsError.__base__ == TException
+    assert ab.PersonNotExistsError.thrift_spec == \
+        ab_tt.PersonNotExistsError.thrift_spec
 
 
 def test_load_service():
-    assert_list_equal(ab.AddressBookService.thrift_services,
-                      ab_tt.AddressBookService.thrift_services)
+    assert ab.AddressBookService.thrift_services == \
+        ab_tt.AddressBookService.thrift_services
