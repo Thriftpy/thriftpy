@@ -7,6 +7,9 @@ import const_thrift as const
 
 
 def test_num_const():
+    assert -10 == const.NEGATIVE_I16
+    assert -123.456 == const.NEGATIVE_DOUBLE
+
     assert 10 == const.I16_CONST
     assert 100000 == const.I32_CONST
     assert 123.456 == const.DOUBLE_CONST

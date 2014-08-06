@@ -45,9 +45,10 @@ def parse(schema):
 
     # general value
     value = pa.Forward()
+    minus_ = pa.Literal('-')
     nums_ = pa.Word(pa.nums)
-    integer_ = nums_.setParseAction(lambda s, l, t: [int(t[0])])
-    double_ = pa.Combine(nums_ + '.' + nums_).setParseAction(lambda s, l, t: [float(t[0])])
+    integer_ = pa.Combine(pa.Optional(minus_) + nums_).setParseAction(lambda s, l, t: [int(t[0])])
+    double_ = pa.Combine(pa.Optional(minus_) + nums_ + '.' + nums_).setParseAction(lambda s, l, t: [float(t[0])])
     string_ = pa.quotedString.setParseAction(pa.removeQuotes)
     list_ = pa.Group(LBRACK + pa.delimitedList(value) + RBRACK).setParseAction(lambda s, l, t: t.asList())
     value << _or(double_, integer_, string_, list_)
