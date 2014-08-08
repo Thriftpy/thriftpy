@@ -7,6 +7,8 @@
     py2/py3 compatibility support.
 """
 
+from __future__ import absolute_import
+
 import sys
 PY3 = sys.version_info[0] == 3
 

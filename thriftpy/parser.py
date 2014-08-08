@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa
 
+from __future__ import absolute_import
+
 import functools
 import hashlib
 import itertools

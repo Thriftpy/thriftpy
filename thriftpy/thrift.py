@@ -7,6 +7,8 @@
     Thrift simplified.
 """
 
+from __future__ import absolute_import
+
 import functools
 
 from ._compat import init_func_generator, with_metaclass
