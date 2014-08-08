@@ -79,9 +79,13 @@ def rpc_client():
     phone2 = addressbook.PhoneNumber()
     phone2.type = addressbook.PhoneType.HOME
     phone2.number = '555-1234'
+
+    # empty struct
+    phone3 = addressbook.PhoneNumber()
+
     person = addressbook.Person()
     person.name = "Alice"
-    person.phones = [phone1, phone2]
+    person.phones = [phone1, phone2, phone3]
     person.created_at = int(time.time())
 
     # test put struct

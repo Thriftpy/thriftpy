@@ -45,7 +45,7 @@ def test_pack_i32():
 
 
 def test_unpack_i32():
-    b = BytesIO(b'I\x96\x02\xd2')
+    b = BytesIO(b"I\x96\x02\xd2")
     assert 1234567890 == proto.read_val(b, TType.I32)
 
 
@@ -56,7 +56,7 @@ def test_pack_i64():
 
 
 def test_unpack_i64():
-    b = BytesIO(b'\x11"\x10\xf4}\xe9\x81\x15')
+    b = BytesIO(b"\x11\"\x10\xf4}\xe9\x81\x15")
     assert 1234567890123456789 == proto.read_val(b, TType.I64)
 
 
@@ -67,7 +67,7 @@ def test_pack_double():
 
 
 def test_unpack_double():
-    b = BytesIO(b'A\xd2e\x80\xb4\x87\xe6\xb7')
+    b = BytesIO(b"A\xd2e\x80\xb4\x87\xe6\xb7")
     assert 1234567890.1234567890 == proto.read_val(b, TType.DOUBLE)
 
 
@@ -84,27 +84,27 @@ def test_pack_string():
 
 
 def test_unpack_string():
-    b = BytesIO(b'\x00\x00\x00\x0c'
-                b'\xe4\xbd\xa0\xe5\xa5\xbd\xe4\xb8\x96\xe7\x95\x8c')
+    b = BytesIO(b"\x00\x00\x00\x0c"
+                b"\xe4\xbd\xa0\xe5\xa5\xbd\xe4\xb8\x96\xe7\x95\x8c")
     assert u("你好世界") == proto.read_val(b, TType.STRING)
 
 
 def test_write_message_begin():
     b = BytesIO()
-    proto.TBinaryProtocol(b).write_message_begin('test', TType.STRING, 1)
+    proto.TBinaryProtocol(b).write_message_begin("test", TType.STRING, 1)
     assert "80 01 00 0b 00 00 00 04 74 65 73 74 00 00 00 01" == \
         hexlify(b.getvalue())
 
 
 def test_read_message_begin():
-    b = BytesIO(b'\x80\x01\x00\x0b\x00\x00\x00\x04test\x00\x00\x00\x01')
+    b = BytesIO(b"\x80\x01\x00\x0b\x00\x00\x00\x04test\x00\x00\x00\x01")
     res = proto.TBinaryProtocol(b).read_message_begin()
     assert res == ("test", TType.STRING, 1)
 
 
 def test_write_struct():
     b = BytesIO()
-    item = TItem(id=123, phones=['123456', 'abcdef'])
+    item = TItem(id=123, phones=["123456", "abcdef"])
     proto.TBinaryProtocol(b).write_struct(item)
     assert ("08 00 01 00 00 00 7b 0f 00 02 0b 00 00 00 02 00 00 00 "
             "06 31 32 33 34 35 36 00 00 00 06 61 62 63 64 65 66 00") == \
@@ -112,9 +112,24 @@ def test_write_struct():
 
 
 def test_read_struct():
-    b = BytesIO(b'\x08\x00\x01\x00\x00\x00{\x0f\x00\x02\x0b\x00\x00\x00'
-                b'\x02\x00\x00\x00\x06123456\x00\x00\x00\x06abcdef\x00')
-    _item = TItem(id=123, phones=['123456', 'abcdef'])
+    b = BytesIO(b"\x08\x00\x01\x00\x00\x00{\x0f\x00\x02\x0b\x00\x00\x00"
+                b"\x02\x00\x00\x00\x06123456\x00\x00\x00\x06abcdef\x00")
+    _item = TItem(id=123, phones=["123456", "abcdef"])
+    _item2 = TItem()
+    proto.TBinaryProtocol(b).read_struct(_item2)
+    assert _item == _item2
+
+
+def test_write_empty_struct():
+    b = BytesIO()
+    item = TItem()
+    proto.TBinaryProtocol(b).write_struct(item)
+    assert "00" == hexlify(b.getvalue())
+
+
+def test_read_empty_struct():
+    b = BytesIO(b"\x00")
+    _item = TItem()
     _item2 = TItem()
     proto.TBinaryProtocol(b).read_struct(_item2)
     assert _item == _item2

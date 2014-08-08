@@ -54,7 +54,7 @@ def test_pack_i32():
 
 
 def test_unpack_i32():
-    b = TMemoryBuffer(b'I\x96\x02\xd2')
+    b = TMemoryBuffer(b"I\x96\x02\xd2")
     p = proto.TCyBinaryProtocol(b)
     assert 1234567890 == p.read_val(TType.I32)
 
@@ -68,7 +68,7 @@ def test_pack_i64():
 
 
 def test_unpack_i64():
-    b = TMemoryBuffer(b'\x11"\x10\xf4}\xe9\x81\x15')
+    b = TMemoryBuffer(b"\x11\"\x10\xf4}\xe9\x81\x15")
     p = proto.TCyBinaryProtocol(b)
     assert 1234567890123456789 == p.read_val(TType.I64)
 
@@ -82,7 +82,7 @@ def test_pack_double():
 
 
 def test_unpack_double():
-    b = TMemoryBuffer(b'A\xd2e\x80\xb4\x87\xe6\xb7')
+    b = TMemoryBuffer(b"A\xd2e\x80\xb4\x87\xe6\xb7")
     p = proto.TCyBinaryProtocol(b)
     assert 1234567890.1234567890 == p.read_val(TType.DOUBLE)
 
@@ -104,8 +104,8 @@ def test_pack_string():
 
 
 def test_unpack_string():
-    b = TMemoryBuffer(b'\x00\x00\x00\x0c'
-                      b'\xe4\xbd\xa0\xe5\xa5\xbd\xe4\xb8\x96\xe7\x95\x8c')
+    b = TMemoryBuffer(b"\x00\x00\x00\x0c"
+                      b"\xe4\xbd\xa0\xe5\xa5\xbd\xe4\xb8\x96\xe7\x95\x8c")
     p = proto.TCyBinaryProtocol(b)
     assert u("你好世界") == p.read_val(TType.STRING)
 
@@ -113,21 +113,21 @@ def test_unpack_string():
 def test_write_message_begin():
     b = TMemoryBuffer()
     p = proto.TCyBinaryProtocol(b)
-    p.write_message_begin('test', TType.STRING, 1)
+    p.write_message_begin("test", TType.STRING, 1)
     p.write_message_end()
     assert "80 01 00 0b 00 00 00 04 74 65 73 74 00 00 00 01" == \
         hexlify(b.getvalue())
 
 
 def test_read_message_begin():
-    b = TMemoryBuffer(b'\x80\x01\x00\x0b\x00\x00\x00\x04test\x00\x00\x00\x01')
+    b = TMemoryBuffer(b"\x80\x01\x00\x0b\x00\x00\x00\x04test\x00\x00\x00\x01")
     res = proto.TCyBinaryProtocol(b).read_message_begin()
     assert res == ("test", TType.STRING, 1)
 
 
 def test_write_struct():
     b = TMemoryBuffer()
-    item = TItem(id=123, phones=['123456', 'abcdef'])
+    item = TItem(id=123, phones=["123456", "abcdef"])
     p = proto.TCyBinaryProtocol(b)
     p.write_struct(item)
     p.write_message_end()
@@ -137,9 +137,26 @@ def test_write_struct():
 
 
 def test_read_struct():
-    b = TMemoryBuffer(b'\x08\x00\x01\x00\x00\x00{\x0f\x00\x02\x0b\x00\x00\x00'
-                      b'\x02\x00\x00\x00\x06123456\x00\x00\x00\x06abcdef\x00')
-    _item = TItem(id=123, phones=['123456', 'abcdef'])
+    b = TMemoryBuffer(b"\x08\x00\x01\x00\x00\x00{\x0f\x00\x02\x0b\x00\x00\x00"
+                      b"\x02\x00\x00\x00\x06123456\x00\x00\x00\x06abcdef\x00")
+    _item = TItem(id=123, phones=["123456", "abcdef"])
+    _item2 = TItem()
+    proto.TCyBinaryProtocol(b).read_struct(_item2)
+    assert _item == _item2
+
+
+def test_write_empty_struct():
+    b = TMemoryBuffer()
+    item = TItem()
+    p = proto.TCyBinaryProtocol(b)
+    p.write_struct(item)
+    p.write_message_end()
+    assert "00" == hexlify(b.getvalue())
+
+
+def test_read_empty_struct():
+    b = TMemoryBuffer(b"\x00")
+    _item = TItem()
     _item2 = TItem()
     proto.TCyBinaryProtocol(b).read_struct(_item2)
     assert _item == _item2
