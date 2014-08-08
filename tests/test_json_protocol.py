@@ -5,7 +5,7 @@ from thriftpy.thrift import TPayload, TType
 
 from thriftpy.protocol import TJSONProtocol
 
-import thriftpy.protocol.json_protocol as proto
+import thriftpy.protocol.json as proto
 
 
 class TItem(TPayload):

@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
+
 import json
 import struct
+
 from thriftpy.thrift import TType
 
 from .exc import TProtocolException
