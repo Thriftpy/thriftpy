@@ -78,9 +78,14 @@ cdef class TCyBinaryProtocol(object):
                 f_container_spec = None
             else:
                 f_type, f_name, f_container_spec = field_spec
+
+            v = getattr(obj, f_name)
+            if v is None:
+                continue
+
             self.buf.write_byte(f_type)
             self.buf.write_int16(field_id)
-            self.write_val(f_type, getattr(obj, f_name), f_container_spec)
+            self.write_val(f_type, v, f_container_spec)
         self.buf.write_byte(FIELD_STOP)
 
     def read_val(self, byte field_type, spec=None):
