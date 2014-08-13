@@ -7,7 +7,7 @@ cdef class Buffer(object):
     cdef byte *buf
     cdef int cur, buf_size, data_size
 
-    def __init__(self, buf_size):
+    def __cinit__(self, buf_size):
         self.buf = <byte*>malloc(buf_size)
         self.buf_size = buf_size
         self.cur = 0
@@ -16,6 +16,7 @@ cdef class Buffer(object):
     def __dealloc__(self):
         if self.buf != NULL:
             free(self.buf)
+            self.buf = NULL
 
     cdef void move_to_start(self):
         if self.cur != 0 and self.data_size > 0:
