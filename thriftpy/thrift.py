@@ -178,7 +178,13 @@ class TProcessor(object):
             args.read(iprot)
             iprot.read_message_end()
             result = getattr(self._service, api + "_result")()
-            call = lambda: getattr(self._handler, api)(**args.__dict__)
+
+            # convert kwargs to args
+            api_args = [args.thrift_spec[k][1]
+                        for k in sorted(args.thrift_spec)]
+            call = lambda: getattr(self._handler, api)(
+                *(args.__dict__[k] for k in api_args)
+            )
             return api, seqid, result, call
 
     def send_exception(self, oprot, api, exc, seqid):
