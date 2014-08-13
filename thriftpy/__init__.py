@@ -3,7 +3,7 @@
 __version__ = '0.1.5'
 
 import sys
-__python__ = sys.version
+__python__ = sys.version_info
 
 __all__ = ["install_import_hook", "remove_import_hook",  "load", "load_module"]
 

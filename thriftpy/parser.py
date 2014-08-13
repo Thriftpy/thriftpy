@@ -29,7 +29,7 @@ def parse(schema):
     # set version and schema md5 hash in result
     result = {
         "__version__": __version__,
-        "__python__": __python__,
+        "__python__": __python__[:2],
         "__hash__": hashlib.md5(schema.encode('utf-8')).digest(),
     }
 
@@ -167,7 +167,7 @@ def load(thrift_file, module_name=None, cache=True):
         else:
             # test cache versions correct
             if result['__version__'] != __version__ or \
-                    result["__python__"] != __python__ or \
+                    result["__python__"] != __python__[:2] or \
                     result["__hash__"] != hashlib.md5(
                         schema.encode("utf-8")).digest():
                 result = _parse_and_cache(schema)
