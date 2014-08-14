@@ -1,18 +1,25 @@
 ThriftPy Changelog
 ==================
 
-Version 0.2.0
+Version 0.1.6
 -------------
 
-Not released.
+Released on August 14, 2014.
 
 - json protocol, via `#21`_.
 - more standard module for loaded sdk, now generated TPayload objects can
-  be pickled, via `#22`_.
+  be pickled when module_name provided, via `#22`_.
+- gunicorn_thrift integration pingpong example, via `#24`_.
+- token cache now only checks python's major and minor version.
 - bugfix for exception handling in void api in RPC request.
+- bugfix for negative number value not recognized.
+- bugfix for cybin protocol to allow None value in struct.
+- bugfix for double free or corruption in cybin protocol, via `#26`_.
 
 .. _`#21`: https://github.com/eleme/thriftpy/pull/21
 .. _`#22`: https://github.com/eleme/thriftpy/pull/22
+.. _`#24`: https://github.com/eleme/thriftpy/pull/24
+.. _`#26`: https://github.com/eleme/thriftpy/pull/26
 
 
 Version 0.1.5
