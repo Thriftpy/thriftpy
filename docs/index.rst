@@ -121,8 +121,11 @@ You may also install cython first to build cython extension locally.
     $ pip install cython thriftpy
 
 
+Usage Notice
+============
+
 Use Cython Binary Protocol
-==========================
+--------------------------
 
 The TCyBinaryProtocol can be used to accelerate serialize and deserialize.
 
@@ -160,6 +163,35 @@ Or client context:
             pingpong_thrift.PingPong, '127.0.0.1', 6000,
             proto_factory=TCyBinaryProtocolFactory()) as c:
         c.ping()
+
+
+Better Module
+-------------
+
+To load thrift file as better module, provide a `module_name` in `load`.
+
+The direct loaded TObjects can't be pickled.
+
+.. code:: python
+
+    >>> ab = thriftpy.load("addressbook.thrift")
+    >>> pickle.dumps(ab.AddressBook())
+    PicklingError: Can't pickle <class 'addressbook.AddressBook'>
+
+TObjects can be pickled when load with `module_name` provided.
+
+.. code:: python
+
+    >>> ab = thriftpy.load("addressbook.thrift", "addressbook_thrift")
+    >>> pickle.dumps(ab.AddressBook())
+    b'\x80\x03caddressbook_thrift\nAddressBook\nq\x00)\x81q\x01}q\x02X\x06\x00\x00\x00peopleq\x03Nsb.'
+
+You can also use `from ... import ...` style after a standard module load.
+
+.. code:: python
+
+    >>> ab = thriftpy.load("addressbook.thrift", "addressbook_thrift")
+    >>> from addressbook_thrift import *
 
 
 Benchmarks
