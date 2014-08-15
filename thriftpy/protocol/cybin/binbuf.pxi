@@ -52,12 +52,15 @@ cdef class BinaryRW(object):
         cdef bytes new_data
         if self.rbuf.data_size == 0:
             self.rbuf.cur = 0
-            self.rbuf.data_size = 0
         if self.rbuf.data_size < size:
             cap = self.rbuf.buf_size - self.rbuf.data_size
-            if cap < 256:
-                self.rbuf.move_to_start()
             new_data = self.trans._read(cap)
+
+            # buf + buf_size >= buf + cur + data_size + new_data_len -->
+            #   buf_size - data_size >= cur + new_data_len -->
+            #     cap - cur >= new_data_len
+            if cap - self.rbuf.cur < len(new_data) or cap < 256:
+                self.rbuf.move_to_start()
             memcpy(self.rbuf.buf + self.rbuf.cur + self.rbuf.data_size,
                 <byte*>new_data, len(new_data))
             self.rbuf.data_size += len(new_data)
@@ -120,7 +123,7 @@ cdef class BinaryRW(object):
         self.rbuf.data_size -= size
 
     cdef ensure_wbuf(self, int size):
-        cdef int cap = self.rbuf.buf_size - self.rbuf.data_size
+        cdef int cap = self.wbuf.buf_size - self.wbuf.data_size
 
         if cap < size:
             if size > self.wbuf.buf_size:
