@@ -27,6 +27,22 @@ cdef class Buffer(object):
         self.cur = 0
         self.data_size = 0
 
+    cdef void grow(self, int min_size):
+        if min_size <= self.buf_size:
+            return
+
+        cdef int multiples = min_size / self.buf_size
+        if min_size % self.buf_size != 0:
+            multiples += 1
+
+        cdef int new_size = self.buf_size * multiples
+        # TODO malloc check
+        cdef byte *new_buf = <byte*>malloc(new_size)
+        memcpy(new_buf + self.cur, self.buf + self.cur, self.data_size)
+        free(self.buf)
+        self.buf_size = new_size
+        self.buf = new_buf
+
 
 class BufferError(Exception):
     pass
@@ -36,30 +52,35 @@ cdef class BinaryRW(object):
     '''binary reader/writer'''
 
     DEF DEFAULT_BUFFER = 4096
+    DEF MIN_BUFFER_SZIE = 1024
+
     cdef object trans
     cdef Buffer rbuf, wbuf
 
     def __init__(self, trans, int buf_size=DEFAULT_BUFFER):
+        if buf_size < MIN_BUFFER_SZIE:
+            raise Exception('buffer too small')
+
         self.trans = trans
         self.rbuf = Buffer(buf_size)
         self.wbuf = Buffer(buf_size)
 
     cdef ensure_rbuf(self, int size):
         if size > self.rbuf.buf_size:
-            raise BufferError('reader buffer out of cap')
+            self.rbuf.grow(size)
 
         cdef int cap
         cdef bytes new_data
         if self.rbuf.data_size == 0:
             self.rbuf.cur = 0
         if self.rbuf.data_size < size:
-            cap = self.rbuf.buf_size - self.rbuf.data_size
+            cap = self.rbuf.buf_size - self.rbuf.cur - self.rbuf.data_size
             new_data = self.trans._read(cap)
 
             # buf + buf_size >= buf + cur + data_size + new_data_len -->
             #   buf_size - data_size >= cur + new_data_len -->
             #     cap - cur >= new_data_len
-            if cap - self.rbuf.cur < len(new_data) or cap < 256:
+            if cap < len(new_data) or cap < 256:
                 self.rbuf.move_to_start()
             memcpy(self.rbuf.buf + self.rbuf.cur + self.rbuf.data_size,
                 <byte*>new_data, len(new_data))
@@ -127,7 +148,7 @@ cdef class BinaryRW(object):
 
         if cap < size:
             if size > self.wbuf.buf_size:
-                raise BufferError('writer buffer out of cap')
+                self.wbuf.grow(size)
             self.write_flush()
 
     cdef write_byte(self, byte n):
