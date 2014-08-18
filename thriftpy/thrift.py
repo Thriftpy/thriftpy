@@ -194,10 +194,10 @@ class TProcessor(object):
         oprot.trans.flush()
 
     def handle_exception(self, e, result):
-        if len(result.thrift_spec) == 1:
-            raise
+        for k in sorted(result.thrift_spec):
+            if result.thrift_spec[k][1] == "success":
+                continue
 
-        for k in sorted(result.thrift_spec)[1:]:
             _, exc_name, exc_cls = result.thrift_spec[k]
             if isinstance(e, exc_cls):
                 setattr(result, exc_name, e)
