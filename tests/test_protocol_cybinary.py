@@ -168,3 +168,22 @@ def test_write_huge_struct():
     p = proto.TCyBinaryProtocol(b)
     p.write_struct(item)
     p.write_message_end()
+
+
+def test_read_huge_args():
+
+    class Hello(TPayload):
+        thrift_spec = {
+            1: (TType.STRING, "name"),
+            2: (TType.STRING, "world"),
+        }
+        default_spec = [("name", None), ("world", None)]
+
+    b = TMemoryBuffer()
+    item = Hello(name='我' * 326, world='你' * 1365)
+    p = proto.TCyBinaryProtocol(b)
+    p.write_struct(item)
+    p.write_message_end()
+
+    item2 = Hello()
+    p.read_struct(item2)

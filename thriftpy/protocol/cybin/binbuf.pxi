@@ -1,5 +1,5 @@
 from libc.stdlib cimport malloc, free
-from libc.string cimport memcpy
+from libc.string cimport memcpy, memmove
 from libc.stdint cimport *
 
 
@@ -20,7 +20,7 @@ cdef class Buffer(object):
 
     cdef void move_to_start(self):
         if self.cur != 0 and self.data_size > 0:
-            memcpy(self.buf, self.buf + self.cur, self.data_size)
+            memmove(self.buf, self.buf + self.cur, self.data_size)
             self.cur = 0
 
     cdef void clean(self):
@@ -59,7 +59,7 @@ cdef class BinaryRW(object):
             # buf + buf_size >= buf + cur + data_size + new_data_len -->
             #   buf_size - data_size >= cur + new_data_len -->
             #     cap - cur >= new_data_len
-            if cap - self.rbuf.cur < len(new_data) or cap < 256:
+            if cap - self.rbuf.cur < len(new_data):
                 self.rbuf.move_to_start()
             memcpy(self.rbuf.buf + self.rbuf.cur + self.rbuf.data_size,
                 <byte*>new_data, len(new_data))
