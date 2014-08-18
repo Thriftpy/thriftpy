@@ -133,3 +133,9 @@ def test_read_empty_struct():
     _item2 = TItem()
     proto.TBinaryProtocol(b).read_struct(_item2)
     assert _item == _item2
+
+
+def test_write_huge_struct():
+    b = BytesIO()
+    item = TItem(id=12345, phones=["1234567890"] * 100000)
+    proto.TBinaryProtocol(b).write_struct(item)
