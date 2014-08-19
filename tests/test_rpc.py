@@ -22,6 +22,9 @@ class Dispatcher(object):
     def ping(self):
         return True
 
+    def hello(self, name):
+        return "hello " + name
+
     def add(self, person):
         self.ab.people[person.name] = person
         return True
@@ -69,9 +72,15 @@ def client(timeout=None):
 
 
 def rpc_client():
-    # test void request
+    # test void and normal request
     with client() as c:
         assert c.ping() is None
+        assert c.hello("world") == "hello world"
+
+    # test big request and return args
+    with client() as c:
+        big_str = "world" * 100000
+        assert c.hello(big_str) == "hello " + big_str
 
     phone1 = addressbook.PhoneNumber()
     phone1.type = addressbook.PhoneType.MOBILE

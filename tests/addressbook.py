@@ -53,6 +53,7 @@ class PersonNotExistsError(TException):
 class AddressBookService(object):
     thrift_services = [
         "ping",
+        "hello",
         "add",
         "remove",
         "get",
@@ -69,6 +70,18 @@ class AddressBookService(object):
     class ping_result(TPayload):
         thrift_spec = {}
         default_spec = []
+
+    class hello_args(TPayload):
+        thrift_spec = {
+            1: (TType.STRING, "name"),
+        }
+        default_spec = [("name", None)]
+
+    class hello_result(TPayload):
+        thrift_spec = {
+            0: (TType.STRING, "success"),
+        }
+        default_spec = [("success", None)]
 
     class add_args(TPayload):
         thrift_spec = {
