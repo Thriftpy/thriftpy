@@ -1,6 +1,21 @@
 ThriftPy Changelog
 ==================
 
+Version 0.1.7
+-------------
+
+Released on August 19, 2014.
+
+- use args instead of kwargs in api calling to match upstream behavior.
+- cython binary protocol auto grow buffer size, via `#29`_.
+- bugfix for void api exception handling in processor.
+- bugfix for cybin protocol buffer overflow and memcpy, via `#27`_ and `#28`_.
+
+.. _`#27`: https://github.com/eleme/thriftpy/pull/27
+.. _`#28`: https://github.com/eleme/thriftpy/pull/28
+.. _`#29`: https://github.com/eleme/thriftpy/pull/29
+
+
 Version 0.1.6
 -------------
 
