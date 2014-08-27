@@ -30,7 +30,7 @@ def parse(schema):
     result = {
         "__version__": __version__,
         "__python__": __python__[:2],
-        "__hash__": hashlib.md5(schema.encode('utf-8')).digest(),
+        "__hash__": hashlib.md5(schema.encode("utf-8")).digest(),
         "typedefs": {},
         "consts": {},
         "enums": {},
@@ -80,7 +80,7 @@ def parse(schema):
     const = _const + ttype("ttype") + identifier("name") + EQ + value("value")
 
     # enum parser
-    enum_value = pa.Group(identifier('name') + pa.Optional(EQ + integer_('value')) + pa.Optional(COMMA))
+    enum_value = pa.Group(identifier("name") + pa.Optional(EQ + integer_("value")) + pa.Optional(COMMA))
     enum_list = pa.Group(pa.ZeroOrMore(enum_value))("members")
     enum = _enum + identifier("name") + LBRACE + enum_list + RBRACE
     enum.ignore(single_line_comment)
@@ -109,27 +109,22 @@ def parse(schema):
 
     parser = pa.OneOrMore(
         _or(
-            pa.Group(typedef)('typedefs*'), pa.Group(const)('consts*'),
-            pa.Group(enum)('enums*'), pa.Group(struct)('structs*'), 
-            pa.Group(exception)('exceptions*'), pa.Group(service)('services')
+            pa.Group(typedef)("typedefs*"), pa.Group(const)("consts*"),
+            pa.Group(enum)("enums*"), pa.Group(struct)("structs*"),
+            pa.Group(exception)("exceptions*"), pa.Group(service)("services")
         )
     )
 
     for parse_results, _, _ in parser.scanString(schema):
         for res in parse_results:
-            if res.getName() == 'typedefs':
-                result[res.getName()][res.name] = res.ttype
-            elif res.getName() == 'consts':
-                result[res.getName()][res.name] = res.value
-            elif res.getName() == 'enums':
-                result[res.getName()][res.name] = res
-            elif res.getName() == 'structs':
+            if res.getName() == "typedefs":
+                result["typedefs"][res.name] = res.ttype
+            elif res.getName() == "consts":
+                result["consts"][res.name] = res.value
+            elif res.getName() == "enums":
+                result["enums"][res.name] = res
+            elif res.getName() in ("structs", "exceptions", "services"):
                 result[res.getName()].append(res)
-            elif res.getName() == 'exceptions':
-                result[res.getName()].append(res)
-            elif res.getName() == 'services':
-                result[res.getName()].append(res)
-
     return result
 
 
