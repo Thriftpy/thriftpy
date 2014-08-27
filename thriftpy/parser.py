@@ -31,6 +31,12 @@ def parse(schema):
         "__version__": __version__,
         "__python__": __python__[:2],
         "__hash__": hashlib.md5(schema.encode('utf-8')).digest(),
+        "typedefs": {},
+        "consts": {},
+        "enums": {},
+        "structs": [],
+        "exceptions": [],
+        "services": [],
     }
 
     # constants
@@ -69,18 +75,15 @@ def parse(schema):
 
     # typedef parser
     typedef = _typedef + orig_types("ttype") + identifier("name")
-    result["typedefs"] = dict((t.name, t.ttype) for t, _, _ in typedef.scanString(schema))
 
     # const parser
     const = _const + ttype("ttype") + identifier("name") + EQ + value("value")
-    result["consts"] = dict((c.name, c.value) for c, _, _ in const.scanString(schema))
 
     # enum parser
     enum_value = pa.Group(identifier('name') + pa.Optional(EQ + integer_('value')) + pa.Optional(COMMA))
     enum_list = pa.Group(pa.ZeroOrMore(enum_value))("members")
     enum = _enum + identifier("name") + LBRACE + enum_list + RBRACE
     enum.ignore(single_line_comment)
-    result["enums"] = dict((e.name, e) for e, _, _ in enum.scanString(schema))
 
     # struct parser
     category = _or(*map(pa.Literal, ("required", "optional")))
@@ -89,12 +92,10 @@ def parse(schema):
     struct = _or(_struct, _union) + identifier("name") + LBRACE + struct_members + RBRACE
     struct.ignore(single_line_comment)
     # struct defines is ordered
-    result["structs"] = [s for s, _, _ in struct.scanString(schema)]
 
     # exception parser
     exception = _exception + identifier("name") + LBRACE + struct_members + RBRACE
     exception.ignore(single_line_comment)
-    result["exceptions"] = [s for s, _, _ in exception.scanString(schema)]
 
     # service parser
     ftype = _or(ttype, pa.Keyword("void"))
@@ -105,7 +106,29 @@ def parse(schema):
     service = _service + identifier("name") + LBRACE + service_apis + RBRACE
     service.ignore(single_line_comment)
     service.ignore(pa.cStyleComment)
-    result["services"] = [s for s, _, _ in service.scanString(schema)]
+
+    parser = pa.OneOrMore(
+        _or(
+            pa.Group(typedef)('typedefs*'), pa.Group(const)('consts*'),
+            pa.Group(enum)('enums*'), pa.Group(struct)('structs*'), 
+            pa.Group(exception)('exceptions*'), pa.Group(service)('services')
+        )
+    )
+
+    for parse_results, _, _ in parser.scanString(schema):
+        for res in parse_results:
+            if res.getName() == 'typedefs':
+                result[res.getName()][res.name] = res.ttype
+            elif res.getName() == 'consts':
+                result[res.getName()][res.name] = res.value
+            elif res.getName() == 'enums':
+                result[res.getName()][res.name] = res
+            elif res.getName() == 'structs':
+                result[res.getName()].append(res)
+            elif res.getName() == 'exceptions':
+                result[res.getName()].append(res)
+            elif res.getName() == 'services':
+                result[res.getName()].append(res)
 
     return result
 

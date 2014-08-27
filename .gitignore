@@ -39,3 +39,4 @@ pip-log.txt
 .project
 .pydevproject
 *.sublime-workspace
+*.sw[op]
