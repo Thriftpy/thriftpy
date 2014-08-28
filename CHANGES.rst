@@ -1,6 +1,18 @@
 ThriftPy Changelog
 ==================
 
+Version 0.1.8
+-------------
+
+Released on August 28, 2014.
+
+- faster thrift file parse speed, via `#30`_.
+- bugfix for cybin buffer read, via `#31`_.
+
+.. _`#30`: https://github.com/eleme/thriftpy/pull/30
+.. _`#31`: https://github.com/eleme/thriftpy/pull/31
+
+
 Version 0.1.7
 -------------
 
