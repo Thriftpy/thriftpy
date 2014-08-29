@@ -34,10 +34,14 @@ ext_modules = []
 if cython:
     ext_modules.append(Extension("thriftpy.protocol.cybin",
                                  ["thriftpy/protocol/cybin/cybin.pyx"]))
+    ext_modules.append(Extension("thriftpy.protocol.cytransport",
+                                 ["thriftpy/protocol/cytransport.pyx"]))
     cmdclass["build_ext"] = build_ext
 else:
     ext_modules.append(Extension("thriftpy.protocol.cybin",
                                  ["thriftpy/protocol/cybin/cybin.c"]))
+    ext_modules.append(Extension("thriftpy.transport.cytransport",
+                                 ["thriftpy/transport/cytransport.c"]))
 
 setup(name="thriftpy",
       version=__import__('thriftpy').__version__,

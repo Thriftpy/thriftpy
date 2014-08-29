@@ -2,8 +2,10 @@ from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy, memmove
 from libc.stdint cimport *
 
+from .transport import TTransportException
 
-cdef class Buffer(object):
+
+cdef class TCyBuffer(object):
     cdef byte *buf
     cdef int cur, buf_size, data_size
 
@@ -46,26 +48,34 @@ cdef class Buffer(object):
         return 0
 
 
-class BufferError(Exception):
-    pass
-
-
-cdef class BinaryRW(object):
-    '''binary reader/writer'''
+cdef class TCyBufferedTransport(object):
+    """binary reader/writer"""
 
     DEF DEFAULT_BUFFER = 4096
     DEF MIN_BUFFER_SZIE = 1024
 
     cdef object trans
-    cdef Buffer rbuf, wbuf
+    cdef TCyBuffer rbuf, wbuf
 
     def __init__(self, trans, int buf_size=DEFAULT_BUFFER):
         if buf_size < MIN_BUFFER_SZIE:
             raise Exception('buffer too small')
 
         self.trans = trans
-        self.rbuf = Buffer(buf_size)
-        self.wbuf = Buffer(buf_size)
+        self.rbuf = TCyBuffer(buf_size)
+        self.wbuf = TCyBuffer(buf_size)
+
+    cdef is_open(self):
+        return self.trans.is_open()
+
+    cdef open(self):
+        return self.trans.open()
+
+    cdef close(self):
+        return self.trans.close()
+
+    cdef write(self, buf):
+        self.trans.write(buf)
 
     cdef ensure_rbuf(self, int size):
         if size > self.rbuf.buf_size:
@@ -74,17 +84,24 @@ cdef class BinaryRW(object):
 
         cdef int cap
         cdef bytes new_data
+
         if self.rbuf.data_size == 0:
             self.rbuf.cur = 0
+
         if self.rbuf.data_size < size:
             cap = self.rbuf.buf_size - self.rbuf.data_size
-            new_data = self.trans._read(cap)
+            new_data = self.trans.read(cap)
             new_data_len = len(new_data)
 
             while new_data_len < size - self.rbuf.data_size:
-                data = self.trans._read(cap - new_data_len)
-                new_data += data
-                new_data_len += len(data)
+                chunk = self.trans.read(cap - new_data_len)
+                new_data += chunk
+                new_data_len += len(chunk)
+
+                if len(chunk) == 0:
+                    raise TTransportException(
+                        TTransportException.END_OF_FILE,
+                        "End of file reading from transport")
 
             # buf + buf_size >= buf + cur + data_size + new_data_len -->
             #   buf_size - data_size >= cur + new_data_len -->
@@ -215,3 +232,8 @@ cdef class BinaryRW(object):
             data = self.wbuf.buf[:self.wbuf.data_size]
             self.trans.write(data)
             self.wbuf.clean()
+
+
+class TCyBufferedTransportFactory(object):
+    def get_transport(self, trans):
+        return TCyBufferedTransport(trans)
