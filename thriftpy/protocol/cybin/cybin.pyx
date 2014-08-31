@@ -1,7 +1,9 @@
-from libc.stdlib cimport malloc, free
-from libc.stdint cimport *
+from libc.stdlib cimport free, malloc
+from libc.stdint cimport int16_t, int32_t, int64_t
 
-cdef extern from 'endian_port.h':
+from thriftpy.transport.cytransport cimport TCyBufferedTransport
+
+cdef extern from "endian_port.h":
     int16_t htobe16(int16_t n)
     int32_t htobe32(int32_t n)
     int64_t htobe64(int64_t n)
@@ -9,234 +11,353 @@ cdef extern from 'endian_port.h':
     int32_t be32toh(int32_t n)
     int64_t be64toh(int64_t n)
 
-from thriftpy.transport import TCyBufferedTransport
+DEF VERSION_MASK = -65536
+DEF VERSION_1 = -2147418112
+DEF TYPE_MASK = 0x000000ff
 
-# cdefs
-DEF T_TYPE_STOP = 0
-DEF T_TYPE_VOID = 1
-DEF T_TYPE_BOOL = 2
-DEF T_TYPE_BYTE = 3
-DEF T_TYPE_I08 = 3
-DEF T_TYPE_DOUBLE = 4
-DEF T_TYPE_I16 = 6
-DEF T_TYPE_I32 = 8
-DEF T_TYPE_I64 = 10
-DEF T_TYPE_STRING = 11
-DEF T_TYPE_UTF7 = 11
-DEF T_TYPE_BINARY = 11
-DEF T_TYPE_STRUCT = 12
-DEF T_TYPE_MAP = 13
-DEF T_TYPE_SET = 14
-DEF T_TYPE_LIST = 15
-DEF T_TYPE_UTF8 = 16
-DEF T_TYPE_UTF16 = 17
+DEF STACK_STRING_LEN = 4096
 
-ctypedef unsigned char byte
+ctypedef enum TType:
+    T_STOP = 0,
+    T_VOID = 1,
+    T_BOOL = 2,
+    T_BYTE = 3,
+    T_I08 = 3,
+    T_I16 = 6,
+    T_I32 = 8,
+    T_U64 = 9,
+    T_I64 = 10,
+    T_DOUBLE = 4,
+    T_STRING = 11,
+    T_UTF7 = 11,
+    T_NARY = 11
+    T_STRUCT = 12,
+    T_MAP = 13,
+    T_SET = 14,
+    T_LIST = 15,
+    T_UTF8 = 16,
+    T_UTF16 = 17
 
 class ProtocolError(Exception):
     pass
 
 
+cdef inline char read_i08(TCyBufferedTransport buf):
+    cdef char data
+    buf.c_read(1, &data)
+    return data
+
+
+cdef inline int16_t read_i16(TCyBufferedTransport buf):
+    cdef char data[2]
+    buf.c_read(2, data)
+    return be16toh((<int16_t*>data)[0])
+
+
+cdef inline int32_t read_i32(TCyBufferedTransport buf):
+    cdef char data[4]
+    buf.c_read(4, data)
+    return be32toh((<int32_t*>data)[0])
+
+
+cdef inline int64_t read_i64(TCyBufferedTransport buf):
+    cdef char data[8]
+    buf.c_read(8, data)
+    return be64toh((<int64_t*>data)[0])
+
+
+cdef inline void write_i08(TCyBufferedTransport buf, char val):
+    buf.c_write(&val, 1)
+
+
+cdef inline void write_i16(TCyBufferedTransport buf, int16_t val):
+    val = htobe16(val)
+    buf.c_write(<char*>(&val), 2)
+
+
+cdef inline void write_i32(TCyBufferedTransport buf, int32_t val):
+    val = htobe32(val)
+    buf.c_write(<char*>(&val), 4)
+
+
+cdef inline void write_i64(TCyBufferedTransport buf, int64_t val):
+    val = htobe64(val)
+    buf.c_write(<char*>(&val), 8)
+
+
+cdef inline void write_double(TCyBufferedTransport buf, double val):
+    cdef int64_t v = htobe64((<int64_t*>(&val))[0])
+    buf.c_write(<char*>(&v), 8)
+
+
+cdef inline read_struct(TCyBufferedTransport buf, obj):
+    cdef dict field_specs = obj.thrift_spec
+    cdef int fid, i
+    cdef TType field_type, orig_field_type, ttype
+    cdef tuple field_spec
+    cdef str name
+
+    for i in range(len(field_specs) + 1):
+        field_type = <TType>read_i08(buf)
+        if field_type == T_STOP:
+            break
+
+        fid = read_i16(buf)
+        if fid not in field_specs:
+            raise ProtocolError('skip')
+
+        field_spec = field_specs[fid]
+        ttype = field_spec[0]
+        if field_type != ttype:
+            raise ProtocolError("Message Corrupt")
+
+        name = field_spec[1]
+        if len(field_spec) == 2:
+            spec = None
+        else:
+            spec = field_spec[2]
+
+        setattr(obj, name, c_read_val(buf, ttype, spec))
+
+
+cdef inline write_struct(TCyBufferedTransport buf, obj):
+    cdef int fid, items_len, i
+    cdef TType f_type
+    cdef dict thrift_spec = obj.thrift_spec
+    cdef tuple field_spec
+    cdef str f_name
+
+    for fid, field_spec in thrift_spec.items():
+        f_type = field_spec[0]
+        f_name = field_spec[1]
+        if len(field_spec) == 2:
+            container_spec = None
+        else:
+            container_spec = field_spec[2]
+
+        v = getattr(obj, f_name)
+        if v is None:
+            continue
+
+        write_i08(buf, f_type)
+        write_i16(buf, fid)
+        c_write_val(buf, f_type, v, container_spec)
+
+    write_i08(buf, T_STOP)
+
+
+cdef c_read_val(TCyBufferedTransport buf, TType ttype, spec=None):
+    cdef int size
+    cdef char* data
+    cdef bytes py_data
+    cdef int64_t n
+    cdef TType v_type, k_type, orig_type, orig_key_type
+    cdef char string_val[STACK_STRING_LEN]
+
+    if ttype == T_BOOL:
+        return bool(read_i08(buf))
+
+    elif ttype == T_I08:
+        return read_i08(buf)
+
+    elif ttype == T_I16:
+        return read_i16(buf)
+
+    elif ttype == T_I32:
+        return read_i32(buf)
+
+    elif ttype == T_I64:
+        return read_i64(buf)
+
+    elif ttype == T_DOUBLE:
+        n = read_i64(buf)
+        return (<double*>(&n))[0]
+
+    elif ttype == T_STRING:
+        size = read_i32(buf)
+        if size > STACK_STRING_LEN:
+            data = <char*>malloc(size)
+            buf.c_read(size, data)
+            py_data = data[:size]
+            free(data)
+        else:
+            buf.c_read(size, string_val)
+            py_data = string_val[:size]
+        try:
+            return py_data.decode("utf-8")
+        except UnicodeDecodeError:
+            return py_data
+
+    elif ttype == T_SET or ttype == T_LIST:
+        if isinstance(spec, int):
+            v_type = spec
+            v_spec = None
+        else:
+            v_type = spec[0]
+            v_spec = spec[1]
+
+        orig_type = <TType>read_i08(buf)
+        size = read_i32(buf)
+
+        if orig_type != v_type:
+            raise ProtocolError("Message Corrupt")
+
+        return [c_read_val(buf, v_type, v_spec) for _ in range(size)]
+
+    elif ttype == T_MAP:
+        key = spec[0]
+        if isinstance(key, int):
+            k_type = key
+            k_spec = None
+        else:
+            k_type = key[0]
+            k_spec = key[1]
+
+        value = spec[1]
+        if isinstance(value, int):
+            v_type = value
+            v_spec = None
+        else:
+            v_type = value[0]
+            v_spec = value[1]
+
+        orig_key_type = <TType>read_i08(buf)
+        orig_type = <TType>read_i08(buf)
+        size = read_i32(buf)
+
+        if orig_key_type != k_type or orig_type != v_type:
+            raise ProtocolError("Message Corrupt")
+
+        return {c_read_val(buf, k_type, k_spec): c_read_val(buf, v_type, v_spec)
+                for _ in range(size)}
+
+    elif ttype == T_STRUCT:
+        read_struct(buf, spec())
+
+
+cdef void c_write_val(TCyBufferedTransport buf, TType ttype, val, spec=None):
+    cdef int val_len, i
+    cdef TType e_type, v_type, k_type
+
+    if ttype == T_BOOL:
+        write_i08(buf, 1 if val else 0)
+
+    elif ttype == T_I08:
+        write_i08(buf, val)
+
+    elif ttype == T_I16:
+        write_i16(buf, val)
+
+    elif ttype == T_I32:
+        write_i32(buf, val)
+
+    elif ttype == T_I64:
+        write_i64(buf, val)
+
+    elif ttype == T_DOUBLE:
+        write_double(buf, val)
+
+    elif ttype == T_STRING:
+        if not isinstance(val, bytes):
+            val = val.encode("utf-8")
+
+        val_len = len(val)
+        write_i32(buf, val_len)
+
+        buf.c_write(<char*>val, val_len)
+
+    elif ttype == T_SET or ttype == T_LIST:
+        if isinstance(spec, int):
+            e_type = spec
+            e_spec = None
+        else:
+            e_type = spec[0]
+            e_spec = spec[1]
+
+        val_len = len(val)
+        write_i08(buf, e_type)
+        write_i32(buf, val_len)
+
+        for i in range(val_len):
+            c_write_val(buf, e_type, val[i], e_spec)
+
+    elif ttype == T_MAP:
+        key = spec[0]
+        if isinstance(key, int):
+            k_type = key
+            k_spec = None
+        else:
+            k_type = key[0]
+            k_spec = key[1]
+
+        value = spec[1]
+        if isinstance(value, int):
+            v_type = value
+            v_spec = None
+        else:
+            v_type = value[0]
+            v_spec = value[1]
+
+        val_len = len(val)
+
+        write_i08(buf, k_type)
+        write_i08(buf, v_type)
+        write_i32(buf, val_len)
+
+        for k, v in val.items():
+            c_write_val(buf, k_type, k, k_spec)
+            c_write_val(buf, v_type, v, v_spec)
+
+    elif ttype == T_STRUCT:
+        write_struct(buf, val)
+
+
+def read_val(TCyBufferedTransport buf, TType ttype):
+    return c_read_val(buf, ttype)
+
+
+def write_val(TCyBufferedTransport buf, TType ttype, val, spec=None):
+    c_write_val(buf, ttype, val, spec)
+
+
 cdef class TCyBinaryProtocol(object):
-    DEF DEFAULT_BUFFER = 4096
-    DEF VERSION_MASK = -65536
-    DEF VERSION_1 = -2147418112
-    DEF TYPE_MASK = 0x000000ff
-    DEF FIELD_STOP = 0
+    cdef public TCyBufferedTransport trans
 
-    cdef TCyBufferedTransport buf
-    cdef public object trans
-
-    def __init__(self, trans, int buf_size=DEFAULT_BUFFER):
+    def __init__(self, trans):
         self.trans = trans
-        self.buf = TCyBufferedTransport(trans, buf_size)
 
     def read_message_begin(self):
-        cdef int32_t mgk, version, msg_type, seq_id
-        self.buf.read_int32(&mgk)
-        version = mgk & VERSION_MASK
+        cdef int32_t size, version, seqid
+        cdef TType ttype
+
+        size = read_i32(self.trans)
+        version = size & VERSION_MASK
         if version != VERSION_1:
             raise ProtocolError('invalid version %d' % version)
-        msg_type = mgk & TYPE_MASK
 
-        name = self.buf.read_string()
-        self.buf.read_int32(&seq_id)
-        return name, msg_type, seq_id
+        ttype = <TType>(size & TYPE_MASK)
+        name = c_read_val(self.trans, T_STRING)
+        seqid = read_i32(self.trans)
+
+        return name, ttype, seqid
 
     def read_message_end(self):
         pass
 
-    def write_message_begin(self, name, int msg_type, int32_t seq_id):
-        cdef uint32_t mgk = VERSION_1 | msg_type
-        self.buf.write_int32(mgk)
-        self.buf.write_string(name)
-        self.buf.write_int32(seq_id)
+    def write_message_begin(self, name, TType ttype, int32_t seqid):
+        cdef int32_t version = VERSION_1 | ttype
+        write_i32(self.trans, version)
+        c_write_val(self.trans, T_STRING, name)
+        write_i32(self.trans, seqid)
 
     def write_message_end(self):
-        self.buf.write_flush()
+        self.trans.c_flush()
 
     def read_struct(self, obj):
-        cdef dict field_specs = obj.thrift_spec
-        cdef int total_argn = len(field_specs)
-        cdef byte field_type, field_type_defed
-        cdef int16_t field_id
-
-        for i in range(total_argn + 1):
-            self.buf.read_byte(&field_type)
-            if field_type == FIELD_STOP:
-                break
-            self.buf.read_int16(&field_id)
-            field_spec = field_specs.get(field_id, None)
-            if field_spec is None:
-                self.skip_val(field_type)
-            else:
-                if len(field_spec) == 2:
-                    field_type_defed, field_name = field_spec
-                    container_spec = None
-                else:
-                    field_type_defed, field_name, container_spec = field_spec
-                if field_type != field_type_defed:
-                    raise ProtocolError(
-                        'field type mismatch: got %d, expected %d' % (
-                        field_type, field_type_defed))
-                val = self.read_val(field_type, container_spec)
-                setattr(obj, field_name, val)
-        return obj
+        read_struct(self.trans, obj)
 
     def write_struct(self, obj):
-        for field_id, field_spec in obj.thrift_spec.items():
-            if len(field_spec) == 2:
-                f_type, f_name = field_spec
-                f_container_spec = None
-            else:
-                f_type, f_name, f_container_spec = field_spec
-
-            v = getattr(obj, f_name)
-            if v is None:
-                continue
-
-            self.buf.write_byte(f_type)
-            self.buf.write_int16(field_id)
-            self.write_val(f_type, v, f_container_spec)
-        self.buf.write_byte(FIELD_STOP)
-
-    def read_val(self, byte field_type, spec=None):
-        cdef byte byte_v, k_type, v_type
-        cdef int16_t int16_v
-        cdef int32_t int32_v
-        cdef int64_t int64_v
-        cdef double double_v
-
-        if field_type == T_TYPE_I32:
-            self.buf.read_int32(&int32_v)
-            return int32_v
-        elif field_type == T_TYPE_STRING or field_type == T_TYPE_UTF8:
-            return self.buf.read_string()
-        elif field_type == T_TYPE_I64:
-            self.buf.read_int64(&int64_v)
-            return int64_v
-        elif field_type == T_TYPE_I16:
-            self.buf.read_int16(&int16_v)
-            return int16_v
-        elif field_type == T_TYPE_DOUBLE:
-            self.buf.read_double(&double_v)
-            return double_v
-        elif field_type == T_TYPE_BOOL:
-            self.buf.read_byte(&byte_v)
-            return byte_v == 1
-        elif field_type == T_TYPE_STRUCT:
-            return self.read_struct(spec())
-        elif field_type == T_TYPE_MAP:
-            if isinstance(spec[0], int):
-                k_type = spec[0]
-                k_spec = None
-            else:
-                k_type, k_spec = spec[0]
-            if isinstance(spec[1], int):
-                v_type = spec[1]
-                v_spec = None
-            else:
-                v_type, v_spec = spec[1]
-            self.buf.read_byte(&byte_v)
-            if byte_v != k_type:
-                raise ProtocolError(
-                    'map key type mismatch: got %d, expected %d' % (
-                        byte_v, k_type))
-            self.buf.read_byte(&byte_v)
-            if byte_v != v_type:
-                raise ProtocolError(
-                    'map value type mismatch: got %d, expected %d' % (
-                        byte_v, v_type))
-            self.buf.read_int32(&int32_v)
-            return {self.read_val(k_type, k_spec): self.read_val(v_type, v_spec)
-                for i in range(int32_v)}
-        elif field_type == T_TYPE_LIST or field_type == T_TYPE_SET:
-            if isinstance(spec, tuple):
-                item_type, item_spec = spec[0], spec[1]
-            else:
-                item_type, item_spec = spec, None
-            self.buf.read_byte(&byte_v)
-            self.buf.read_int32(&int32_v)
-            if byte_v != item_type:
-                raise ProtocolError(
-                    'list/set item type mismatch: got %d, expected %d' % (
-                        item_type, byte_v))
-            return [self.read_val(byte_v, item_spec)
-                    for i in range(int32_v)]
-        elif field_type == T_TYPE_BYTE or field_type == T_TYPE_I08:
-            self.buf.read_byte(&byte_v)
-            return byte_v
-        else:
-            raise ProtocolError('unsupportted field type: %d' % field_type)
-
-    def write_val(self, field_type, obj, spec=None):
-        if field_type == T_TYPE_I32:
-            self.buf.write_int32(obj)
-        elif field_type == T_TYPE_STRING or field_type == T_TYPE_UTF8:
-            self.buf.write_string(obj)
-        elif field_type == T_TYPE_I64:
-            self.buf.write_int64(obj)
-        elif field_type == T_TYPE_I16:
-            self.buf.write_int16(obj)
-        elif field_type == T_TYPE_DOUBLE:
-            self.buf.write_double(obj)
-        elif field_type == T_TYPE_BOOL:
-            self.buf.write_byte(obj)
-        elif field_type == T_TYPE_STRUCT:
-            self.write_struct(obj)
-        elif field_type == T_TYPE_MAP:
-            if isinstance(spec[0], int):
-                k_type = spec[0]
-                k_spec = None
-            else:
-                k_type, k_spec = spec[0]
-            if isinstance(spec[1], int):
-                v_type = spec[1]
-                v_spec = None
-            else:
-                v_type, v_spec = spec[1]
-            self.buf.write_byte(k_type)
-            self.buf.write_byte(v_type)
-            self.buf.write_int32(len(obj))
-            for k, v in obj.items():
-                self.write_val(k_type, k, k_spec)
-                self.write_val(v_type, v, v_spec)
-        elif field_type == T_TYPE_LIST or field_type == T_TYPE_SET:
-            if isinstance(spec, tuple):
-                item_type, item_spec = spec[0], spec[1]
-            else:
-                item_type, item_spec = spec, None
-            self.buf.write_byte(item_type)
-            self.buf.write_int32(len(obj))
-            for item in obj:
-                self.write_val(item_type, item, item_spec)
-        elif field_type == T_TYPE_BYTE or field_type == T_TYPE_I08:
-            self.buf.write_byte(obj)
-        else:
-            raise ProtocolError('unsupportted field type: %d' % field_type)
-
-    cdef skip_val(self, byte field_type):
-        raise ProtocolError('skip')
+        write_struct(self.trans, obj)
 
 
 class TCyBinaryProtocolFactory(object):

@@ -6,7 +6,7 @@ import struct
 
 from io import BytesIO
 
-from .thrift import TType, TException
+from ..thrift import TType, TException
 
 
 class TTransportBase(object):
@@ -106,8 +106,8 @@ class TBufferedTransport(TTransportBase):
         self.__rbuf = BytesIO(b"")
         self.__rbuf_size = rbuf_size
 
-    def isOpen(self):
-        return self.__trans.isOpen()
+    def is_open(self):
+        return self.__trans.is_open()
 
     def open(self):
         return self.__trans.open()
