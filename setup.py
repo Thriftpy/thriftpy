@@ -32,10 +32,14 @@ cmdclass = {}
 ext_modules = []
 
 if cython:
+    ext_modules.append(Extension("thriftpy.transport.cytransport",
+                                 ["thriftpy/transport/cytransport.pyx"]))
     ext_modules.append(Extension("thriftpy.protocol.cybin",
                                  ["thriftpy/protocol/cybin/cybin.pyx"]))
     cmdclass["build_ext"] = build_ext
 else:
+    ext_modules.append(Extension("thriftpy.transport.cytransport",
+                                 ["thriftpy/transport/cytransport.c"]))
     ext_modules.append(Extension("thriftpy.protocol.cybin",
                                  ["thriftpy/protocol/cybin/cybin.c"]))
 
