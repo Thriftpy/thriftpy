@@ -124,6 +124,8 @@ cdef inline read_struct(TCyBufferedTransport buf, obj):
 
         setattr(obj, name, c_read_val(buf, ttype, spec))
 
+    return obj
+
 
 cdef inline write_struct(TCyBufferedTransport buf, obj):
     cdef int fid, items_len, i
@@ -237,7 +239,7 @@ cdef c_read_val(TCyBufferedTransport buf, TType ttype, spec=None):
                 for _ in range(size)}
 
     elif ttype == T_STRUCT:
-        read_struct(buf, spec())
+        return read_struct(buf, spec())
 
 
 cdef c_write_val(TCyBufferedTransport buf, TType ttype, val, spec=None):
@@ -359,7 +361,7 @@ cdef class TCyBinaryProtocol(object):
         self.trans.c_flush()
 
     def read_struct(self, obj):
-        read_struct(self.trans, obj)
+        return read_struct(self.trans, obj)
 
     def write_struct(self, obj):
         write_struct(self.trans, obj)
