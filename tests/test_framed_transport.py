@@ -1,17 +1,21 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import absolute_import
+
+import logging
+import socket
+import threading
+import time
+
+from os import path
+from unittest import TestCase
+
+from tornado import ioloop
+
+import thriftpy
 from thriftpy.tornado import make_server
 from thriftpy.rpc import make_client
 from thriftpy.transport import TFramedTransportFactory
-from tornado import ioloop
-from unittest import TestCase
-from os import path
-
-import logging
-import thriftpy
-import threading
-import socket
-import time
-
 
 logging.basicConfig(level=logging.INFO)
 
@@ -58,7 +62,7 @@ class FramedTransportTestCase(TestCase):
     def mk_client(self):
         return make_client(addressbook.AddressBookService,
                            '127.0.0.1', self.port,
-                           transport_factory=TFramedTransportFactory())
+                           trans_factory=TFramedTransportFactory())
 
     def setUp(self):
         self.mk_server()
