@@ -42,52 +42,57 @@ class ProtocolError(Exception):
     pass
 
 
-cdef inline char read_i08(TCyBufferedTransport buf):
+cdef inline char read_i08(TCyBufferedTransport buf) except? -1:
     cdef char data
     buf.c_read(1, &data)
     return data
 
 
-cdef inline int16_t read_i16(TCyBufferedTransport buf):
+cdef inline int16_t read_i16(TCyBufferedTransport buf) except? -1:
     cdef char data[2]
     buf.c_read(2, data)
     return be16toh((<int16_t*>data)[0])
 
 
-cdef inline int32_t read_i32(TCyBufferedTransport buf):
+cdef inline int32_t read_i32(TCyBufferedTransport buf) except? -1:
     cdef char data[4]
     buf.c_read(4, data)
     return be32toh((<int32_t*>data)[0])
 
 
-cdef inline int64_t read_i64(TCyBufferedTransport buf):
+cdef inline int64_t read_i64(TCyBufferedTransport buf) except? -1:
     cdef char data[8]
     buf.c_read(8, data)
     return be64toh((<int64_t*>data)[0])
 
 
-cdef inline void write_i08(TCyBufferedTransport buf, char val):
+cdef inline int write_i08(TCyBufferedTransport buf, char val) except -1:
     buf.c_write(&val, 1)
+    return 0
 
 
-cdef inline void write_i16(TCyBufferedTransport buf, int16_t val):
+cdef inline int write_i16(TCyBufferedTransport buf, int16_t val) except -1:
     val = htobe16(val)
     buf.c_write(<char*>(&val), 2)
+    return 0
 
 
-cdef inline void write_i32(TCyBufferedTransport buf, int32_t val):
+cdef inline int write_i32(TCyBufferedTransport buf, int32_t val) except -1:
     val = htobe32(val)
     buf.c_write(<char*>(&val), 4)
+    return 0
 
 
-cdef inline void write_i64(TCyBufferedTransport buf, int64_t val):
+cdef inline int write_i64(TCyBufferedTransport buf, int64_t val) except -1:
     val = htobe64(val)
     buf.c_write(<char*>(&val), 8)
+    return 0
 
 
-cdef inline void write_double(TCyBufferedTransport buf, double val):
+cdef inline int write_double(TCyBufferedTransport buf, double val) except -1:
     cdef int64_t v = htobe64((<int64_t*>(&val))[0])
     buf.c_write(<char*>(&v), 8)
+    return 0
 
 
 cdef inline read_struct(TCyBufferedTransport buf, obj):
@@ -104,7 +109,7 @@ cdef inline read_struct(TCyBufferedTransport buf, obj):
 
         fid = read_i16(buf)
         if fid not in field_specs:
-            raise ProtocolError('skip')
+            raise ProtocolError("skip")
 
         field_spec = field_specs[fid]
         ttype = field_spec[0]
@@ -235,7 +240,7 @@ cdef c_read_val(TCyBufferedTransport buf, TType ttype, spec=None):
         read_struct(buf, spec())
 
 
-cdef void c_write_val(TCyBufferedTransport buf, TType ttype, val, spec=None):
+cdef c_write_val(TCyBufferedTransport buf, TType ttype, val, spec=None):
     cdef int val_len, i
     cdef TType e_type, v_type, k_type
 
