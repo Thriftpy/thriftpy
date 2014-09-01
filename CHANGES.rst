@@ -1,6 +1,17 @@
 ThriftPy Changelog
 ==================
 
+Version 0.1.9
+-------------
+
+Released on September 1, 2014.
+
+- refine cython binary protocol, add cython buffered transport, via `#32`_.
+- param name change, rename transport_factory to trans_factory in rpc.
+
+.. _`#32`: https://github.com/eleme/thriftpy/pull/32
+
+
 Version 0.1.8
 -------------
 
