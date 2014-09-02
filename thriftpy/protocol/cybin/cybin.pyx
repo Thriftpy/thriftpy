@@ -243,7 +243,7 @@ cdef c_read_val(TCyBufferedTransport buf, TType ttype, spec=None):
 
 
 cdef c_write_val(TCyBufferedTransport buf, TType ttype, val, spec=None):
-    cdef int val_len, i
+    cdef int val_len
     cdef TType e_type, v_type, k_type
 
     if ttype == T_BOOL:
@@ -285,8 +285,8 @@ cdef c_write_val(TCyBufferedTransport buf, TType ttype, val, spec=None):
         write_i08(buf, e_type)
         write_i32(buf, val_len)
 
-        for i in range(val_len):
-            c_write_val(buf, e_type, val[i], e_spec)
+        for e_val in val:
+            c_write_val(buf, e_type, e_val, e_spec)
 
     elif ttype == T_MAP:
         key = spec[0]

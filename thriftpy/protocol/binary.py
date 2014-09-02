@@ -116,8 +116,8 @@ def write_val(outbuf, ttype, val, spec=None):
 
         val_len = len(val)
         write_list_begin(outbuf, e_type, val_len)
-        for i in range(val_len):
-            write_val(outbuf, e_type, val[i], t_spec)
+        for e_val in val:
+            write_val(outbuf, e_type, e_val, t_spec)
 
     elif ttype == TType.MAP:
         if isinstance(spec[0], int):
