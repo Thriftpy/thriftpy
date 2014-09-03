@@ -9,8 +9,8 @@ from .exc import ThriftGrammerError
 
 
 def p_error(p):
-    raise ThriftGrammerError('Thrift syntax error %r at line %d' %
-                            (p.value[0], p.lineno))
+    raise ThriftGrammerError('Grammer error %r at line %d' %
+                            (p.value, p.lineno))
 
 
 def p_start(p):

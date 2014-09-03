@@ -129,7 +129,7 @@ def t_LITERAL(t):
                 val += maps[s[i]]
             else:
                 msg = 'Unexcepted escaping characher: %s' % s[i]
-                raise ThriftSyntaxError(msg)
+                raise ThriftLexerError(msg)
         else:
             val += s[i]
 
