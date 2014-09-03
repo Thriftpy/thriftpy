@@ -128,7 +128,7 @@ class ContainerType(list):
 class ListType(ContainerType):   # ['list', val_type]
 
     def cast(self, data):
-        return map(self[1].cast, data)
+        return list(map(self[1].cast, data))
 
 
 class MapType(ContainerType):  # ['map', k_type, v_type]
