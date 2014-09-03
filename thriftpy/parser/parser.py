@@ -3,13 +3,14 @@
 # ref: https://thrift.apache.org/docs/idl
 
 from ply import yacc
-from . import ThriftSyntaxError
-from .lexer import tokens
+from .lexer import tokens, lexer
 from .model import *
+from .exc import ThriftGrammerError
 
 
 def p_error(p):
-    raise ThriftSyntaxError(p)
+    raise ThriftGrammerError('Grammer error %r at line %d' %
+                            (p.value, p.lineno))
 
 
 def p_start(p):
@@ -120,14 +121,15 @@ def p_enum(p):
     '''enum : ENUM IDENTIFIER '{' enum_seq '}' '''
 
     dct = dict(p[4])
+    vals = list(dct.values())
     num = 0
-    vals = dct.values()
 
     for key in dct:
         if dct[key] is None:
             while num in vals:
                 num += 1
             dct[key] = num
+            vals.append(num)
 
     thrift.enums[p[2]] = dct
 
@@ -298,6 +300,7 @@ thrift = None
 def parse(data):
     global thrift
     thrift = Thrift()
+    lexer.lineno = 1
     parser.parse(data)
     return thrift
 
