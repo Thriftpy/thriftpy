@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from thriftpy.transport import TMemoryBuffer
-from thriftpy.thrift import TPayload, TType
-
 from thriftpy.protocol import TJSONProtocol
+from thriftpy.thrift import TPayload, TType
+from thriftpy.transport import TMemoryBuffer
 
 import thriftpy.protocol.json as proto
 

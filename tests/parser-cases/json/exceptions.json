@@ -1,0 +1,28 @@
+{
+  "includes": [],
+  "namespaces": {},
+  "typedefs": {},
+  "enums": {},
+  "unions": {},
+  "consts": {},
+  "services": {},
+  "exceptions": {
+    "SyntaxError": [
+      {
+        "id": 1,
+        "name": "lineNumber",
+        "type": "i32",
+        "value": null,
+        "requirement": null
+      },
+      {
+        "id": 2,
+        "name": "errorMessage",
+        "type": "string",
+        "value": null,
+        "requirement": null
+      }
+    ]
+  },
+  "structs": {}
+}

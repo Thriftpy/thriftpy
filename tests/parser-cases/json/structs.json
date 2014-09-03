@@ -1,0 +1,28 @@
+{
+  "includes": [],
+  "namespaces": {},
+  "typedefs": {},
+  "enums": {},
+  "unions": {},
+  "consts": {},
+  "services": {},
+  "exceptions": {},
+  "structs": {
+    "Person": [
+      {
+        "id": 1,
+        "name": "name",
+        "type": "string",
+        "value": null,
+        "requirement": null
+      },
+      {
+        "id": 2,
+        "name": "age",
+        "type": "i32",
+        "value": null,
+        "requirement": null
+      }
+    ]
+  }
+}
