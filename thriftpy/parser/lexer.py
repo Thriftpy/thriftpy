@@ -2,7 +2,7 @@
 # flake8: noqa
 
 from ply import lex
-from . import ThriftLexerError
+from .exc import ThriftLexerError
 
 
 literals = ':;,=*{}()<>[]'

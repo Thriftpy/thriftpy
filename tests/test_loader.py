@@ -51,5 +51,5 @@ def test_load_exc():
 
 
 def test_load_service():
-    assert ab.AddressBookService.thrift_services == \
-        ab_tt.AddressBookService.thrift_services
+    assert not set(ab.AddressBookService.thrift_services).difference(
+        ab_tt.AddressBookService.thrift_services)

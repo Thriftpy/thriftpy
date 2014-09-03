@@ -120,18 +120,21 @@ def p_typedef(p):
 def p_enum(p):
     '''enum : ENUM IDENTIFIER '{' enum_seq '}' '''
 
-    dct = dict(p[4])
-    vals = list(dct.values())
-    num = 0
+    if not p[4]:
+        thrift.enums[p[2]] = {}
+    else:
+        init_val = p[4][0][1]
+        vals = [-1 if init_val is None else init_val]
 
-    for key in dct:
-        if dct[key] is None:
-            while num in vals:
-                num += 1
-            dct[key] = num
-            vals.append(num)
+        for item in p[4]:
+            if item[1] is None:
+                val = vals[-1] + 1
+                item[1] = val
+                vals.append(val)
+            vals.append(item[1])
 
-    thrift.enums[p[2]] = dct
+        dct = dict(p[4])
+        thrift.enums[p[2]] = dct
 
 
 def p_enum_seq(p):
