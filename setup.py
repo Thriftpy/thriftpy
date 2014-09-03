@@ -44,7 +44,7 @@ else:
                                  ["thriftpy/protocol/cybin/cybin.c"]))
 
 setup(name="thriftpy",
-      version=__import__('thriftpy').__version__,
+      version='0.1.9',
       description="Pure python implemention of Apache Thrift.",
       keywords="thrift python thriftpy",
       author="Lx Yu",
