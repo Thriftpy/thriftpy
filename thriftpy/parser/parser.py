@@ -3,13 +3,13 @@
 # ref: https://thrift.apache.org/docs/idl
 
 from ply import yacc
-from .lexer import tokens
+from .lexer import tokens, lexer
 from .model import *
-from .exc import ThriftSyntaxError
+from .exc import ThriftGrammerError
 
 
 def p_error(p):
-    raise ThriftSyntaxError(p)
+    raise ThriftGrammerError(p)
 
 
 def p_start(p):
@@ -302,6 +302,7 @@ thrift = None
 def parse(data):
     global thrift
     thrift = Thrift()
+    lexer.lineno = 1
     parser.parse(data)
     return thrift
 

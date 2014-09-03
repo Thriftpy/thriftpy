@@ -51,7 +51,7 @@ t_ignore = ' \t\r'   # whitespace
 
 
 def t_error(t):
-    raise ThriftSyntaxError('Illegal characher %r at line %d' %
+    raise ThriftLexerError('Illegal characher %r at line %d' %
                             (t.value[0], t.lineno))
 
 
