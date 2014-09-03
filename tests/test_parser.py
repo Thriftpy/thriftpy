@@ -16,9 +16,6 @@ def _json(name):
 def _thrift(name):
     path = os.path.join('parser-cases', 'thrift', name + '.thrift')
     dct = parse(open(path).read())
-    del dct['__hash__']
-    del dct['__python__']
-    del dct['__version__']
     return dct
 
 
