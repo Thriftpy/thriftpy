@@ -37,3 +37,4 @@ class TestParser(object):
     test_exceptions = case('exceptions')
     test_serices = case('services')
     test_tutorial = case('tutorial')
+    test_escape = case('escape')
