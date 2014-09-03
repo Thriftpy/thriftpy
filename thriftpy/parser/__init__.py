@@ -7,35 +7,20 @@
     thrift parser using ply
 """
 
-import hashlib
 import itertools
 import os
-import pickle
 import sys
 import types
 
-from .parser import parse as _parse
+from .parser import parse
 from ..thrift import gen_init, TException, TPayload, TType
-from .. import __version__, __python__
 
-
-def parse(schema):
-    result = _parse(schema)
-    result.update({
-        "__version__": __version__,
-        "__python__": __python__[:2],
-        "__hash__": hashlib.md5(schema.encode("utf-8")).digest()
-    })
-    return result
 
 _thriftloader = {}
 
 
-def load(thrift_file, module_name=None, cache=True):
-    """Load thrift_file as a module, default use cache to accelerate
-    tokenize processing.
-
-    Set cache to False if you don't want to load from cache.
+def load(thrift_file, module_name=None):
+    """Load thrift_file as a module
 
     The module loaded and objects inside may only be pickled if module_name
     was provided.
@@ -61,38 +46,7 @@ def load(thrift_file, module_name=None, cache=True):
     with open(thrift_file, "r") as fp:
         schema = fp.read()
 
-    def _parse_and_cache(schema):
-        result = parse(schema)
-
-        # cache result with '.cache' suffix
-        with open("{0}.cache".format(thrift_file), "wb") as fp:
-            pickle.dump(result, fp, protocol=1)
-
-        return result
-
-    # try load from cache first
-    if not cache:
-        result = parse(schema)
-    else:
-        try:
-            with open("{}.cache".format(thrift_file), "rb") as fp:
-                result = pickle.load(fp)
-
-        # 3 possible reasons for cache failure:
-        # - cache not exists
-        # - cache corrupt
-        # - cache protocol version not found
-        except (IOError, ValueError, pickle.UnpicklingError):
-            result = _parse_and_cache(schema)
-
-        else:
-            # test cache versions correct
-            if result['__version__'] != __version__ or \
-                    result["__python__"] != __python__[:2] or \
-                    result["__hash__"] != hashlib.md5(
-                        schema.encode("utf-8")).digest():
-                result = _parse_and_cache(schema)
-
+    result = parse(schema)
     struct_names = list(itertools.chain(result["structs"].keys(),
                                         result["unions"].keys(),
                                         result["exceptions"].keys()))
@@ -226,7 +180,7 @@ def _import_module(import_name):
         return __import__(import_name)
 
 
-def load_module(fullname, cache=True):
+def load_module(fullname):
     """Load thrift_file by fullname, fullname should have '_thrift' as
     suffix.
 
@@ -249,6 +203,6 @@ def load_module(fullname, cache=True):
         path = fullname
     thrift_file = "{0}.thrift".format(path[:-7])
 
-    module = load(thrift_file, module_name=fullname, cache=cache)
+    module = load(thrift_file, module_name=fullname)
     sys.modules[fullname] = module
     return sys.modules[fullname]
