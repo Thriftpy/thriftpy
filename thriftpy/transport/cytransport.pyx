@@ -18,9 +18,8 @@ cdef class TCyBuffer(object):
             self.buf = NULL
 
     cdef void move_to_start(self):
-        if self.cur != 0 and self.data_size > 0:
-            memmove(self.buf, self.buf + self.cur, self.data_size)
-            self.cur = 0
+        memmove(self.buf, self.buf + self.cur, self.data_size)
+        self.cur = 0
 
     cdef void clean(self):
         self.cur = 0
