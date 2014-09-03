@@ -75,6 +75,15 @@ class TPayloadMeta(type):
         return super(TPayloadMeta, cls).__new__(cls, name, bases, attrs)
 
 
+def gen_init(cls, thrift_spec=None, default_spec=None):
+    if thrift_spec is not None:
+        cls.thrift_spec = thrift_spec
+
+    if "default_spec" is not None:
+        cls.__init__ = init_func_generator(default_spec)
+    return cls
+
+
 class TPayload(with_metaclass(TPayloadMeta, object)):
 
     def read(self, iprot):

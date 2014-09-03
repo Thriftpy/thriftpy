@@ -1,0 +1,150 @@
+{
+  "namespaces": {
+    "tutorial": "perl"
+  },
+  "includes": [
+    "shared.thrift"
+  ],
+  "services": {
+    "Calculator": {
+      "extends": "shared.SharedService",
+      "apis": {
+        "add": {
+          "fields": [
+            {
+              "requirement": null,
+              "type": "i32",
+              "id": 1,
+              "value": null,
+              "name": "num1"
+            },
+            {
+              "requirement": null,
+              "type": "i32",
+              "id": 2,
+              "value": null,
+              "name": "num2"
+            }
+          ],
+          "oneway": false,
+          "type": "i32",
+          "name": "add",
+          "throws": []
+        },
+        "ping": {
+          "fields": [],
+          "oneway": false,
+          "type": "void",
+          "name": "ping",
+          "throws": []
+        },
+        "calculate": {
+          "fields": [
+            {
+              "requirement": null,
+              "type": "i32",
+              "id": 1,
+              "value": null,
+              "name": "logid"
+            },
+            {
+              "requirement": null,
+              "type": "Work",
+              "id": 2,
+              "value": null,
+              "name": "w"
+            }
+          ],
+          "oneway": false,
+          "type": "i32",
+          "name": "calculate",
+          "throws": [
+            {
+              "requirement": null,
+              "type": "InvalidOperation",
+              "id": 1,
+              "value": null,
+              "name": "ouch"
+            }
+          ]
+        },
+        "zip": {
+          "fields": [],
+          "oneway": true,
+          "type": "void",
+          "name": "zip",
+          "throws": []
+        }
+      }
+    }
+  },
+  "unions": {},
+  "typedefs": {
+    "MyInteger": "i32"
+  },
+  "consts": {
+    "MAPCONSTANT": {
+      "goodnight": "moon",
+      "hello": "world"
+    },
+    "INT32CONSTANT": 9853
+  },
+  "exceptions": {
+    "InvalidOperation": [
+      {
+        "requirement": null,
+        "type": "i32",
+        "id": 1,
+        "value": null,
+        "name": "what"
+      },
+      {
+        "requirement": null,
+        "type": "string",
+        "id": 2,
+        "value": null,
+        "name": "why"
+      }
+    ]
+  },
+  "enums": {
+    "Operation": {
+      "MULTIPLY": 3,
+      "ADD": 1,
+      "SUBTRACT": 2,
+      "DIVIDE": 4
+    }
+  },
+  "structs": {
+    "Work": [
+      {
+        "requirement": null,
+        "type": "i32",
+        "id": 1,
+        "value": 0,
+        "name": "num1"
+      },
+      {
+        "requirement": null,
+        "type": "i32",
+        "id": 2,
+        "value": null,
+        "name": "num2"
+      },
+      {
+        "requirement": null,
+        "type": "Operation",
+        "id": 3,
+        "value": null,
+        "name": "op"
+      },
+      {
+        "requirement": "optional",
+        "type": "string",
+        "id": 4,
+        "value": null,
+        "name": "comment"
+      }
+    ]
+  }
+}

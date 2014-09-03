@@ -1,0 +1,11 @@
+{
+  "includes": ["shared.thrift", "sample.thrift"],
+  "namespaces": {},
+  "enums": {},
+  "structs": {},
+  "unions": {},
+  "exceptions": {},
+  "typedefs": {},
+  "consts": {},
+  "services": {}
+}

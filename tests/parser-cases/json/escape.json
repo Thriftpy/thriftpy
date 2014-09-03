@@ -1,0 +1,13 @@
+{
+  "consts": {
+    "name": "\t\n\r\\"
+  },
+  "includes": [],
+  "namespaces": {},
+  "enums": {},
+  "structs": {},
+  "unions": {},
+  "exceptions": {},
+  "typedefs": {},
+  "services": {}
+}

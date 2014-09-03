@@ -1,0 +1,18 @@
+{
+  "consts": {
+    "num1": 1,
+    "num2": 2000,
+    "num3": 30000000000,
+    "str": "hello",
+    "lst": [1, 2, 3],
+    "mp": {"key": "val"}
+  },
+  "includes": [],
+  "namespaces": {},
+  "enums": {},
+  "structs": {},
+  "unions": {},
+  "exceptions": {},
+  "typedefs": {},
+  "services": {}
+}

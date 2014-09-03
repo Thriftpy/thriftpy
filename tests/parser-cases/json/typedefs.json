@@ -1,0 +1,15 @@
+{
+  "typedefs": {
+    "myInt": "i32",
+    "str": "string",
+    "miniInt": "byte"
+  },
+  "includes": [],
+  "namespaces": {},
+  "enums": {},
+  "structs": {},
+  "unions": {},
+  "consts": {},
+  "services": {},
+  "exceptions": {}
+}

@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 from setuptools.extension import Extension
 
 install_requires = [
-    "pyparsing>=2.0.2,<2.1.0",
+    "ply>=3.4",
 ]
 
 tornado_requires = [
@@ -44,7 +44,7 @@ else:
                                  ["thriftpy/protocol/cybin/cybin.c"]))
 
 setup(name="thriftpy",
-      version=__import__('thriftpy').__version__,
+      version='0.1.9',
       description="Pure python implemention of Apache Thrift.",
       keywords="thrift python thriftpy",
       author="Lx Yu",
