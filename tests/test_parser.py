@@ -2,10 +2,10 @@
 
 
 import os
-import sys
 import json
 
 from thriftpy import parse
+from thriftpy.parser.exc import ThriftLexerError, ThriftGrammerError
 
 
 def _json(name):
@@ -38,3 +38,21 @@ class TestParser(object):
     test_serices = case('services')
     test_tutorial = case('tutorial')
     test_escape = case('escape')
+
+    def test_lexer_exc(self):
+        try:
+            _thrift('bad_lexer')
+        except SyntaxError as e:
+            assert isinstance(e, ThriftLexerError)
+
+    def test_lexer_bad_escaping_exc(self):
+        try:
+            _thrift('bad_lexer_escaping')
+        except SyntaxError as e:
+            assert isinstance(e, ThriftLexerError)
+
+    def test_bad_grammer(self):
+        try:
+            _thrift('bad_grammer')
+        except SyntaxError as e:
+            assert isinstance(e, ThriftGrammerError)
