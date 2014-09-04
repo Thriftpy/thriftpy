@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# flake8: noqa
 
 import sys
 
@@ -21,6 +20,7 @@ class Thrift(dict):
                  unions=None,
                  exceptions=None,
                  services=None):
+
         super(Thrift, self).__init__()
 
         if includes is None:

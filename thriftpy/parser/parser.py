@@ -1,16 +1,31 @@
 # -*- coding: utf-8 -*-
-# flake8: noqa
-# ref: https://thrift.apache.org/docs/idl
+
+"""
+IDL Ref:
+    https://thrift.apache.org/docs/idl
+"""
+
+from __future__ import absolute_import
 
 from ply import yacc
-from .lexer import tokens, lexer
-from .model import *
+
+from .lexer import tokens, lexer  # noqa
+from .model import (
+    BASE_TYPE_MAPS,
+    Field,
+    Function,
+    ListType,
+    MapType,
+    Service,
+    SetType,
+    Thrift
+)
 from .exc import ThriftGrammerError
 
 
 def p_error(p):
     raise ThriftGrammerError('Grammer error %r at line %d' %
-                            (p.value, p.lineno))
+                             (p.value, p.lineno))
 
 
 def p_start(p):

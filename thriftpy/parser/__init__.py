@@ -4,8 +4,10 @@
     thriftpy.parser
     ~~~~~~~~~~~~~~~
 
-    thrift parser using ply
+    Thrift parser using ply
 """
+
+from __future__ import absolute_import
 
 import itertools
 import os
