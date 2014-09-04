@@ -1,6 +1,19 @@
 ThriftPy Changelog
 ==================
 
+Version 0.1.10
+--------------
+
+Released on September 4, 2014.
+
+- fix memory free bug in cython buffered transport, via `#35`_.
+- new thrift parser by PLY, removed cache since the performance is much more
+  faster now, via `#36`_.
+
+.. _`#35`: https://github.com/eleme/thriftpy/pull/35
+.. _`#36`: https://github.com/eleme/thriftpy/pull/36
+
+
 Version 0.1.9
 -------------
 
