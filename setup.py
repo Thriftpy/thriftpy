@@ -5,12 +5,12 @@ from setuptools import setup, find_packages
 from setuptools.extension import Extension
 
 install_requires = [
-    "pyparsing>=2.0.2,<2.1.0",
+    "ply==3.4",
 ]
 
 tornado_requires = [
     "tornado>=4.0,<5.0",
-    "toro"
+    "toro==0.6"
 ]
 
 dev_requires = [

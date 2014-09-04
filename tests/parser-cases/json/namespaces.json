@@ -1,0 +1,11 @@
+{
+  "namespaces": {"SAMPLE": "php", "sample": "py"},
+  "includes": [],
+  "enums": {},
+  "structs": {},
+  "unions": {},
+  "exceptions": {},
+  "typedefs": {},
+  "consts": {},
+  "services": {}
+}

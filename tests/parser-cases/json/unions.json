@@ -1,0 +1,28 @@
+{
+  "typedefs": {},
+  "includes": [],
+  "namespaces": {},
+  "structs": {},
+  "consts": {},
+  "services": {},
+  "exceptions": {},
+  "enums": {},
+  "unions": {
+    "Sample": [
+      {
+        "id": 1,
+        "name": "size",
+        "type": "i32",
+        "value": null,
+        "requirement": null
+      },
+      {
+        "id": 2,
+        "name": "name",
+        "type": "string",
+        "value": null,
+        "requirement": null
+      }
+    ]
+  }
+}
