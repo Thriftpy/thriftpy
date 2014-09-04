@@ -8,5 +8,11 @@ __all__ = ['TBinaryProtocol', 'TBinaryProtocolFactory',
 
 
 from .binary import TBinaryProtocol, TBinaryProtocolFactory
-from .cybin import TCyBinaryProtocol, TCyBinaryProtocolFactory
 from .json import TJSONProtocol, TJSONProtocolFactory
+
+from thriftpy._compat import PYPY
+if not PYPY:
+    from .cybin import TCyBinaryProtocol, TCyBinaryProtocolFactory
+else:
+    TCyBinaryProtocol = TBinaryProtocol
+    TCyBinaryProtocolFactory = TBinaryProtocolFactory

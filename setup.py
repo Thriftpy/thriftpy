@@ -28,26 +28,33 @@ dev_requires = [
 ] + tornado_requires
 
 
+# cython detection
 try:
     from Cython.Distutils import build_ext
-    cython = True
+    CYTHON = True
 except ImportError:
-    cython = False
+    CYTHON = False
+
+# pypy detection
+import sys
+PYPY = "__pypy__" in sys.modules
 
 cmdclass = {}
 ext_modules = []
 
-if cython:
-    ext_modules.append(Extension("thriftpy.transport.cytransport",
-                                 ["thriftpy/transport/cytransport.pyx"]))
-    ext_modules.append(Extension("thriftpy.protocol.cybin",
-                                 ["thriftpy/protocol/cybin/cybin.pyx"]))
-    cmdclass["build_ext"] = build_ext
-else:
-    ext_modules.append(Extension("thriftpy.transport.cytransport",
-                                 ["thriftpy/transport/cytransport.c"]))
-    ext_modules.append(Extension("thriftpy.protocol.cybin",
-                                 ["thriftpy/protocol/cybin/cybin.c"]))
+# only build ext in CPython
+if not PYPY:
+    if CYTHON:
+        ext_modules.append(Extension("thriftpy.transport.cytransport",
+                                     ["thriftpy/transport/cytransport.pyx"]))
+        ext_modules.append(Extension("thriftpy.protocol.cybin",
+                                     ["thriftpy/protocol/cybin/cybin.pyx"]))
+        cmdclass["build_ext"] = build_ext
+    else:
+        ext_modules.append(Extension("thriftpy.transport.cytransport",
+                                     ["thriftpy/transport/cytransport.c"]))
+        ext_modules.append(Extension("thriftpy.protocol.cybin",
+                                     ["thriftpy/protocol/cybin/cybin.c"]))
 
 setup(name="thriftpy",
       version=version,
