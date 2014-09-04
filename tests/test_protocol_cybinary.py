@@ -1,10 +1,18 @@
 # -*- coding: utf-8 -*-
 
+import sys
+PYPY = "__pypy__" in sys.modules
+
+import pytest
+pytestmark = pytest.mark.skipif(PYPY, reason="cybin not enabled in pypy.")
+
 from thriftpy._compat import u
-from thriftpy.protocol import cybin as proto
 from thriftpy.thrift import TType, TPayload
 from thriftpy.transport import TMemoryBuffer, TCyBufferedTransport
 from thriftpy.utils import hexlify
+
+if not PYPY:
+    from thriftpy.protocol import cybin as proto
 
 
 class TItem(TPayload):

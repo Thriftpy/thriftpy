@@ -4,14 +4,12 @@ from __future__ import absolute_import
 
 import binascii
 
-from .transport import TMemoryBuffer, TCyBufferedTransport
-from .protocol import TBinaryProtocolFactory, TCyBinaryProtocolFactory
+from .transport import TMemoryBuffer
+from .protocol import TBinaryProtocolFactory
 
 
 def serialize(thrift_object, proto_factory=TBinaryProtocolFactory()):
     transport = TMemoryBuffer()
-    if isinstance(proto_factory, TCyBinaryProtocolFactory):
-        transport = TCyBufferedTransport(transport)
     protocol = proto_factory.get_protocol(transport)
     thrift_object.write(protocol)
     protocol.write_message_end()
@@ -20,8 +18,6 @@ def serialize(thrift_object, proto_factory=TBinaryProtocolFactory()):
 
 def deserialize(thrift_object, buf, proto_factory=TBinaryProtocolFactory()):
     transport = TMemoryBuffer(buf)
-    if isinstance(proto_factory, TCyBinaryProtocolFactory):
-        transport = TCyBufferedTransport(transport)
     protocol = proto_factory.get_protocol(transport)
     thrift_object.read(protocol)
     return thrift_object
