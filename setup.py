@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import re
+from os.path import join, dirname
+
+with open(join(dirname(__file__), 'thriftpy', '__init__.py'), 'r') as f:
+    version = re.match(r".*__version__ = '(.*?)'", f.read(), re.S).group(1)
+
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
 
@@ -44,7 +50,7 @@ else:
                                  ["thriftpy/protocol/cybin/cybin.c"]))
 
 setup(name="thriftpy",
-      version=__import__('thriftpy').__version__,
+      version=version,
       description="Pure python implemention of Apache Thrift.",
       keywords="thrift python thriftpy",
       author="Lx Yu",
