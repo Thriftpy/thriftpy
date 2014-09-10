@@ -162,8 +162,9 @@ def load(thrift_file, module_name=None, include_dirs=None):
 
             base = getattr(module, extends_name)
 
-        assert hasattr(base, "thrift_services"), "%s is not a valid service base" % (service["extends"])
-                
+        assert hasattr(base, "thrift_services"), \
+            "%s is not a valid service base" % (service["extends"])
+
         service_cls = _type(name, base)
         thrift_services = []
         for api_name, api in service["apis"].items():

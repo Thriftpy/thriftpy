@@ -5,14 +5,13 @@
 
 from thriftpy.thrift import (
     TPayload,
-    TException,
     TType,
 )
 
 
 class MixItem(TPayload):
     thrift_spec = {
-        1: (TType.LIST, "list_map", 
+        1: (TType.LIST, "list_map",
             (TType.MAP, (TType.STRING, TType.STRING))),
         2: (TType.MAP, "map_list",
             (TType.STRING, (TType.LIST, TType.STRING)))
