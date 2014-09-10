@@ -26,10 +26,10 @@ def test_load_enum():
 def test_load_struct():
     assert ab_tt.PhoneNumber.__base__ == TPayload
 
-    ab_thrift_spec = {k: map(str, v) for k, v in
-                      ab.PhoneNumber.thrift_spec.iteritems()}
-    ab_tt_thrift_spec = {k: map(str, v) for k, v in
-                         ab_tt.PhoneNumber.thrift_spec.iteritems()}
+    ab_thrift_spec = {k: list(map(str, v)) for k, v in
+                      ab.PhoneNumber.thrift_spec.items()}
+    ab_tt_thrift_spec = {k: list(map(str, v)) for k, v in
+                         ab_tt.PhoneNumber.thrift_spec.items()}
     assert ab_thrift_spec == ab_tt_thrift_spec
 
     assert storm_tt.NullStruct.__base__ == TPayload
