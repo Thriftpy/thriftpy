@@ -9,6 +9,9 @@ from thriftpy.thrift import (
     TType,
 )
 
+from container import MixItem
+
+
 DEFAULT_LIST_SIZE = 10
 
 
@@ -22,8 +25,9 @@ class PhoneNumber(TPayload):
     thrift_spec = {
         1: (TType.I32, "type"),
         2: (TType.STRING, "number"),
+        3: (TType.STRUCT, "mix_item", MixItem),
     }
-    default_spec = [("type", None), ("number", None)]
+    default_spec = [("type", None), ("number", None), ("mix_item", None)]
 
 
 class Person(TPayload):
