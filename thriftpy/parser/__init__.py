@@ -11,6 +11,7 @@ from __future__ import absolute_import
 
 import itertools
 import os
+import os.path
 import sys
 import types
 
@@ -21,7 +22,7 @@ from ..thrift import gen_init, TException, TPayload, TType
 _thriftloader = {}
 
 
-def load(thrift_file, module_name=None):
+def load(thrift_file, module_name=None, include_dirs=None):
     """Load thrift_file as a module
 
     The module loaded and objects inside may only be pickled if module_name
@@ -30,6 +31,8 @@ def load(thrift_file, module_name=None):
     if module_name and not module_name.endswith("_thrift"):
         raise ValueError(
             "ThriftPy can only generate module with '_thrift' suffix")
+
+    include_dirs = list(include_dirs or ["."])
 
     global _thriftloader
     # if module_name provided, it should be unique. we'll ignore the filename
@@ -45,30 +48,57 @@ def load(thrift_file, module_name=None):
         basename = os.path.basename(thrift_file)
         module_name, _ = os.path.splitext(basename)
 
-    with open(thrift_file, "r") as fp:
-        schema = fp.read()
+    exception = None
+    for d in include_dirs:
+        try:
+            path = os.path.join(d, thrift_file)
+            with open(path, "r") as fp:
+                schema = fp.read()
+        except IOError as e:
+            exception = e
+        else:
+            exception = None
+            break
+
+    if exception is not None:
+        raise exception
 
     result = parse(schema)
-    struct_names = list(itertools.chain(result["structs"].keys(),
-                                        result["unions"].keys(),
-                                        result["exceptions"].keys()))
 
     # load thrift schema as module
     thrift_schema = types.ModuleType(module_name)
     _type = lambda n, o: type(n, (o, ), {"__module__": module_name})
 
-    def _ttype(t):
+    def make_thrift_include_name(path):
+        name = os.path.basename(path)
+        assert name.endswith(".thrift")
+        return name[:-len(".thrift")]
+
+    thrift_schema._includes = {
+        make_thrift_include_name(path): load(path, include_dirs=include_dirs)
+        for path in result["includes"]
+    }
+
+    thrift_schema._struct_names = list(itertools.chain(
+        result["structs"].keys(),
+        result["unions"].keys(),
+        result["exceptions"].keys()))
+
+    def _ttype(t, module=None):
+        module = module or thrift_schema
         if isinstance(t, str):
-            if t in struct_names:
-                return TType.STRUCT, getattr(thrift_schema, t)
+            if "." in t:
+                include, field = t.split(".", 1)
+                return _ttype(field, module=module._includes[include])
+            elif t in module._struct_names:
+                return TType.STRUCT, getattr(module, t)
             elif t in result["enums"]:
-                return TType.I32
+                return TType.I32, getattr(module, t)
             elif t in result["typedefs"]:
                 return _ttype(result["typedefs"][t])
             else:
                 return getattr(TType, t.upper())
-
-        if t[0] == "list":
+        elif t[0] == "list":
             return TType.LIST, _ttype(t[1])
         elif t[0] == "map":
             return TType.MAP, (_ttype(t[1]), _ttype(t[2]))
@@ -123,7 +153,19 @@ def load(thrift_file, module_name=None):
 
     # load services
     for name, service in result["services"].items():
-        service_cls = _type(name, object)
+        base = _BaseService
+        if service["extends"]:
+            module, extends_name = thrift_schema, service["extends"]
+            if "." in service["extends"]:
+                module_name, extends_name = service["extends"].split(".", 1)
+                module = module._includes[module_name]
+
+            base = getattr(module, extends_name)
+
+        assert hasattr(base, "thrift_services"), \
+            "%s is not a valid service base" % (service["extends"])
+
+        service_cls = _type(name, base)
         thrift_services = []
         for api_name, api in service["apis"].items():
             thrift_services.append(api_name)
@@ -163,7 +205,7 @@ def load(thrift_file, module_name=None):
                      _default_spec(result_thrift_spec))
             setattr(service_cls, result_name, result_cls)
 
-        setattr(service_cls, "thrift_services", thrift_services)
+        service_cls.thrift_services = base.thrift_services + thrift_services
         setattr(thrift_schema, name, service_cls)
     thrift_schema.__file__ = thrift_file
 
@@ -208,3 +250,7 @@ def load_module(fullname):
     module = load(thrift_file, module_name=fullname)
     sys.modules[fullname] = module
     return sys.modules[fullname]
+
+
+class _BaseService(object):
+    thrift_services = []

@@ -1,8 +1,20 @@
 {
-  "includes": ["shared.thrift", "sample.thrift"],
+  "includes": ["structs.thrift", "enums.thrift"],
   "namespaces": {},
   "enums": {},
-  "structs": {},
+  "structs": {
+      "Both": [
+          {"requirement": null,
+           "type": "structs.Person",
+           "id": 1,
+           "value": null,
+           "name": "person"},
+          {"requirement": null,
+           "type": "enums.Enum1",
+           "id": 2,
+           "value": null,
+           "name": "enum1"}
+      ]},
   "unions": {},
   "exceptions": {},
   "typedefs": {},

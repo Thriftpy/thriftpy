@@ -1,3 +1,5 @@
+include "container.thrift"
+
 const i16 DEFAULT_LIST_SIZE = 10
 
 typedef i32 timestamp
@@ -11,6 +13,7 @@ enum PhoneType {
 struct PhoneNumber {
     1: optional PhoneType type = 0,
     2: optional string number,
+    3: optional container.MixItem mix_item,
 }
 
 struct Person {
