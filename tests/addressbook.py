@@ -23,7 +23,7 @@ class PhoneType(object):
 
 class PhoneNumber(TPayload):
     thrift_spec = {
-        1: (TType.I32, "type"),
+        1: (TType.I32, "type", PhoneType),
         2: (TType.STRING, "number"),
         3: (TType.STRUCT, "mix_item", MixItem),
     }

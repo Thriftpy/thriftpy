@@ -93,7 +93,7 @@ def load(thrift_file, module_name=None, include_dirs=None):
             elif t in module._struct_names:
                 return TType.STRUCT, getattr(module, t)
             elif t in result["enums"]:
-                return TType.I32
+                return TType.I32, getattr(module, t)
             elif t in result["typedefs"]:
                 return _ttype(result["typedefs"][t])
             else:

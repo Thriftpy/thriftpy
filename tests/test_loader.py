@@ -26,9 +26,9 @@ def test_load_enum():
 def test_load_struct():
     assert ab_tt.PhoneNumber.__base__ == TPayload
 
-    ab_thrift_spec = {k: list(map(str, v)) for k, v in
+    ab_thrift_spec = {k: [str(v).replace('_thrift', '') for v in vs] for k, vs in
                       ab.PhoneNumber.thrift_spec.items()}
-    ab_tt_thrift_spec = {k: list(map(str, v)) for k, v in
+    ab_tt_thrift_spec = {k: [str(v).replace('_thrift', '') for v in vs] for k, vs in
                          ab_tt.PhoneNumber.thrift_spec.items()}
     assert ab_thrift_spec == ab_tt_thrift_spec
 
