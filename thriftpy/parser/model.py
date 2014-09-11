@@ -143,7 +143,9 @@ class MapType(ContainerType):  # ['map', k_type, v_type]
 
 
 class SetType(ContainerType):  # ['set', v_type]
-    pass
+
+    def cast(self, data):
+        return frozenset(map(self[1].cast, data))
 
 
 BASE_TYPE_MAPS = {

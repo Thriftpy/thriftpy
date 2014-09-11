@@ -14,9 +14,16 @@ def _json(name):
     return json.load(open(path))
 
 
+def _to_json(value):
+    if isinstance(value, (set, frozenset)):
+        return list(sorted(value))
+
+    assert False
+
+
 def _thrift(name):
     path = os.path.join('parser-cases', 'thrift', name + '.thrift')
-    return parse(open(path).read())
+    return json.loads(json.dumps(parse(open(path).read()), default=_to_json))
 
 
 class TestParser(object):

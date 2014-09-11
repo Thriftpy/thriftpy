@@ -5,7 +5,8 @@
     "num3": 30000000000,
     "str": "hello",
     "lst": [1, 2, 3],
-    "mp": {"key": "val"}
+    "mp": {"key": "val"},
+    "st": [1, 2, 3]
   },
   "includes": [],
   "namespaces": {},
