@@ -28,11 +28,13 @@ def make_client(service, host, port,
 
 
 def make_server(service, handler, host, port,
-                proto_factory=TBinaryProtocolFactory()):
+                proto_factory=TBinaryProtocolFactory(),
+                trans_factory=TBufferedTransportFactory()):
     processor = TProcessor(service, handler)
     server_socket = TServerSocket(host=host, port=port)
     server = TThreadedServer(processor, server_socket,
-                             iprot_factory=proto_factory)
+                             iprot_factory=proto_factory,
+                             itrans_factory=trans_factory)
     return server
 
 
