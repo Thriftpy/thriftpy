@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import thriftpy
-from thriftpy.rpc import client_context
+pp_thrift = thriftpy.load("pingpong.thrift", module_name="pp_thrift")
 
-pingpong = thriftpy.load("pingpong.thrift")
+from thriftpy.rpc import client_context
 
 
 def main():
-    with client_context(pingpong.PingService, '127.0.0.1', 6000) as c:
+    with client_context(pp_thrift.PingService, '127.0.0.1', 6000) as c:
         pong = c.ping()
         print(pong)
 

@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 
 import thriftpy
-thriftpy.install_import_hook()
+calc_thrift = thriftpy.load("calc.thrift", module_name="calc_thrift")
 
 from thriftpy.protocol import TCyBinaryProtocolFactory
+from thriftpy.transport import TCyBufferedTransportFactory
 from thriftpy.rpc import client_context
-import calc_thrift as calc
 
 
 def main():
-    with client_context(calc.Calculator, '127.0.0.1', 6000,
-                        proto_factory=TCyBinaryProtocolFactory()) as cal:
+    with client_context(calc_thrift.Calculator, '127.0.0.1', 6000,
+                        proto_factory=TCyBinaryProtocolFactory(),
+                        trans_factory=TCyBufferedTransportFactory()) as cal:
         a = cal.mult(5, 2)
         b = cal.sub(7, 3)
         c = cal.sub(6, 4)

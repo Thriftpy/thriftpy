@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import thriftpy
-thriftpy.install_import_hook()
+calc_thrift = thriftpy.load("calc.thrift", module_name="calc_thrift")
 
 from thriftpy.protocol import TCyBinaryProtocolFactory
+from thriftpy.transport import TCyBufferedTransportFactory
 from thriftpy.rpc import make_server
-import calc_thrift as calc
 
 
 class Dispatcher(object):
@@ -27,8 +27,10 @@ class Dispatcher(object):
 
 
 def main():
-    server = make_server(calc.Calculator, Dispatcher(), '127.0.0.1', 6000,
-                         proto_factory=TCyBinaryProtocolFactory())
+    server = make_server(calc_thrift.Calculator, Dispatcher(),
+                         '127.0.0.1', 6000,
+                         proto_factory=TCyBinaryProtocolFactory(),
+                         trans_factory=TCyBufferedTransportFactory())
     print("serving...")
     server.serve()
 

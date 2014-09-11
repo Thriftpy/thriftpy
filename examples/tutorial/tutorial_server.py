@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import thriftpy
-thriftpy.install_import_hook()
+tutorial_thrift = thriftpy.load(
+    "tutorial.thrift", module_name="tutorial_thrift")
 
-from thriftpy.protocol import TCyBinaryProtocolFactory
 from thriftpy.rpc import make_server
-import tutorial_thrift as tutorial
 
 
 class CalculatorHandler(object):
@@ -22,26 +21,26 @@ class CalculatorHandler(object):
     def calculate(self, logid, work):
         print('calculate(%d, %r)' % (logid, work))
 
-        if work.op == tutorial.Operation.ADD:
+        if work.op == tutorial_thrift.Operation.ADD:
             val = work.num1 + work.num2
-        elif work.op == tutorial.Operation.SUBTRACT:
+        elif work.op == tutorial_thrift.Operation.SUBTRACT:
             val = work.num1 - work.num2
-        elif work.op == tutorial.Operation.MULTIPLY:
+        elif work.op == tutorial_thrift.Operation.MULTIPLY:
             val = work.num1 * work.num2
-        elif work.op == tutorial.Operation.DIVIDE:
+        elif work.op == tutorial_thrift.Operation.DIVIDE:
             if work.num2 == 0:
-                x = tutorial.InvalidOperation()
+                x = tutorial_thrift.InvalidOperation()
                 x.what = work.op
                 x.why = 'Cannot divide by 0'
                 raise x
             val = work.num1 / work.num2
         else:
-            x = tutorial.InvalidOperation()
+            x = tutorial_thrift.InvalidOperation()
             x.what = work.op
             x.why = 'Invalid operation'
             raise x
 
-        log = tutorial.SharedStruct()
+        log = tutorial_thrift.SharedStruct()
         log.key = logid
         log.value = '%d' % (val)
         self.log[logid] = log
@@ -57,9 +56,8 @@ class CalculatorHandler(object):
 
 
 def main():
-    server = make_server(
-        tutorial.Calculator, CalculatorHandler(), '127.0.0.1', 6000,
-        proto_factory=TCyBinaryProtocolFactory())
+    server = make_server(tutorial_thrift.Calculator, CalculatorHandler(),
+                         '127.0.0.1', 6000)
     print("serving...")
     server.serve()
 

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import thriftpy
-from thriftpy.rpc import make_server
+pp_thrift = thriftpy.load("pingpong.thrift", module_name="pp_thrift")
 
-pingpong = thriftpy.load("pingpong.thrift")
+from thriftpy.rpc import make_server
 
 
 class Dispatcher(object):
@@ -13,7 +13,8 @@ class Dispatcher(object):
 
 
 def main():
-    server = make_server(pingpong.PingService, Dispatcher(), '127.0.0.1', 6000)
+    server = make_server(pp_thrift.PingService, Dispatcher(),
+                         '127.0.0.1', 6000)
     print("serving...")
     server.serve()
 
