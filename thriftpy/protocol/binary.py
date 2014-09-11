@@ -59,9 +59,14 @@ def unpack_double(buf):
     return struct.unpack("!d", buf)[0]
 
 
-def write_message_begin(outbuf, name, ttype, seqid):
-    outbuf.write(pack_i32(VERSION_1 | ttype))
-    outbuf.write(pack_string(name.encode('utf-8')))
+def write_message_begin(outbuf, name, ttype, seqid, strict=True):
+    if strict:
+        outbuf.write(pack_i32(VERSION_1 | ttype))
+        outbuf.write(pack_string(name.encode('utf-8')))
+    else:
+        outbuf.write(pack_string(name.encode('utf-8')))
+        outbuf.write(pack_i8(ttype))
+
     outbuf.write(pack_i32(seqid))
 
 
@@ -155,19 +160,28 @@ def write_val(outbuf, ttype, val, spec=None):
         write_field_stop(outbuf)
 
 
-def read_message_begin(inbuf):
+def read_message_begin(inbuf, strict=True):
     sz = unpack_i32(inbuf.read(4))
-    version = sz & VERSION_MASK
-    if version != VERSION_1:
-        raise TProtocolException(
-            type=TProtocolException.BAD_VERSION,
-            message='Bad version in read_message_begin: %d' % (sz))
-    type_ = sz & TYPE_MASK
+    if sz < 0:
+        version = sz & VERSION_MASK
+        if version != VERSION_1:
+            raise TProtocolException(
+                type=TProtocolException.BAD_VERSION,
+                message='Bad version in read_message_begin: %d' % (sz))
+        name_sz = unpack_i32(inbuf.read(4))
+        name = inbuf.read(name_sz).decode('utf-8')
 
-    name_sz = unpack_i32(inbuf.read(4))
-    name = inbuf.read(name_sz).decode('utf-8')
+        type_ = sz & TYPE_MASK
+    else:
+        if strict:
+            raise TProtocolException(type=TProtocolException.BAD_VERSION,
+                                     message='No protocol version header')
+
+        name = inbuf.read(sz).decode('utf-8')
+        type_ = unpack_i8(inbuf.read(1))
 
     seqid = unpack_i32(inbuf.read(4))
+
     return name, type_, seqid
 
 
@@ -332,18 +346,22 @@ def skip(inbuf, ftype):
 class TBinaryProtocol(object):
     """Binary implementation of the Thrift protocol driver."""
 
-    def __init__(self, trans):
+    def __init__(self, trans, strict_read=True, strict_write=True):
         self.trans = trans
+        self.strict_read = strict_read
+        self.strict_write = strict_write
 
     def read_message_begin(self):
-        api, ttype, seqid = read_message_begin(self.trans)
+        api, ttype, seqid = read_message_begin(
+            self.trans, strict=self.strict_read)
         return api, ttype, seqid
 
     def read_message_end(self):
         pass
 
     def write_message_begin(self, name, ttype, seqid):
-        write_message_begin(self.trans, name, ttype, seqid)
+        write_message_begin(self.trans, name, ttype, seqid,
+                            strict=self.strict_write)
 
     def write_message_end(self):
         pass
@@ -356,5 +374,9 @@ class TBinaryProtocol(object):
 
 
 class TBinaryProtocolFactory(object):
+    def __init__(self, strict_read=True, strict_write=True):
+        self.strict_read = strict_read
+        self.strict_write = strict_write
+
     def get_protocol(self, trans):
-        return TBinaryProtocol(trans)
+        return TBinaryProtocol(trans, self.strict_read, self.strict_write)

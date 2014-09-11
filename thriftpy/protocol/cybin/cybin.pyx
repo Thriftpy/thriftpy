@@ -1,5 +1,6 @@
 from libc.stdlib cimport free, malloc
 from libc.stdint cimport int16_t, int32_t, int64_t
+from cpython cimport bool
 
 from thriftpy.transport.cytransport cimport TCyBufferedTransport
 
@@ -153,13 +154,30 @@ cdef inline write_struct(TCyBufferedTransport buf, obj):
     write_i08(buf, T_STOP)
 
 
+cdef inline c_read_string(TCyBufferedTransport buf, int32_t size):
+    cdef char string_val[STACK_STRING_LEN]
+
+    if size > STACK_STRING_LEN:
+        data = <char*>malloc(size)
+        buf.c_read(size, data)
+        py_data = data[:size]
+        free(data)
+    else:
+        buf.c_read(size, string_val)
+        py_data = string_val[:size]
+
+    try:
+        return py_data.decode("utf-8")
+    except UnicodeDecodeError:
+        return py_data
+
+
 cdef c_read_val(TCyBufferedTransport buf, TType ttype, spec=None):
     cdef int size
     cdef char* data
     cdef bytes py_data
     cdef int64_t n
     cdef TType v_type, k_type, orig_type, orig_key_type
-    cdef char string_val[STACK_STRING_LEN]
 
     if ttype == T_BOOL:
         return bool(read_i08(buf))
@@ -182,18 +200,7 @@ cdef c_read_val(TCyBufferedTransport buf, TType ttype, spec=None):
 
     elif ttype == T_STRING:
         size = read_i32(buf)
-        if size > STACK_STRING_LEN:
-            data = <char*>malloc(size)
-            buf.c_read(size, data)
-            py_data = data[:size]
-            free(data)
-        else:
-            buf.c_read(size, string_val)
-            py_data = string_val[:size]
-        try:
-            return py_data.decode("utf-8")
-        except UnicodeDecodeError:
-            return py_data
+        return c_read_string(buf, size)
 
     elif ttype == T_SET or ttype == T_LIST:
         if isinstance(spec, int):
@@ -329,21 +336,33 @@ def write_val(TCyBufferedTransport buf, TType ttype, val, spec=None):
 
 cdef class TCyBinaryProtocol(object):
     cdef public TCyBufferedTransport trans
+    cdef public bool strict_read
+    cdef public bool strict_write
 
-    def __init__(self, trans):
+    def __init__(self, trans, strict_read=True, strict_write=True):
         self.trans = trans
+        self.strict_read = strict_read
+        self.strict_write = strict_write
 
     def read_message_begin(self):
         cdef int32_t size, version, seqid
         cdef TType ttype
 
         size = read_i32(self.trans)
-        version = size & VERSION_MASK
-        if version != VERSION_1:
-            raise ProtocolError('invalid version %d' % version)
+        if size < 0:
+            version = size & VERSION_MASK
+            if version != VERSION_1:
+                raise ProtocolError('invalid version %d' % version)
 
-        ttype = <TType>(size & TYPE_MASK)
-        name = c_read_val(self.trans, T_STRING)
+            name = c_read_val(self.trans, T_STRING)
+            ttype = <TType>(size & TYPE_MASK)
+        else:
+            if self.strict_read:
+                raise ProtocolError('No protocol version header')
+
+            name = c_read_string(self.trans, size)
+            ttype = <TType>(read_i08(self.trans))
+
         seqid = read_i32(self.trans)
 
         return name, ttype, seqid
@@ -353,8 +372,13 @@ cdef class TCyBinaryProtocol(object):
 
     def write_message_begin(self, name, TType ttype, int32_t seqid):
         cdef int32_t version = VERSION_1 | ttype
-        write_i32(self.trans, version)
-        c_write_val(self.trans, T_STRING, name)
+        if self.strict_write:
+            write_i32(self.trans, version)
+            c_write_val(self.trans, T_STRING, name)
+        else:
+            c_write_val(self.trans, T_STRING, name)
+            write_i08(self.trans, ttype)
+
         write_i32(self.trans, seqid)
 
     def write_message_end(self):
@@ -368,5 +392,9 @@ cdef class TCyBinaryProtocol(object):
 
 
 class TCyBinaryProtocolFactory(object):
+    def __init__(self, strict_read=True, strict_write=True):
+        self.strict_read = strict_read
+        self.strict_write = strict_write
+
     def get_protocol(self, trans):
-        return TCyBinaryProtocol(trans)
+        return TCyBinaryProtocol(trans, self.strict_read, self.strict_write)

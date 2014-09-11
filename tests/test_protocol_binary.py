@@ -96,9 +96,23 @@ def test_write_message_begin():
         hexlify(b.getvalue())
 
 
+def test_write_message_begin_not_strict():
+    b = BytesIO()
+    proto.TBinaryProtocol(b, strict_write=False) \
+        .write_message_begin("test", TType.STRING, 1)
+    assert "00 00 00 04 74 65 73 74 0b 00 00 00 01" == \
+        hexlify(b.getvalue())
+
+
 def test_read_message_begin():
     b = BytesIO(b"\x80\x01\x00\x0b\x00\x00\x00\x04test\x00\x00\x00\x01")
     res = proto.TBinaryProtocol(b).read_message_begin()
+    assert res == ("test", TType.STRING, 1)
+
+
+def test_read_message_begin_not_strict():
+    b = BytesIO(b"\x00\x00\x00\x04test\x0b\x00\x00\x00\x01")
+    res = proto.TBinaryProtocol(b, strict_read=False).read_message_begin()
     assert res == ("test", TType.STRING, 1)
 
 
