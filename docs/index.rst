@@ -36,15 +36,15 @@ Then we can make a server:
 .. code:: python
 
     import thriftpy
-    from thriftpy.rpc import make_server
+    pingpong_thrift = thriftpy.load("pingpong.thrift", module_name="pingpong_thrift")
 
-    pingpong = thriftpy.load("pingpong.thrift")
+    from thriftpy.rpc import make_server
 
     class Dispatcher(object):
         def ping(self):
             return "pong"
 
-    server = make_server(pingpong.PingPong, Dispatcher(), '127.0.0.1', 6000)
+    server = make_server(pingpong_thrift.PingPong, Dispatcher(), '127.0.0.1', 6000)
     server.serve()
 
 And a client:
@@ -52,11 +52,11 @@ And a client:
 .. code:: python
 
     import thriftpy
+    pingpong_thrift = thriftpy.load("pingpong.thrift", module_name="pingpong_thrift")
+
     from thriftpy.rpc import make_client
 
-    pingpong = thriftpy.load("pingpong.thrift")
-
-    client = make_client(pingpong.PingPong, '127.0.0.1', 6000)
+    client = make_client(pingpong_thrift.PingPong, '127.0.0.1', 6000)
     client.ping()
 
 See, it's that easy!
@@ -69,11 +69,10 @@ usage examples.
 Features
 ========
 
-
 Currently ThriftPy have these features (also advantages over the upstream
 python lib):
 
-- Supports python2.7 to python3.4 and pypy.
+- Supports python2.7+, python3.3+, pypy and pypy3.
 
 - Compatible with Apache Thirft.  You can use ThriftPy together with the
   official implemention servers and clients, such as a upstream server with
@@ -81,25 +80,29 @@ python lib):
 
   Currently implemented protocols and transports:
 
-  * binary protocol (python and cython implemention)
+  * binary protocol (python and cython)
 
-  * buffered transport
+  * buffered transport (python & cython)
 
   * tornado server and client (with tornado 4.0)
 
   * framed transport
 
+  * json protocol
+
 - Can directly load thrift file as module, the sdk code will be generated on
   the fly.
 
-  For example, ``pingpong = thriftpy.load("pingpong.thrift")`` will load
-  'pingpong.thrift' as 'pingpong' module.
+  For example, ``pingpong_thrift = thriftpy.load("pingpong.thrift", module_name="pingpong_thrift")``
+  will load 'pingpong.thrift' as 'pingpong_thrift' module.
 
-  Or, when import hook enabled, directly use ``import pingpong_thrift`` to
-  import the 'pingpong.thrift' file as module.
+  Or, when import hook enabled by ``thriftpy.install_import_hook()``, you can
+  directly use ``import pingpong_thrift`` to import the 'pingpong.thrift' file
+  as module, you may also use ``from pingpong_thrift import PingService`` to
+  import specific object from the thrift module.
 
-- Pure python, standalone implemention. No longer need to compile & install
-  the 'thrift' package. All you need is thrift file.
+- Pure python implemention. No longer need to compile & install the 'thrift'
+  package. All you need is thriftpy and thrift file.
 
 - Easy RPC server/client setup.
 
@@ -129,14 +132,20 @@ Use Cython Binary Protocol
 
 The TCyBinaryProtocol can be used to accelerate serialize and deserialize.
 
+.. note::
+
+    The TCyBinaryProtocol and TCyBufferedTransport must be used together.
+
 .. code:: python
 
     from thriftpy.protocol import TCyBinaryProtocolFactory
-    from thriftpy.rpc import make_server
+    from thriftpy.transport import TCyBufferedTransportFactory
+    from thriftpy.rpc import client_context
 
     server = make_server(
         pingpong_thrift.PingPong, Dispatcher(), '127.0.0.1', 6000,
-        proto_factory=TCyBinaryProtocolFactory())
+        proto_factory=TCyBinaryProtocolFactory(),
+        trans_factory=TCyBufferedTransport())
     print("serving...")
     server.serve()
 
@@ -145,11 +154,13 @@ The same goes for client.
 .. code:: python
 
     from thriftpy.protocol import TCyBinaryProtocolFactory
+    from thriftpy.transport import TCyBufferedTransportFactory
     from thriftpy.rpc import make_client
 
     client = make_client(
         pingpong_thrift.PingPong, '127.0.0.1', 6000,
-        proto_factory=TCyBinaryProtocolFactory())
+        proto_factory=TCyBinaryProtocolFactory(),
+        trans_factory=TCyBufferedTransport())
     client.ping()
 
 Or client context:
@@ -157,11 +168,13 @@ Or client context:
 .. code:: python
 
     from thriftpy.protocol import TCyBinaryProtocolFactory
+    from thriftpy.transport import TCyBufferedTransportFactory
     from thriftpy.rpc import client_context
 
     with client_context(
             pingpong_thrift.PingPong, '127.0.0.1', 6000,
-            proto_factory=TCyBinaryProtocolFactory()) as c:
+            proto_factory=TCyBinaryProtocolFactory(),
+            trans_factory=TCyBufferedTransportFactory()) as c:
         c.ping()
 
 
@@ -226,25 +239,6 @@ Some benchmark results::
 
 Checkout the `benchmark/benchmark.rst` for detailed benchmark scripts and
 scores.
-
-
-TODOs
-=====
-
-Currently ThriftPy is not fully compatible with thrift, I only implemented
-the features we need in ele.me.
-
-These todos need to be done, but may not be completed by me in near future,
-so contributions are very welcome!
-
-- other protocol and transport except binary and buffered transport.
-
-- map type const.
-
-- 'namespace', 'extends', 'import', 'oneway' etc keywords.
-
-- the '.thrift' file parser will skip a section if it has syntax error. A
-  better warning message should be given.
 
 
 Changelogs
