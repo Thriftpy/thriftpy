@@ -1,12 +1,34 @@
 ThriftPy Changelog
 ==================
 
+Version 0.1.11
+--------------
+
+Released on September 16, 2014.
+
+- bugfix for init func generator for TStruct.
+- bugfix for set constants in parser, via `#39`_.
+- add support for "includes" and service "extends", via `#37`_.
+- add close() to servers, via `#38`_.
+- implement non-strict mode for binary protocol, via `#40`_.
+- removed cython ext in pypy, and add pypy3 support.
+- some args updates:
+  * add `trans_factory` arg to `make_server`
+  * rename `rbuf_size` in buffered transport to `buf_size`.
+  * rename `isOpen` to `is_open`, `readFrame` to `read_frame`.
+
+.. _`#37`: https://github.com/eleme/thriftpy/pull/37
+.. _`#38`: https://github.com/eleme/thriftpy/pull/38
+.. _`#39`: https://github.com/eleme/thriftpy/pull/39
+.. _`#40`: https://github.com/eleme/thriftpy/pull/40
+
+
 Version 0.1.10
 --------------
 
 Released on September 4, 2014.
 
-- fix memory free bug in cython buffered transport, via `#35`_.
+- bugfix for memory free in cython buffered transport, via `#35`_.
 - new thrift parser by PLY, removed cache since the performance is much more
   faster now, via `#36`_.
 
