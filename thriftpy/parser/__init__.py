@@ -149,7 +149,7 @@ def load(thrift_file, module_name=None, include_dirs=None):
             thrift_spec[m["id"]] = _ttype_spec(m["type"], m["name"])
             default_spec.append((m["name"], m["value"] or None))
         struct_cls = getattr(thrift_schema, name)
-        gen_init(struct_cls, thrift_spec, sorted(default_spec))
+        gen_init(struct_cls, thrift_spec, default_spec)
 
     # load services
     for name, service in result["services"].items():
