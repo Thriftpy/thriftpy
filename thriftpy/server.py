@@ -47,7 +47,7 @@ class TSimpleServer(TServer):
             iprot = self.iprot_factory.get_protocol(itrans)
             oprot = self.oprot_factory.get_protocol(otrans)
             try:
-                while True and not self.closed:
+                while not self.closed:
                     self.processor.process(iprot, oprot)
             except TTransportException:
                 pass
@@ -71,7 +71,7 @@ class TThreadedServer(TServer):
 
     def serve(self):
         self.trans.listen()
-        while True and not self.closed:
+        while not self.closed:
             try:
                 client = self.trans.accept()
                 t = threading.Thread(target=self.handle, args=(client,))
