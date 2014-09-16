@@ -58,7 +58,7 @@ class TMemoryBuffer(TTransportBase):
         self._buffer = BytesIO(value) if value is not None else BytesIO()
         self._pos = 0
 
-    def isOpen(self):
+    def is_open(self):
         return not self._buffer.closed
 
     def open(self):
@@ -146,8 +146,8 @@ class TFramedTransport(TTransportBase):
         self.__rbuf = BytesIO()
         self.__wbuf = BytesIO()
 
-    def isOpen(self):
-        return self.__trans.isOpen()
+    def is_open(self):
+        return self.__trans.is_open()
 
     def open(self):
         return self.__trans.open()
@@ -160,10 +160,10 @@ class TFramedTransport(TTransportBase):
         if len(ret) != 0:
             return ret
 
-        self.readFrame()
+        self.read_frame()
         return self.__rbuf.read(sz)
 
-    def readFrame(self):
+    def read_frame(self):
         buff = self.__trans.read(4)
         sz, = struct.unpack('!i', buff)
         self.__rbuf = BytesIO(self.__trans.read(sz))
