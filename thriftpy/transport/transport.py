@@ -100,11 +100,11 @@ class TBufferedTransport(TTransportBase):
     """
     DEFAULT_BUFFER = 4096
 
-    def __init__(self, trans, rbuf_size=DEFAULT_BUFFER):
+    def __init__(self, trans, buf_size=DEFAULT_BUFFER):
         self.__trans = trans
         self.__wbuf = BytesIO()
         self.__rbuf = BytesIO(b"")
-        self.__rbuf_size = rbuf_size
+        self.__buf_size = buf_size
 
     def is_open(self):
         return self.__trans.is_open()
@@ -120,7 +120,7 @@ class TBufferedTransport(TTransportBase):
         if len(ret) != 0:
             return ret
 
-        self.__rbuf = BytesIO(self.__trans.read(max(sz, self.__rbuf_size)))
+        self.__rbuf = BytesIO(self.__trans.read(max(sz, self.__buf_size)))
         return self.__rbuf.read(sz)
 
     def write(self, buf):
