@@ -27,12 +27,16 @@ class TServer(object):
     def serve(self):
         pass
 
+    def close(self):
+        pass
+
 
 class TSimpleServer(TServer):
     """Simple single-threaded server that just pumps around one transport."""
 
     def __init__(self, *args):
         TServer.__init__(self, *args)
+        self.closed = False
 
     def serve(self):
         self.trans.listen()
@@ -43,7 +47,7 @@ class TSimpleServer(TServer):
             iprot = self.iprot_factory.get_protocol(itrans)
             oprot = self.oprot_factory.get_protocol(otrans)
             try:
-                while True:
+                while True and not self.closed:
                     self.processor.process(iprot, oprot)
             except TTransportException:
                 pass
@@ -53,6 +57,9 @@ class TSimpleServer(TServer):
             itrans.close()
             otrans.close()
 
+    def close(self):
+        self.closed = True
+
 
 class TThreadedServer(TServer):
     """Threaded server that spawns a new thread per each connection."""
@@ -60,10 +67,11 @@ class TThreadedServer(TServer):
     def __init__(self, *args, **kwargs):
         self.daemon = kwargs.pop("daemon", False)
         TServer.__init__(self, *args, **kwargs)
+        self.closed = False
 
     def serve(self):
         self.trans.listen()
-        while True:
+        while True and not self.closed:
             try:
                 client = self.trans.accept()
                 t = threading.Thread(target=self.handle, args=(client,))
@@ -89,3 +97,6 @@ class TThreadedServer(TServer):
 
         itrans.close()
         otrans.close()
+
+    def close(self):
+        self.closed = True
