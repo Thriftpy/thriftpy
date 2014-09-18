@@ -110,7 +110,8 @@ cdef inline read_struct(TCyBufferedTransport buf, obj):
 
         fid = read_i16(buf)
         if fid not in field_specs:
-            raise ProtocolError("skip")
+            skip(buf, field_type)
+            continue
 
         field_spec = field_specs[fid]
         ttype = field_spec[0]
@@ -324,6 +325,42 @@ cdef c_write_val(TCyBufferedTransport buf, TType ttype, val, spec=None):
 
     elif ttype == T_STRUCT:
         write_struct(buf, val)
+
+
+cpdef skip(TCyBufferedTransport buf, TType ttype):
+    cdef TType v_type, k_type, f_type
+    cdef int i, size
+
+    if ttype == T_BOOL or ttype == T_I08:
+        read_i08(buf)
+    elif ttype == T_I16:
+        read_i16(buf)
+    elif ttype == T_I32:
+        read_i32(buf)
+    elif ttype == T_I64 or ttype == T_DOUBLE:
+        read_i64(buf)
+    elif ttype == T_STRING:
+        size = read_i32(buf)
+        c_read_string(buf, size)
+    elif ttype == T_SET or ttype == T_LIST:
+        v_type = <TType>read_i08(buf)
+        size = read_i32(buf)
+        for i in range(size):
+            skip(buf, v_type)
+    elif ttype == T_MAP:
+        k_type = <TType>read_i08(buf)
+        v_type = <TType>read_i08(buf)
+        size = read_i32(buf)
+        for i in range(size):
+            skip(buf, k_type)
+            skip(buf, v_type)
+    elif ttype == T_STRUCT:
+        while 1:
+            f_type = <TType>read_i08(buf)
+            if f_type == T_STOP:
+                break
+            read_i16(buf)
+            skip(buf, f_type)
 
 
 def read_val(TCyBufferedTransport buf, TType ttype):
