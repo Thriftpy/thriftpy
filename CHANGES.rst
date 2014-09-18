@@ -1,6 +1,16 @@
 ThriftPy Changelog
 ==================
 
+Version 0.1.12
+--------------
+
+Released on September 18, 2014.
+
+- bugfix for lack of `skip` func in cython binary protocol, via `#43`_.
+
+.. _`#43`: https://github.com/eleme/thriftpy/pull/43
+
+
 Version 0.1.11
 --------------
 
