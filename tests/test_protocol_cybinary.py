@@ -244,3 +244,68 @@ def test_read_huge_args():
 
     item2 = Hello()
     p.read_struct(item2)
+
+
+def test_skip_bool():
+    b = TCyBufferedTransport(TMemoryBuffer())
+    proto.write_val(b, TType.BOOL, 1)
+    proto.write_val(b, TType.I32, 123)
+    b.flush()
+
+    proto.skip(b, TType.BOOL)
+    assert 123 == proto.read_val(b, TType.I32)
+
+
+def test_skip_double():
+    b = TCyBufferedTransport(TMemoryBuffer())
+    proto.write_val(b, TType.DOUBLE, 0.123425897)
+    proto.write_val(b, TType.I32, 123)
+    b.flush()
+
+    proto.skip(b, TType.DOUBLE)
+    assert 123 == proto.read_val(b, TType.I32)
+
+
+def test_skip_string():
+    b = TCyBufferedTransport(TMemoryBuffer())
+    proto.write_val(b, TType.STRING, "hello world")
+    proto.write_val(b, TType.I32, 123)
+    b.flush()
+
+    proto.skip(b, TType.STRING)
+    assert 123 == proto.read_val(b, TType.I32)
+
+
+def test_skip_list():
+    b = TCyBufferedTransport(TMemoryBuffer())
+    proto.write_val(b, TType.LIST, [5, 6, 7, 8, 9], spec=TType.I32)
+    proto.write_val(b, TType.I32, 123)
+    b.flush()
+
+    proto.skip(b, TType.LIST)
+    assert 123 == proto.read_val(b, TType.I32)
+
+
+def test_skip_map():
+    b = TCyBufferedTransport(TMemoryBuffer())
+    proto.write_val(b, TType.MAP, {"hello": 0.3456},
+                    spec=(TType.STRING, TType.DOUBLE))
+    proto.write_val(b, TType.I32, 123)
+    b.flush()
+
+    proto.skip(b, TType.MAP)
+    assert 123 == proto.read_val(b, TType.I32)
+
+
+def test_skip_struct():
+    b = TCyBufferedTransport(TMemoryBuffer())
+    p = proto.TCyBinaryProtocol(b)
+    item = TItem(id=123, phones=["123456", "abcdef"])
+    p.write_struct(item)
+    p.write_message_end()
+
+    proto.write_val(b, TType.I32, 123)
+    b.flush()
+
+    proto.skip(b, TType.STRUCT)
+    assert 123 == proto.read_val(b, TType.I32)
