@@ -25,3 +25,9 @@ def test_isinstancecheck():
     assert isinstance(ab.Person(name="hello"), ab2.Person)
 
     assert isinstance(ab.PersonNotExistsError(), ab2.PersonNotExistsError)
+
+
+def test_hashable():
+    ab = thriftpy.load("addressbook.thrift")
+
+    hash(ab.Person(name="Tom"))
