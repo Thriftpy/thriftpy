@@ -103,6 +103,9 @@ class TPayload(with_metaclass(TPayloadMeta, object)):
         return isinstance(other, self.__class__) and \
             self.__dict__ == other.__dict__
 
+    def __hash__(self):
+        return super(TPayload, self).__hash__()
+
     def __ne__(self, other):
         return self != other
 
