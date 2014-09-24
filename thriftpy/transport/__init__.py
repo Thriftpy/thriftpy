@@ -17,15 +17,16 @@ from .transport import (
     TTransportBase,
     TTransportException,
     TMemoryBuffer,
-    TBufferedTransport,
-    TBufferedTransportFactory,
     TFramedTransport,
     TFramedTransportFactory,
 )
 
 from thriftpy._compat import PYPY
-if not PYPY:
-    from .cytransport import TCyBufferedTransport, TCyBufferedTransportFactory
+if PYPY:
+    from .transport import TBufferedTransport, TBufferedTransportFactory
 else:
-    TCyBufferedTransport = TBufferedTransport
-    TCyBufferedTransportFactory = TBufferedTransportFactory
+    from .cytransport import TBufferedTransport, TBufferedTransportFactory
+
+# backward compatible
+TCyBufferedTransport = TBufferedTransport
+TCyBufferedTransportFactory = TBufferedTransportFactory

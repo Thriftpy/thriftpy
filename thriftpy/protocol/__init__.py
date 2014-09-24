@@ -7,12 +7,14 @@ __all__ = ['TBinaryProtocol', 'TBinaryProtocolFactory',
            'TJSONProtocol', 'TJSONProtocolFactory']
 
 
-from .binary import TBinaryProtocol, TBinaryProtocolFactory
 from .json import TJSONProtocol, TJSONProtocolFactory
 
 from thriftpy._compat import PYPY
-if not PYPY:
-    from .cybin import TCyBinaryProtocol, TCyBinaryProtocolFactory
+if PYPY:
+    from .binary import TBinaryProtocol, TBinaryProtocolFactory
 else:
-    TCyBinaryProtocol = TBinaryProtocol
-    TCyBinaryProtocolFactory = TBinaryProtocolFactory
+    from .cybin import TBinaryProtocol, TBinaryProtocolFactory
+
+# backward compatible
+TCyBinaryProtocol = TBinaryProtocol
+TCyBinaryProtocolFactory = TBinaryProtocolFactory
