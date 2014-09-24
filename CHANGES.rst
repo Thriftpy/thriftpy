@@ -1,6 +1,18 @@
 ThriftPy Changelog
 ==================
 
+Version 0.1.13
+--------------
+
+Released on September 24, 2014.
+
+- bugfix for TPayload not able to be hashed in py3, via `#44`_.
+- bugfix for cython buffered transport read issue, via `#46`_.
+
+.. _`#44`: https://github.com/eleme/thriftpy/pull/44
+.. _`#46`: https://github.com/eleme/thriftpy/pull/46
+
+
 Version 0.1.12
 --------------
 
