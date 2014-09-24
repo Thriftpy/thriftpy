@@ -6,9 +6,17 @@ PYPY = "__pypy__" in sys.modules
 import pytest
 pytestmark = pytest.mark.skipif(PYPY, reason="cybin not enabled in pypy.")
 
+import multiprocessing
+import time
+
 from thriftpy._compat import u
 from thriftpy.thrift import TType, TPayload
-from thriftpy.transport import TMemoryBuffer, TCyBufferedTransport
+from thriftpy.transport import (
+    TMemoryBuffer,
+    TCyBufferedTransport,
+    TSocket,
+    TServerSocket
+)
 from thriftpy.utils import hexlify
 
 if not PYPY:
@@ -309,3 +317,27 @@ def test_skip_struct():
 
     proto.skip(b, TType.STRUCT)
     assert 123 == proto.read_val(b, TType.I32)
+
+
+def test_read_long_data():
+    val = 'z' * 97 * 1024
+
+    def serve():
+        server_sock = TServerSocket(host="127.0.0.1", port=9090)
+        server_sock.listen()
+        client = server_sock.accept()
+        t = TCyBufferedTransport(client)
+        proto.write_val(t, TType.STRING, val)
+        t.flush()
+
+    p = multiprocessing.Process(target=serve)
+    p.start()
+    time.sleep(0.1)
+
+    try:
+        sock = TSocket(host='127.0.0.1', port=9090)
+        b = TCyBufferedTransport(sock)
+        b.open()
+        assert val == proto.read_val(b, TType.STRING)
+    finally:
+        p.terminate()
