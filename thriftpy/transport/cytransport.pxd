@@ -1,4 +1,4 @@
-cdef class TCyBuffer(object):
+cdef class TBuffer(object):
     cdef char *buf
     cdef int cur, buf_size, data_size
 
@@ -7,9 +7,9 @@ cdef class TCyBuffer(object):
     cdef int grow(self, int min_size)
 
 
-cdef class TCyBufferedTransport(object):
+cdef class TBufferedTransport(object):
     cdef object trans
-    cdef TCyBuffer rbuf, wbuf
+    cdef TBuffer rbuf, wbuf
 
     cdef c_read(self, int sz, char* out)
     cdef c_write(self, char* data, int sz)

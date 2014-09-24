@@ -5,7 +5,7 @@ DEF DEFAULT_BUFFER = 4096
 DEF MIN_BUFFER_SZIE = 1024
 
 
-cdef class TCyBuffer(object):
+cdef class TBuffer(object):
     def __cinit__(self, buf_size):
         self.buf = <char*>malloc(buf_size)
         self.buf_size = buf_size
@@ -44,7 +44,7 @@ cdef class TCyBuffer(object):
         return 0
 
 
-cdef class TCyBufferedTransport(object):
+cdef class TBufferedTransport(object):
     """binary reader/writer"""
 
     def __init__(self, trans, int buf_size=DEFAULT_BUFFER):
@@ -52,8 +52,8 @@ cdef class TCyBufferedTransport(object):
             raise Exception("buffer too small")
 
         self.trans = trans
-        self.rbuf = TCyBuffer(buf_size)
-        self.wbuf = TCyBuffer(buf_size)
+        self.rbuf = TBuffer(buf_size)
+        self.wbuf = TBuffer(buf_size)
 
     def is_open(self):
         return self.trans.is_open()
@@ -130,6 +130,6 @@ cdef class TCyBufferedTransport(object):
         return self.trans.getvalue()
 
 
-class TCyBufferedTransportFactory(object):
+class TBufferedTransportFactory(object):
     def get_transport(self, trans):
-        return TCyBufferedTransport(trans)
+        return TBufferedTransport(trans)
