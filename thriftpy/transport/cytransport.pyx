@@ -1,6 +1,8 @@
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy, memmove
 
+from ..transport import TTransportException
+
 DEF DEFAULT_BUFFER = 4096
 DEF MIN_BUFFER_SZIE = 1024
 
@@ -104,8 +106,14 @@ cdef class TCyBufferedTransport(object):
             new_data = self.trans.read(cap)
             new_data_len = len(new_data)
 
-            if new_data_len < sz - self.rbuf.data_size:
-                raise Exception("Transport error")
+            while new_data_len < sz - self.rbuf.data_size:
+                more = self.trans.read(cap - new_data_len)
+                if len(more) <= 0:
+                    raise TTransportException(
+                        TTransportException.END_OF_FILE,
+                        "End of file reading from transport")
+                new_data += more
+                new_data_len += len(more)
 
             if cap - self.rbuf.cur < new_data_len:
                 self.rbuf.move_to_start()
