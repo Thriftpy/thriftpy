@@ -74,10 +74,10 @@ def load(thrift_file, module_name=None, include_dirs=None):
         assert name.endswith(".thrift")
         return name[:-len(".thrift")]
 
-    thrift_schema._includes = {
-        make_thrift_include_name(path): load(path, include_dirs=include_dirs)
-        for path in result["includes"]
-    }
+    thrift_schema._includes = {}
+    for path in result["includes"]:
+        thrift_schema._includes[make_thrift_include_name(path)] = load(
+            path, include_dirs=include_dirs)
 
     thrift_schema._struct_names = list(itertools.chain(
         result["structs"].keys(),

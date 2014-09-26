@@ -39,7 +39,7 @@ class Dispatcher(object):
         """
         if name not in self.registry:
             raise addressbook.PersonNotExistsError(
-                'Person "{}" does not exist!'.format(name))
+                'Person "{0}" does not exist!'.format(name))
         return self.registry[name]
 
     @gen.coroutine
@@ -51,7 +51,7 @@ class Dispatcher(object):
         yield gen.Task(self.io_loop.add_callback)
         if name not in self.registry:
             raise addressbook.PersonNotExistsError(
-                'Person "{}" does not exist!'.format(name))
+                'Person "{0}" does not exist!'.format(name))
         del self.registry[name]
         raise gen.Return(True)
 
@@ -97,8 +97,13 @@ class TornadoRPCTestCase(testing.AsyncTestCase):
 
     @testing.gen_test
     def test_synchronous_exception(self):
-        with self.assertRaises(addressbook.PersonNotExistsError):
+        exc = None
+        try:
             yield self.client.get('Brian Kernighan')
+        except Exception as e:
+            exc = e
+
+        assert isinstance(exc, addressbook.PersonNotExistsError)
 
     @testing.gen_test
     def test_asynchronous_result(self):
@@ -109,5 +114,9 @@ class TornadoRPCTestCase(testing.AsyncTestCase):
 
     @testing.gen_test
     def test_asynchronous_exception(self):
-        with self.assertRaises(addressbook.PersonNotExistsError):
+        exc = None
+        try:
             yield self.client.remove('Brian Kernighan')
+        except Exception as e:
+            exc = e
+        assert isinstance(exc, addressbook.PersonNotExistsError)
