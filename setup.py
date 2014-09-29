@@ -25,6 +25,8 @@ dev_requires = [
     "pytest>=2.6.0",
     "sphinx-rtd-theme>=0.1.6",
     "sphinx>=1.2.2",
+    "gevent",
+    "gunicorn_thrift",
 ] + tornado_requires
 
 
