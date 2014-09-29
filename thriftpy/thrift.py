@@ -133,7 +133,12 @@ class TClient(object):
                           *args)
         kwargs.update(_kw)
         self._send(api, **kwargs)
-        return self._recv(api)
+
+        result_cls = getattr(self._service, api + "_result")
+
+        if not getattr(result_cls, "oneway"):
+            # wait result only if non-oneway
+            return self._recv(api)
 
     def _send(self, api, **kwargs):
         self._oprot.write_message_begin(api, TMessageType.CALL, self._seqid)
@@ -225,8 +230,10 @@ class TProcessor(object):
 
     def process(self, iprot, oprot):
         api, seqid, result, call = self.process_in(iprot)
+
         if isinstance(result, TApplicationException):
-            self.send_exception(oprot, api, result, seqid)
+            if not result.oneway:
+                self.send_exception(oprot, api, result, seqid)
         else:
             try:
                 result.success = call()
@@ -234,7 +241,8 @@ class TProcessor(object):
                 # raise if api don't have throws
                 self.handle_exception(e, result)
 
-            self.send_result(oprot, api, result, seqid)
+            if not result.oneway:
+                self.send_result(oprot, api, result, seqid)
 
 
 class TException(TPayload, Exception):
