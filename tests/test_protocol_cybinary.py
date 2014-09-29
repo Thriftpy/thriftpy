@@ -343,7 +343,7 @@ def test_read_long_data():
         p.terminate()
 
 
-def test_wrong_arg_type():
+def test_write_wrong_arg_type():
     trans = TCyBufferedTransport(TMemoryBuffer())
     b = proto.TCyBinaryProtocol(trans)
     item = TItem(id="wrong type", phones=["123456", "abcdef"])
@@ -359,3 +359,34 @@ def test_wrong_arg_type():
     assert ("08 00 01 00 00 00 7b 0f 00 02 0b 00 00 00 02 00 00 00 "
             "06 31 32 33 34 35 36 00 00 00 06 61 62 63 64 65 66 00") == \
         hexlify(trans.getvalue())
+
+
+def test_read_wrong_arg_type():
+
+    class TWrongTypeItem(TPayload):
+        thrift_spec = {
+            1: (TType.STRING, "id"),
+            2: (TType.LIST, "phones", (TType.STRING)),
+        }
+        default_spec = [("id", None), ("phones", None)]
+
+    trans = TCyBufferedTransport(TMemoryBuffer())
+    b = proto.TCyBinaryProtocol(trans)
+    item = TItem(id=58, phones=["123456", "abcdef"])
+    b.write_struct(item)
+    b.write_message_end()
+
+    item2 = TWrongTypeItem()
+    try:
+        b.read_struct(item2)
+    except Exception:
+        pass
+
+    item3 = TItem(id=123, phones=["123456", "abcdef"])
+    b.write_struct(item3)
+    b.write_message_end()
+
+    item4 = TItem()
+    b.read_struct(item4)
+
+    assert item3 == item4

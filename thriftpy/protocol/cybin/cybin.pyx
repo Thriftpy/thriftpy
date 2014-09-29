@@ -424,9 +424,8 @@ cdef class TCyBinaryProtocol(object):
     def read_struct(self, obj):
         try:
             return read_struct(self.trans, obj)
-        except Exception:
+        finally:
             self.trans.clean()
-            raise
 
     def write_struct(self, obj):
         try:
