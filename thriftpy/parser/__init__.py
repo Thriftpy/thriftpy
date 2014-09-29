@@ -190,6 +190,9 @@ def load(thrift_file, module_name=None, include_dirs=None):
             result_name = "%s_result" % api_name
             result_attrs = {"__module__": module_name}
 
+            # if oneway
+            result_attrs["oneway"] = api["oneway"]
+
             if api["type"] == "void":
                 result_thrift_spec = {}
             else:
