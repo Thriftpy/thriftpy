@@ -57,6 +57,10 @@ cdef class TCyBufferedTransport(object):
         self.rbuf = TCyBuffer(buf_size)
         self.wbuf = TCyBuffer(buf_size)
 
+    def clean(self):
+        self.rbuf.clean()
+        self.wbuf.clean()
+
     def is_open(self):
         return self.trans.is_open()
 

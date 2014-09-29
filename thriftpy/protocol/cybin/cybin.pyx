@@ -422,10 +422,17 @@ cdef class TCyBinaryProtocol(object):
         self.trans.c_flush()
 
     def read_struct(self, obj):
-        return read_struct(self.trans, obj)
+        try:
+            return read_struct(self.trans, obj)
+        finally:
+            self.trans.clean()
 
     def write_struct(self, obj):
-        write_struct(self.trans, obj)
+        try:
+            write_struct(self.trans, obj)
+        except Exception:
+            self.trans.clean()
+            raise
 
 
 class TCyBinaryProtocolFactory(object):
