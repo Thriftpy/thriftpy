@@ -2,7 +2,8 @@
 
 from __future__ import absolute_import
 
-from thriftpy.thrift import TPayload, TException
+from thriftpy import load
+from thriftpy.thrift import TPayload, TException, TType
 
 import thriftpy
 thriftpy.install_import_hook()
@@ -61,3 +62,11 @@ def test_load_exc():
 def test_load_service():
     assert not set(ab.AddressBookService.thrift_services).difference(
         ab_tt.AddressBookService.thrift_services)
+
+
+def test_load_include():
+    b = load("base.thrift")
+    g = load("parent.thrift")
+
+    ts = g.Greet.thrift_spec
+    assert ts[1][2] == b.Hello and ts[2][0] == TType.I64 and ts[3][2] == b.Code

@@ -84,6 +84,9 @@ def load(thrift_file, module_name=None, include_dirs=None):
         result["unions"].keys(),
         result["exceptions"].keys()))
 
+    thrift_schema._enums = result["enums"]
+    thrift_schema._typedefs = result["typedefs"]
+
     def _ttype(t, module=None):
         module = module or thrift_schema
         if isinstance(t, str):
@@ -92,10 +95,10 @@ def load(thrift_file, module_name=None, include_dirs=None):
                 return _ttype(field, module=module._includes[include])
             elif t in module._struct_names:
                 return TType.STRUCT, getattr(module, t)
-            elif t in result["enums"]:
+            elif t in module._enums:
                 return TType.I32, getattr(module, t)
-            elif t in result["typedefs"]:
-                return _ttype(result["typedefs"][t])
+            elif t in module._typedefs:
+                return _ttype(module._typedefs[t])
             else:
                 return getattr(TType, t.upper())
         elif t[0] == "list":
