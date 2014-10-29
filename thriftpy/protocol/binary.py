@@ -351,6 +351,9 @@ class TBinaryProtocol(object):
         self.strict_read = strict_read
         self.strict_write = strict_write
 
+    def skip(self, ttype):
+        skip(self.trans, ttype)
+
     def read_message_begin(self):
         api, ttype, seqid = read_message_begin(
             self.trans, strict=self.strict_read)
