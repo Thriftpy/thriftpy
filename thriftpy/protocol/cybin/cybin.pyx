@@ -381,6 +381,9 @@ cdef class TCyBinaryProtocol(object):
         self.strict_read = strict_read
         self.strict_write = strict_write
 
+    def skip(self, ttype):
+        skip(self.trans, <TType>(ttype))
+
     def read_message_begin(self):
         cdef int32_t size, version, seqid
         cdef TType ttype
