@@ -232,8 +232,7 @@ class TProcessor(object):
         api, seqid, result, call = self.process_in(iprot)
 
         if isinstance(result, TApplicationException):
-            if not result.oneway:
-                self.send_exception(oprot, api, result, seqid)
+            self.send_exception(oprot, api, result, seqid)
         else:
             try:
                 result.success = call()
