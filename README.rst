@@ -93,7 +93,7 @@ python lib):
 
 - Supports python2.7+, python3.3+, pypy and pypy3.
 
-- Compatible with Apache Thirft.  You can use ThriftPy together with the
+- Compatible with Apache Thrift.  You can use ThriftPy together with the
   official implemention servers and clients, such as a upstream server with
   a thriftpy client or the opposite.
 
