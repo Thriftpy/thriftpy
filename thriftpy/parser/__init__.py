@@ -103,6 +103,8 @@ def load(thrift_file, module_name=None, include_dirs=None):
                 return getattr(TType, t.upper())
         elif t[0] == "list":
             return TType.LIST, _ttype(t[1])
+        elif t[0] == "set":
+            return TType.SET, _ttype(t[1])
         elif t[0] == "map":
             return TType.MAP, (_ttype(t[1]), _ttype(t[2]))
         else:
