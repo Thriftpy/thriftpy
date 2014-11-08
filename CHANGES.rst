@@ -1,6 +1,27 @@
 ThriftPy Changelog
 ==================
 
+Version 0.1.14
+--------------
+
+Released on November 8, 2014.
+
+- support for python2.6.
+- support for testing by tox.
+- support for oneway keyword, via `#49`_.
+- bugfix for wrong type args, via `#48`_.
+- bugfix for thrift file include keyword, via `#53`_.
+- bugfix for skip method not found in protocol, via `#55`_.
+- bugfix for set type support, via `#59`_.
+- bugfix for 'api' arg name collision in client.
+
+.. _`#48`: https://github.com/eleme/thriftpy/pull/48
+.. _`#49`: https://github.com/eleme/thriftpy/pull/49
+.. _`#53`: https://github.com/eleme/thriftpy/pull/53
+.. _`#55`: https://github.com/eleme/thriftpy/pull/55
+.. _`#59`: https://github.com/eleme/thriftpy/pull/59
+
+
 Version 0.1.13
 --------------
 
