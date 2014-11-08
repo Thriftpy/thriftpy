@@ -118,45 +118,44 @@ class TClient(object):
             self._oprot = oprot
         self._seqid = 0
 
-    def __getattr__(self, api):
-        if api in self._service.thrift_services:
-            return functools.partial(self._req, api)
+    def __getattr__(self, _api):
+        if _api in self._service.thrift_services:
+            return functools.partial(self._req, _api)
 
         raise AttributeError("{} instance has no attribute '{}'".format(
-            self.__class__.__name__, api))
+            self.__class__.__name__, _api))
 
     def __dir__(self):
         return self._service.thrift_services
 
-    def _req(self, api, *args, **kwargs):
-        _kw = args2kwargs(getattr(self._service, api + "_args").thrift_spec,
+    def _req(self, _api, *args, **kwargs):
+        _kw = args2kwargs(getattr(self._service, _api + "_args").thrift_spec,
                           *args)
         kwargs.update(_kw)
-        self._send(api, **kwargs)
+        result_cls = getattr(self._service, _api + "_result")
 
-        result_cls = getattr(self._service, api + "_result")
-
+        self._send(_api, **kwargs)
+        # wait result only if non-oneway
         if not getattr(result_cls, "oneway"):
-            # wait result only if non-oneway
-            return self._recv(api)
+            return self._recv(_api)
 
-    def _send(self, api, **kwargs):
-        self._oprot.write_message_begin(api, TMessageType.CALL, self._seqid)
-        args = getattr(self._service, api + "_args")()
+    def _send(self, _api, **kwargs):
+        self._oprot.write_message_begin(_api, TMessageType.CALL, self._seqid)
+        args = getattr(self._service, _api + "_args")()
         for k, v in kwargs.items():
             setattr(args, k, v)
         args.write(self._oprot)
         self._oprot.write_message_end()
         self._oprot.trans.flush()
 
-    def _recv(self, api):
+    def _recv(self, _api):
         fname, mtype, rseqid = self._iprot.read_message_begin()
         if mtype == TMessageType.EXCEPTION:
             x = TApplicationException()
             x.read(self._iprot)
             self._iprot.read_message_end()
             raise x
-        result = getattr(self._service, api + "_result")()
+        result = getattr(self._service, _api + "_result")()
         result.read(self._iprot)
         self._iprot.read_message_end()
 
