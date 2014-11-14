@@ -160,7 +160,7 @@ The same goes for client.
     client = make_client(
         pingpong_thrift.PingPong, '127.0.0.1', 6000,
         proto_factory=TCyBinaryProtocolFactory(),
-        trans_factory=TCyBufferedTransport())
+        trans_factory=TCyBufferedTransportFactory())
     client.ping()
 
 Or client context:
