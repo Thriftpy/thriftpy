@@ -156,6 +156,11 @@ class TFramedTransport(TTransportBase):
         return self.__trans.close()
 
     def read(self, sz):
+        # Important: don't attempt to read the next frame if the caller
+        # doesn't actually need any data.
+        if sz == 0:
+            return b''
+
         ret = self.__rbuf.read(sz)
         if len(ret) != 0:
             return ret

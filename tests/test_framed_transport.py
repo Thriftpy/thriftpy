@@ -37,6 +37,14 @@ class Dispatcher(object):
         self.registry[person.name] = person
         return True
 
+    def get(self, name):
+        """
+        Person get(1: string name)
+        """
+        if name not in self.registry:
+            raise addressbook.PersonNotExistsError()
+        return self.registry[name]
+
 
 class FramedTransportTestCase(TestCase):
     def mk_server(self):
@@ -75,3 +83,10 @@ class FramedTransportTestCase(TestCase):
         assert success
         success = self.client.add(dennis)
         assert not success
+
+    def test_zero_length_string(self):
+        dennis = addressbook.Person(name='')
+        success = self.client.add(dennis)
+        assert success
+        success = self.client.get(name='')
+        assert success
