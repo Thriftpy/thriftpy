@@ -6,6 +6,11 @@
 *.c
 *.so
 
+# intellij files
+.idea
+*.xml
+*.iml
+
 # Packages
 *.egg
 *.egg-info
