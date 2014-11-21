@@ -3,6 +3,7 @@
 from thriftpy.protocol import TJSONProtocol
 from thriftpy.thrift import TPayload, TType
 from thriftpy.transport import TMemoryBuffer
+from thriftpy._compat import u
 
 import thriftpy.protocol.json as proto
 
@@ -28,7 +29,7 @@ def test_map_to_json():
     spec = [TType.STRING, TType.DOUBLE]
     json = proto.map_to_json(obj, spec)
 
-    assert [{"key": "ratio", "value": "0.618"}] == json
+    assert [{"key": "ratio", "value": 0.618}] == json
 
 
 def test_list_to_obj():
@@ -92,3 +93,22 @@ def test_json_proto_api_read():
     obj2 = p.read_struct(obj2)
 
     assert obj.id == 13 and obj.phones == ["5234", "12346456"]
+
+
+def test_unicode_string():
+    class Foo(TPayload):
+        thrift_spec = {
+            1: (TType.STRING, "name")
+        }
+        default_spec = [("name", None)]
+
+    trans = TMemoryBuffer()
+    p = TJSONProtocol(trans)
+
+    foo = Foo(name=u('pão de açúcar'))
+    foo.write(p)
+
+    foo2 = Foo()
+    foo2.read(p)
+
+    assert foo == foo2
