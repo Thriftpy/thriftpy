@@ -16,11 +16,8 @@ VERSION = 1
 
 
 def json_value(ttype, val, spec=None):
-    if ttype in INTEGER:
-        return int(val)
-
-    if ttype in FLOAT or ttype == TType.STRING:
-        return str(val)
+    if ttype in INTEGER or ttype in FLOAT or ttype == TType.STRING:
+        return val
 
     if ttype == TType.BOOL:
         return True if val else False
