@@ -1,10 +1,10 @@
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy, memmove
 
-from ..transport import TTransportException
+from ..transport import TFramedTransport, TTransportException
 
 DEF DEFAULT_BUFFER = 4096
-DEF MIN_BUFFER_SZIE = 1024
+DEF MIN_BUFFER_SIZE = 1024
 
 
 cdef class TCyBuffer(object):
@@ -50,7 +50,7 @@ cdef class TCyBufferedTransport(object):
     """binary reader/writer"""
 
     def __init__(self, trans, int buf_size=DEFAULT_BUFFER):
-        if buf_size < MIN_BUFFER_SZIE:
+        if buf_size < MIN_BUFFER_SIZE:
             raise Exception("buffer too small")
 
         self.trans = trans
@@ -136,6 +136,7 @@ cdef class TCyBufferedTransport(object):
         if self.wbuf.data_size > 0:
             data = self.wbuf.buf[:self.wbuf.data_size]
             self.trans.write(data)
+            self.trans.flush()
             self.wbuf.clean()
 
     def getvalue(self):
@@ -145,3 +146,7 @@ cdef class TCyBufferedTransport(object):
 class TCyBufferedTransportFactory(object):
     def get_transport(self, trans):
         return TCyBufferedTransport(trans)
+
+class TCyFramedTransportFactory(object):
+    def get_transport(self, trans):
+        return TCyBufferedTransport(TFramedTransport(trans))

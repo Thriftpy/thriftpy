@@ -106,15 +106,7 @@ class TSocket(TSocketBase):
         if not self.handle:
             raise TTransportException(type=TTransportException.NOT_OPEN,
                                       message='Transport not open')
-        sent = 0
-        have = len(buff)
-        while sent < have:
-            plus = self.handle.send(buff)
-            if plus == 0:
-                raise TTransportException(type=TTransportException.END_OF_FILE,
-                                          message='TSocket sent 0 bytes')
-            sent += plus
-            buff = buff[plus:]
+        self.handle.sendall(buff)
 
     def flush(self):
         pass

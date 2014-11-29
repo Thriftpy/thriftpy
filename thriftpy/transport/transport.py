@@ -144,7 +144,6 @@ class TFramedTransport(TTransportBase):
     def __init__(self, trans):
         self.__trans = trans
         self.__rbuf = BytesIO()
-        self.__wbuf = BytesIO()
 
     def is_open(self):
         return self.__trans.is_open()
@@ -174,23 +173,20 @@ class TFramedTransport(TTransportBase):
         self.__rbuf = BytesIO(self.__trans.read(sz))
 
     def write(self, buf):
-        self.__wbuf.write(buf)
-
-    def flush(self):
-        wout = self.__wbuf.getvalue()
-        wsz = len(wout)
-        # reset wbuf before write/flush to preserve state on underlying failure
-        self.__wbuf = BytesIO()
+        wsz = len(buf)
         # N.B.: Doing this string concatenation is WAY cheaper than making
         # two separate calls to the underlying socket object. Socket writes in
         # Python turn out to be REALLY expensive, but it seems to do a pretty
         # good job of managing string buffer operations without excessive
         # copies
-        buf = struct.pack("!i", wsz) + wout
-        self.__trans.write(buf)
+        towrite = struct.pack("!i", wsz) + buf
+        self.__trans.write(towrite)
         self.__trans.flush()
+
+    def flush(self):
+        pass
 
 
 class TFramedTransportFactory(object):
     def get_transport(self, trans):
-        return TFramedTransport(trans)
+        return TBufferedTransport(TFramedTransport(trans))
