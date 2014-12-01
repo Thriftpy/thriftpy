@@ -25,7 +25,12 @@ from .transport import (
 
 from thriftpy._compat import PYPY
 if not PYPY:
-    from .cytransport import TCyBufferedTransport, TCyBufferedTransportFactory
+    from .cytransport import (
+        TCyBufferedTransport,
+        TCyBufferedTransportFactory,
+        TCyFramedTransportFactory,
+    )
 else:
     TCyBufferedTransport = TBufferedTransport
     TCyBufferedTransportFactory = TBufferedTransportFactory
+    TCyFramedTransportFactory = TFramedTransportFactory

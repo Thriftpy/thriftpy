@@ -15,7 +15,10 @@ from tornado import ioloop
 import thriftpy
 from thriftpy.tornado import make_server
 from thriftpy.rpc import make_client
-from thriftpy.transport import TFramedTransportFactory
+from thriftpy.transport import (
+    TFramedTransportFactory,
+    TCyFramedTransportFactory,
+)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -47,6 +50,8 @@ class Dispatcher(object):
 
 
 class FramedTransportTestCase(TestCase):
+    TRANSPORT_FACTORY = TFramedTransportFactory()
+
     def mk_server(self):
         self.io_loop = ioloop.IOLoop()
         server = make_server(addressbook.AddressBookService,
@@ -70,7 +75,7 @@ class FramedTransportTestCase(TestCase):
     def mk_client(self):
         return make_client(addressbook.AddressBookService,
                            '127.0.0.1', self.port,
-                           trans_factory=TFramedTransportFactory())
+                           trans_factory=self.TRANSPORT_FACTORY)
 
     def setUp(self):
         self.mk_server()
@@ -90,3 +95,7 @@ class FramedTransportTestCase(TestCase):
         assert success
         success = self.client.get(name='')
         assert success
+
+
+class CyFramedTransportTestCase(FramedTransportTestCase):
+    TRANSPORT_FACTORY = TCyFramedTransportFactory()
