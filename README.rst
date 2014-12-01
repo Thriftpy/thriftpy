@@ -173,7 +173,7 @@ Contribute
 
 2. Write a test which shows a bug was fixed or the feature works as expected.
 
-3. Make sure travis-ci test succeed.
+3. Make sure ``travis-ci`` or ``tox`` tests succeed.
 
 4. Send pull request.
 

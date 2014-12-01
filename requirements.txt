@@ -1,3 +1,0 @@
-pytest
-tornado>=4.0,<5.0
-toro==0.6
