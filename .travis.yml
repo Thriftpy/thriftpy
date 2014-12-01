@@ -1,5 +1,8 @@
 language: python
 python: 3.4
+cache:
+  directories:
+    - $HOME/.pip-cache
 env:
   - TOXENV=flake8
   - TOXENV=py26-py
@@ -11,8 +14,9 @@ env:
   - TOXENV=py34-py
   - TOXENV=py34-cy
   - TOXENV=pypy
+before_install:
+  - pip install --download-cache $HOME/.pip-cache --use-wheel cython tox
 install:
-  - pip install tox cython
   - make build_ext
 script:
   - tox -v
