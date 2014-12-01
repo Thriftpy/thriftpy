@@ -14,24 +14,36 @@ from thriftpy.transport import (
 )
 
 
-def make_client(service, host, port,
+def make_client(service, host="localhost", port=9090, unix_socket=None,
                 proto_factory=TBinaryProtocolFactory(),
                 trans_factory=TBufferedTransportFactory(),
                 timeout=None):
-    socket = TSocket(host, port)
+    if host and port:
+        socket = TSocket(host, port)
+    elif unix_socket:
+        socket = TSocket(unix_socket=unix_socket)
+    else:
+        raise ValueError("Either host/port or unix_socket must be provided.")
+
     if timeout:
         socket.set_timeout(timeout)
+
     transport = trans_factory.get_transport(socket)
     protocol = proto_factory.get_protocol(transport)
     transport.open()
     return TClient(service, protocol)
 
 
-def make_server(service, handler, host, port,
+def make_server(service, handler, host="localhost", port=9090, unix_socket=None,
                 proto_factory=TBinaryProtocolFactory(),
                 trans_factory=TBufferedTransportFactory()):
     processor = TProcessor(service, handler)
-    server_socket = TServerSocket(host=host, port=port)
+    if host and port:
+        server_socket = TServerSocket(host=host, port=port)
+    elif unix_socket:
+        server_socket = TServerSocket(unix_socket=unix_socket)
+    else:
+        raise ValueError("Either host/port or unix_socket must be provided.")
     server = TThreadedServer(processor, server_socket,
                              iprot_factory=proto_factory,
                              itrans_factory=trans_factory)
