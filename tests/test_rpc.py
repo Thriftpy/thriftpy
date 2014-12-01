@@ -62,12 +62,13 @@ class Dispatcher(object):
 
 def serve():
     server = make_server(addressbook.AddressBookService, Dispatcher(),
-                         '127.0.0.1', 8000)
+                         unix_socket="/tmp/thriftpy_test.sock")
     server.serve()
 
 
 def client(timeout=None):
-    return client_context(addressbook.AddressBookService, '127.0.0.1', 8000,
+    return client_context(addressbook.AddressBookService,
+                          unix_socket="/tmp/thriftpy_test.sock",
                           timeout=timeout)
 
 

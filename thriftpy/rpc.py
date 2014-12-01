@@ -44,6 +44,7 @@ def make_server(service, handler, host="localhost", port=9090, unix_socket=None,
         server_socket = TServerSocket(unix_socket=unix_socket)
     else:
         raise ValueError("Either host/port or unix_socket must be provided.")
+
     server = TThreadedServer(processor, server_socket,
                              iprot_factory=proto_factory,
                              itrans_factory=trans_factory)
@@ -51,17 +52,25 @@ def make_server(service, handler, host="localhost", port=9090, unix_socket=None,
 
 
 @contextlib.contextmanager
-def client_context(service, host, port,
+def client_context(service, host="localhost", port=9090, unix_socket=None,
                    proto_factory=TBinaryProtocolFactory(),
                    trans_factory=TBufferedTransportFactory(),
                    timeout=None):
     try:
-        socket = TSocket(host, port)
+        if host and port:
+            socket = TSocket(host, port)
+        elif unix_socket:
+            socket = TSocket(unix_socket=unix_socket)
+        else:
+            raise ValueError("Either host/port or unix_socket must be provided.")
+
         if timeout:
             socket.set_timeout(timeout)
+
         transport = trans_factory.get_transport(socket)
         protocol = proto_factory.get_protocol(transport)
         transport.open()
         yield TClient(service, protocol)
+
     finally:
         transport.close()
