@@ -323,7 +323,8 @@ def test_read_long_data():
     val = 'z' * 97 * 1024
 
     def serve():
-        server_sock = TServerSocket(host="127.0.0.1", port=9090)
+        server_sock = TServerSocket(
+            unix_socket="/tmp/thriftpy_test.sock")
         server_sock.listen()
         client = server_sock.accept()
         t = TCyBufferedTransport(client)
@@ -335,7 +336,7 @@ def test_read_long_data():
     time.sleep(0.1)
 
     try:
-        sock = TSocket(host='127.0.0.1', port=9090)
+        sock = TSocket(unix_socket="/tmp/thriftpy_test.sock")
         b = TCyBufferedTransport(sock)
         b.open()
         assert val == proto.read_val(b, TType.STRING)
