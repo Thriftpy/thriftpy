@@ -15,7 +15,8 @@ env:
   - TOXENV=py34-cy
   - TOXENV=pypy
 before_install:
-  - pip install --download-cache $HOME/.pip-cache --use-wheel cython tox
+  - pip install --download-cache $HOME/.pip-cache --use-wheel --install-option="--no-cython-compile" cython
+  - pip install --download-cache $HOME/.pip-cache tox
 install:
   - make build_ext
 script:
