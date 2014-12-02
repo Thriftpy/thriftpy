@@ -2,16 +2,21 @@
 
 from __future__ import absolute_import
 
+import os
 import multiprocessing
 import socket
 import time
+
+import pytest
 
 import thriftpy
 thriftpy.install_import_hook()
 
 from thriftpy.rpc import make_server, client_context
 
-import addressbook_thrift as addressbook
+
+addressbook = thriftpy.load(os.path.join(os.path.dirname(__file__),
+                                         "addressbook.thrift"))
 
 
 class Dispatcher(object):
@@ -60,29 +65,27 @@ class Dispatcher(object):
         return True
 
 
-def serve():
+@pytest.fixture(scope="module")
+def server(request):
     server = make_server(addressbook.AddressBookService, Dispatcher(),
-                         unix_socket="/tmp/thriftpy_test.sock")
-    server.serve()
+                         unix_socket="./thriftpy_test.sock")
+    ps = multiprocessing.Process(target=server.serve)
+    ps.start()
+
+    time.sleep(0.1)
+
+    def fin():
+        if ps.is_alive():
+            ps.terminate()
+        try:
+            os.remove("./thriftpy_test.sock")
+        except FileNotFoundError:
+            pass
+    request.addfinalizer(fin)
 
 
-def client(timeout=None):
-    return client_context(addressbook.AddressBookService,
-                          unix_socket="/tmp/thriftpy_test.sock",
-                          timeout=timeout)
-
-
-def rpc_client():
-    # test void and normal request
-    with client() as c:
-        assert c.ping() is None
-        assert c.hello("world") == "hello world"
-
-    # test big request and return args
-    with client() as c:
-        big_str = "world" * 100000
-        assert c.hello(big_str) == "hello " + big_str
-
+@pytest.fixture(scope="module")
+def person():
     phone1 = addressbook.PhoneNumber()
     phone1.type = addressbook.PhoneType.MOBILE
     phone1.number = '555-1212'
@@ -93,68 +96,59 @@ def rpc_client():
     # empty struct
     phone3 = addressbook.PhoneNumber()
 
-    person = addressbook.Person()
-    person.name = "Alice"
-    person.phones = [phone1, phone2, phone3]
-    person.created_at = int(time.time())
+    alice = addressbook.Person()
+    alice.name = "Alice"
+    alice.phones = [phone1, phone2, phone3]
+    alice.created_at = int(time.time())
 
-    # test put struct
+    return alice
+
+
+def client(timeout=3000):
+    return client_context(addressbook.AddressBookService,
+                          unix_socket="./thriftpy_test.sock",
+                          timeout=timeout)
+
+
+def test_void_api(server):
     with client() as c:
-        assert c.add(person)
+        assert c.ping() is None
 
-    # test get struct
+
+def test_string_api(server):
     with client() as c:
-        alice = c.get("Alice")
-        assert person == alice
+        assert c.hello("world") == "hello world"
 
-    # test get complex struct
+
+def test_huge_res(server):
     with client() as c:
-        # test get list
-        # assert isinstance(c.get_phonenumbers("Alice"), list)
+        big_str = "world" * 100000
+        assert c.hello(big_str) == "hello " + big_str
 
-        # test get empty list
+
+def test_tstruct_req(person):
+    with client() as c:
+        assert c.add(person) is True
+
+
+def test_tstruct_res(person):
+    with client() as c:
+        assert person == c.get("Alice")
+
+
+def test_complex_tstruct():
+    with client() as c:
         assert len(c.get_phonenumbers("Alice", 0)) == 0
         assert len(c.get_phonenumbers("Alice", 1000)) == 1000
 
-        # assert isinstance(c.get_phones("Alice"), dict)
-        # assert isinstance(c.book(), addressbook.AddressBook)
 
-    # test exception
-    with client() as c:
-        try:
-            name = "Bob"
-            c.remove(name)
+def test_exception():
+    with pytest.raises(addressbook.PersonNotExistsError):
+        with client() as c:
+            c.remove("Bob")
 
-            # should not be executed
-            assert False
 
-        except Exception as e:
-            assert isinstance(e, addressbook.PersonNotExistsError)
-
-    # test client timeout
-    with client(timeout=500) as c:
-        try:
+def test_client_timeout():
+    with pytest.raises(socket.timeout):
+        with client(timeout=500) as c:
             c.sleep(1000)
-
-            # should not be executed
-            assert False
-
-        except Exception as e:
-            assert isinstance(e, socket.timeout)
-
-
-def test_rpc():
-    p = multiprocessing.Process(target=serve)
-    p.start()
-    time.sleep(0.1)
-
-    try:
-        rpc_client()
-    except:
-        raise
-    finally:
-        p.terminate()
-
-
-if __name__ == "__main__":
-    test_rpc()

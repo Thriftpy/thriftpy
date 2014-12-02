@@ -6,6 +6,7 @@ PYPY = "__pypy__" in sys.modules
 import pytest
 pytestmark = pytest.mark.skipif(PYPY, reason="cybin not enabled in pypy.")
 
+import os
 import multiprocessing
 import time
 
@@ -324,7 +325,7 @@ def test_read_long_data():
 
     def serve():
         server_sock = TServerSocket(
-            unix_socket="/tmp/thriftpy_test.sock")
+            unix_socket="./thriftpy_test.sock")
         server_sock.listen()
         client = server_sock.accept()
         t = TCyBufferedTransport(client)
@@ -336,12 +337,17 @@ def test_read_long_data():
     time.sleep(0.1)
 
     try:
-        sock = TSocket(unix_socket="/tmp/thriftpy_test.sock")
+        sock = TSocket(unix_socket="./thriftpy_test.sock")
         b = TCyBufferedTransport(sock)
         b.open()
         assert val == proto.read_val(b, TType.STRING)
+        sock.close()
     finally:
         p.terminate()
+        try:
+            os.remove("./thriftpy_test.sock")
+        except FileNotFoundError:
+            pass
 
 
 def test_write_wrong_arg_type():
