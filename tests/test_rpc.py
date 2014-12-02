@@ -79,7 +79,7 @@ def server(request):
             ps.terminate()
         try:
             os.remove("./thriftpy_test.sock")
-        except FileNotFoundError:
+        except IOError:
             pass
     request.addfinalizer(fin)
 

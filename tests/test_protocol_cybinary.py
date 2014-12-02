@@ -346,7 +346,7 @@ def test_read_long_data():
         p.terminate()
         try:
             os.remove("./thriftpy_test.sock")
-        except FileNotFoundError:
+        except IOError:
             pass
 
 
