@@ -2,7 +2,7 @@
 ThriftPy
 ========
 
-ThriftPy is a pure python implemention of
+ThriftPy is a pure python implementation of
 `Apache Thrift <http://thrift.apache.org/>`_ in a pythonic way.
 
 The official thrift python lib is not pythonic at all, it needs a complicated
@@ -72,10 +72,10 @@ Features
 Currently ThriftPy have these features (also advantages over the upstream
 python lib):
 
-- Supports python2.7+, python3.3+, pypy and pypy3.
+- Supports python2.6+, python3.3+, pypy and pypy3.
 
 - Compatible with Apache Thirft.  You can use ThriftPy together with the
-  official implemention servers and clients, such as a upstream server with
+  official implementation servers and clients, such as a upstream server with
   a thriftpy client or the opposite.
 
   Currently implemented protocols and transports:
@@ -101,7 +101,7 @@ python lib):
   as module, you may also use ``from pingpong_thrift import PingService`` to
   import specific object from the thrift module.
 
-- Pure python implemention. No longer need to compile & install the 'thrift'
+- Pure python implementation. No longer need to compile & install the 'thrift'
   package. All you need is thriftpy and thrift file.
 
 - Easy RPC server/client setup.
