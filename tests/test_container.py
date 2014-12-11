@@ -17,6 +17,9 @@ def test_list_item():
     l_item2 = deserialize(container.ListItem(), b)
     assert l_item == l_item2
 
+    l_item3 = container.ListItem()
+    assert l_item != l_item3
+
 
 def test_map_item():
     m_item = container.MapItem()

@@ -107,7 +107,7 @@ class TPayload(with_metaclass(TPayloadMeta, object)):
         return super(TPayload, self).__hash__()
 
     def __ne__(self, other):
-        return self != other
+        return not self.__eq__(other)
 
 
 class TClient(object):
