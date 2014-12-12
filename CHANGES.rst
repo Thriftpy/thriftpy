@@ -1,6 +1,25 @@
 ThriftPy Changelog
 ==================
 
+Version 0.1.15
+--------------
+
+Released on December 12, 2014.
+
+- add MIT `LICENSE` file as requested.
+- tests refines with tox and pytest fixtures.
+- support for a mostly cythonized version of framed transport, via `#66`_.
+- bugfix for unix socket param in rpc.
+- bugfix for receiving 0-length strings & framed transport, via `#63`_.
+- bugfix for json protocol unicode decode error, via `#65`_.
+- bugfix for operator `__ne__` implementation error, via `#68`_.
+
+.. _`#66`: https://github.com/eleme/thriftpy/pull/66
+.. _`#63`: https://github.com/eleme/thriftpy/pull/63
+.. _`#65`: https://github.com/eleme/thriftpy/pull/65
+.. _`#68`: https://github.com/eleme/thriftpy/pull/68
+
+
 Version 0.1.14
 --------------
 
