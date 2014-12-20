@@ -2,7 +2,13 @@
   "includes": [],
   "namespaces": {},
   "typedefs": {},
-  "enums": {},
+  "enums": {
+      "Country": {
+          "CA": 3,
+          "UK": 2,
+          "US": 1
+      }
+  },
   "unions": {},
   "consts": {},
   "services": {},
@@ -21,6 +27,15 @@
         "name": "age",
         "type": "i32",
         "value": null,
+        "requirement": null
+      },
+      {
+        "id": 3,
+        "name": "country",
+        "type": "Country",
+        "value": {
+            "v": "Country.US"
+        },
         "requirement": null
       }
     ]

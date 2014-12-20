@@ -31,3 +31,9 @@ def test_hashable():
     ab = thriftpy.load("addressbook.thrift")
 
     hash(ab.Person(name="Tom"))
+
+
+def test_default_value():
+    ab = thriftpy.load("addressbook.thrift")
+
+    assert ab.PhoneNumber().type == ab.PhoneType.MOBILE

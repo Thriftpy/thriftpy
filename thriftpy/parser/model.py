@@ -160,6 +160,12 @@ BASE_TYPE_MAPS = {
 }
 
 
+class IdentifierValue(dict):
+    def __init__(self, v):
+        super(IdentifierValue, self).__init__()
+        self.v = self['v'] = v
+
+
 class Field(dict):
 
     def __init__(self, id, type, name, value=None, requirement=None):

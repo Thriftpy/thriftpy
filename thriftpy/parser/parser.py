@@ -14,6 +14,7 @@ from .model import (
     BASE_TYPE_MAPS,
     Field,
     Function,
+    IdentifierValue,
     ListType,
     MapType,
     Service,
@@ -90,11 +91,16 @@ def p_const_value(p):
                    | DUBCONSTANT
                    | LITERAL
                    | BOOLCONSTANT
-                   | IDENTIFIER
+                   | identifier_value
                    | const_list
                    | const_map'''
 
     p[0] = p[1]
+
+
+def p_identifier_value(p):
+    '''identifier_value : IDENTIFIER'''
+    p[0] = IdentifierValue(p[1])
 
 
 def p_const_list(p):

@@ -11,7 +11,7 @@ enum PhoneType {
 }
 
 struct PhoneNumber {
-    1: optional PhoneType type = 0,
+    1: optional PhoneType type = PhoneType.MOBILE,
     2: optional string number,
     3: optional container.MixItem mix_item,
 }
