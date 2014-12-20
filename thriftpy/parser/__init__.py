@@ -15,6 +15,7 @@ import os.path
 import sys
 import types
 
+from .model import IdentifierValue
 from .parser import parse
 from ..thrift import gen_init, TException, TPayload, TType
 
@@ -76,8 +77,10 @@ def load(thrift_file, module_name=None, include_dirs=None):
 
     thrift_schema._includes = {}
     for path in result["includes"]:
-        thrift_schema._includes[make_thrift_include_name(path)] = load(
+        name = make_thrift_include_name(path)
+        include = thrift_schema._includes[name] = load(
             path, include_dirs=include_dirs)
+        setattr(thrift_schema, name, include)
 
     thrift_schema._struct_names = list(itertools.chain(
         result["structs"].keys(),
@@ -110,16 +113,21 @@ def load(thrift_file, module_name=None, include_dirs=None):
         else:
             raise Exception("ttype parse error: {0}".format(t))
 
+    def _lookup_value(const):
+        if isinstance(const, IdentifierValue):
+            value = thrift_schema
+            for ref in const.v.split("."):
+                value = getattr(value, ref)
+            return value
+
+        return const
+
     def _ttype_spec(ttype, name):
         ttype = _ttype(ttype)
         if isinstance(ttype, int):
             return ttype, name
         else:
             return ttype[0], name, ttype[1]
-
-    # load consts
-    for name, value in result["consts"].items():
-        setattr(thrift_schema, name, value)
 
     # load enums
     for name, enum in result["enums"].items():
@@ -133,6 +141,10 @@ def load(thrift_file, module_name=None, include_dirs=None):
         attrs['_NAMES_TO_VALUES'] = n2v
         enum_cls = type(name, (object, ), attrs)
         setattr(thrift_schema, name, enum_cls)
+
+    # load consts
+    for name, value in result["consts"].items():
+        setattr(thrift_schema, name, _lookup_value(value))
 
     # load structs/unions
     for name in itertools.chain(result["structs"].keys(),
@@ -152,7 +164,8 @@ def load(thrift_file, module_name=None, include_dirs=None):
         thrift_spec, default_spec = {}, []
         for m in struct:
             thrift_spec[m["id"]] = _ttype_spec(m["type"], m["name"])
-            default_spec.append((m["name"], m["value"] or None))
+            default = _lookup_value(m["value"]) if m["value"] else None
+            default_spec.append((m["name"], default))
         struct_cls = getattr(thrift_schema, name)
         gen_init(struct_cls, thrift_spec, default_spec)
 
