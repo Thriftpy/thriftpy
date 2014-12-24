@@ -397,3 +397,22 @@ def test_read_wrong_arg_type():
     b.read_struct(item4)
 
     assert item3 == item4
+
+
+def test_multiple_read_struct():
+    b = TMemoryBuffer()
+    t = TCyBufferedTransport(b)
+    p = proto.TCyBinaryProtocol(t)
+
+    item1 = TItem(id=123, phones=["123456", "abcdef"])
+    item2 = TItem(id=234, phones=["110", "120"])
+    p.write_struct(item1)
+    p.write_struct(item2)
+    p.write_message_end()
+
+    _item1 = TItem()
+    _item2 = TItem()
+    p.read_struct(_item1)
+    p.read_struct(_item2)
+
+    assert _item1 == item1 and _item2 == item2
