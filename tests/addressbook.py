@@ -23,18 +23,18 @@ class PhoneType(object):
 
 class PhoneNumber(TPayload):
     thrift_spec = {
-        1: (TType.I32, "type", PhoneType),
-        2: (TType.STRING, "number"),
-        3: (TType.STRUCT, "mix_item", MixItem),
+        1: (TType.I32, "type", PhoneType, False),
+        2: (TType.STRING, "number", False),
+        3: (TType.STRUCT, "mix_item", MixItem, False),
     }
     default_spec = [("type", None), ("number", None), ("mix_item", None)]
 
 
 class Person(TPayload):
     thrift_spec = {
-        1: (TType.STRING, "name"),
+        1: (TType.STRING, "name", False),
         2: (TType.LIST, "phones", (TType.STRUCT, PhoneNumber)),
-        4: (TType.I32, "created_at"),
+        4: (TType.I32, "created_at", False),
     }
     default_spec = [("name", None), ("phones", None), ("created_at", None)]
 
@@ -49,7 +49,7 @@ class AddressBook(TPayload):
 
 class PersonNotExistsError(TException):
     thrift_spec = {
-        1: (TType.STRING, "message")
+        1: (TType.STRING, "message", False)
     }
     default_spec = [("message", None)]
 

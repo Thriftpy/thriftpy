@@ -5,4 +5,4 @@ from thriftpy.thrift import TType
 def test_set():
     s = load("type.thrift")
 
-    assert s.Set.thrift_spec == {1: (TType.SET, "a_set", TType.STRING)}
+    assert s.Set.thrift_spec == {1: (TType.SET, "a_set", TType.STRING, True)}

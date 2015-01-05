@@ -10,8 +10,8 @@ from thriftpy.protocol import binary as proto
 
 class TItem(TPayload):
     thrift_spec = {
-        1: (TType.I32, "id"),
-        2: (TType.LIST, "phones", (TType.STRING)),
+        1: (TType.I32, "id", False),
+        2: (TType.LIST, "phones", (TType.STRING), False),
     }
     default_spec = [("id", None), ("phones", None)]
 

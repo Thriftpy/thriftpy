@@ -12,12 +12,12 @@ from thriftpy.thrift import (
 
 
 class JavaObjectArg(TPayload):
-    thrift_spec = {1: (TType.I32, 'int_arg'),
-                   2: (TType.I64, 'long_arg'),
-                   3: (TType.STRING, 'string_arg'),
-                   4: (TType.BOOL, 'bool_arg'),
-                   5: (TType.BINARY, 'binary_arg'),
-                   6: (TType.DOUBLE, 'double_arg')}
+    thrift_spec = {1: (TType.I32, 'int_arg', False),
+                   2: (TType.I64, 'long_arg', False),
+                   3: (TType.STRING, 'string_arg', False),
+                   4: (TType.BOOL, 'bool_arg', False),
+                   5: (TType.BINARY, 'binary_arg', False),
+                   6: (TType.DOUBLE, 'double_arg', False)}
 
 
 class JavaObject(TPayload):
@@ -135,8 +135,8 @@ class ClusterSummary(TPayload):
 
 
 class ErrorInfo(TPayload):
-    thrift_spec = {1: (TType.STRING, 'error'),
-                   2: (TType.I32, 'error_time_secs')}
+    thrift_spec = {1: (TType.STRING, 'error', False),
+                   2: (TType.I32, 'error_time_secs', False)}
 
 
 class BoltStats(TPayload):

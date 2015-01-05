@@ -145,11 +145,11 @@ def write_val(outbuf, ttype, val, spec=None):
     elif ttype == TType.STRUCT:
         for fid in iter(val.thrift_spec):
             f_spec = val.thrift_spec[fid]
-            if len(f_spec) == 2:
-                f_type, f_name = f_spec
+            if len(f_spec) == 3:
+                f_type, f_name, f_req = f_spec
                 f_container_spec = None
             else:
-                f_type, f_name, f_container_spec = f_spec
+                f_type, f_name, f_container_spec, f_req = f_spec
 
             v = getattr(val, f_name)
             if v is None:
@@ -291,11 +291,11 @@ def read_struct(inbuf, obj):
             skip(inbuf, f_type)
             continue
 
-        if len(obj.thrift_spec[fid]) == 2:
-            sf_type, f_name = obj.thrift_spec[fid]
+        if len(obj.thrift_spec[fid]) == 3:
+            sf_type, f_name, f_req = obj.thrift_spec[fid]
             f_container_spec = None
         else:
-            sf_type, f_name, f_container_spec = obj.thrift_spec[fid]
+            sf_type, f_name, f_container_spec, f_req = obj.thrift_spec[fid]
 
         # it really should equal here. but since we already wasted
         # space storing the duplicate info, let's check it.

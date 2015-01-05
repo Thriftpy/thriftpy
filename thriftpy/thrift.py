@@ -220,7 +220,7 @@ class TProcessor(object):
             if result.thrift_spec[k][1] == "success":
                 continue
 
-            _, exc_name, exc_cls = result.thrift_spec[k]
+            _, exc_name, exc_cls, _ = result.thrift_spec[k]
             if isinstance(e, exc_cls):
                 setattr(result, exc_name, e)
                 break

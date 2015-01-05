@@ -122,12 +122,15 @@ def load(thrift_file, module_name=None, include_dirs=None):
 
         return const
 
-    def _ttype_spec(ttype, name):
+    def _ttype_spec(ttype, name, requirement=None):
         ttype = _ttype(ttype)
+        req = False
+        if requirement == 'required':
+            req = True
         if isinstance(ttype, int):
-            return ttype, name
+            return ttype, name, req
         else:
-            return ttype[0], name, ttype[1]
+            return ttype[0], name, ttype[1], req
 
     # load enums
     for name, enum in result["enums"].items():
@@ -163,7 +166,8 @@ def load(thrift_file, module_name=None, include_dirs=None):
                                         result["exceptions"].items()):
         thrift_spec, default_spec = {}, []
         for m in struct:
-            thrift_spec[m["id"]] = _ttype_spec(m["type"], m["name"])
+            thrift_spec[m["id"]] = _ttype_spec(m["type"], m["name"],
+                                               m["requirement"])
             default = _lookup_value(m["value"]) if m["value"] else None
             default_spec.append((m["name"], default))
         struct_cls = getattr(thrift_schema, name)
