@@ -2,7 +2,10 @@
   "typedefs": {
     "myInt": "i32",
     "str": "string",
-    "miniInt": "byte"
+    "miniInt": "byte",
+    "byteMap": ["map", "bytes", "int"],
+    "byteSet": ["set", "miniInt"], 
+    "bytes": ["list", "miniInt"]
   },
   "includes": [],
   "namespaces": {},
