@@ -1,5 +1,5 @@
 {
-  "includes": ["structs.thrift", "enums.thrift"],
+  "includes": ["structs.thrift", "enums.thrift", "typedefs.thrift"],
   "namespaces": {},
   "enums": {},
   "structs": {
@@ -13,7 +13,13 @@
            "type": "enums.Enum1",
            "id": 2,
            "value": null,
-           "name": "enum1"}
+           "name": "enum1"},
+	  {"requirement": null,
+           "type": "typedefs.bytes",
+	   "id": 3,
+	   "value": null,
+	   "name": "bytes"
+	  }
       ]},
   "unions": {},
   "exceptions": {},

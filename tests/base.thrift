@@ -11,4 +11,7 @@ enum Code {
     UNKNOWN
 }
 
+typedef list<Code> codelist
+typedef map<Code, i64> codemap
+typedef set<Code> codeset
 typedef i64 timestamp

@@ -101,15 +101,15 @@ def load(thrift_file, module_name=None, include_dirs=None):
             elif t in module._enums:
                 return TType.I32, getattr(module, t)
             elif t in module._typedefs:
-                return _ttype(module._typedefs[t])
+                return _ttype(module._typedefs[t], module)
             else:
                 return getattr(TType, t.upper())
         elif t[0] == "list":
-            return TType.LIST, _ttype(t[1])
+            return TType.LIST, _ttype(t[1], module)
         elif t[0] == "set":
-            return TType.SET, _ttype(t[1])
+            return TType.SET, _ttype(t[1], module)
         elif t[0] == "map":
-            return TType.MAP, (_ttype(t[1]), _ttype(t[2]))
+            return TType.MAP, (_ttype(t[1], module), _ttype(t[2], module))
         else:
             raise Exception("ttype parse error: {0}".format(t))
 
