@@ -10,17 +10,7 @@ from __future__ import absolute_import
 from ply import yacc
 
 from .lexer import tokens, lexer  # noqa
-from .model import (
-    BASE_TYPE_MAPS,
-    Field,
-    Function,
-    IdentifierValue,
-    ListType,
-    MapType,
-    Service,
-    SetType,
-    Thrift
-)
+from .types import *  # noqa
 from .exc import ThriftGrammerError
 
 
@@ -34,8 +24,13 @@ def p_start(p):
 
 
 def p_header(p):
-    '''header : header_unit header
+    '''header : header_unit_ header
               |'''
+
+
+def p_header_unit_(p):
+    '''header_unit_ : header_unit ';'
+                    | header_unit'''
 
 
 def p_header_unit(p):
@@ -45,12 +40,12 @@ def p_header_unit(p):
 
 def p_include(p):
     '''include : INCLUDE LITERAL'''
-    thrift.includes.append(p[2])
+    thrift.setdefault('includes', set()).add(p[2])
 
 
 def p_namespace(p):
     '''namespace : NAMESPACE namespace_scope IDENTIFIER'''
-    thrift.namespaces[p[3]] = p[2]
+    thrift.setdefault('namespaces', {})[p[3]] = p[2]
 
 
 def p_namespace_scope(p):
@@ -66,24 +61,24 @@ def p_sep(p):
 
 
 def p_definition(p):
-    '''definition : definition definition_unit
+    '''definition : definition definition_unit_
                   |'''
+
+
+def p_definition_(p):
+    '''definition_unit_ : definition_unit ';'
+                        | definition_unit'''
 
 
 def p_definition_unit(p):
     '''definition_unit : const
-                       | typedef
-                       | enum
-                       | struct
-                       | union
-                       | exception
-                       | service
+                       | ttype
     '''
 
 
 def p_const(p):
-    '''const : CONST field_type IDENTIFIER '=' const_value '''
-    thrift.consts[p[3]] = p[2].cast(p[5])
+    '''const : CONST field_type IDENTIFIER '=' const_value'''
+    thrift.setdefault('constants', {})[p[3]] = p[2].cast(p[5])
 
 
 def p_const_value(p):
@@ -91,16 +86,10 @@ def p_const_value(p):
                    | DUBCONSTANT
                    | LITERAL
                    | BOOLCONSTANT
-                   | identifier_value
                    | const_list
-                   | const_map'''
-
+                   | const_map
+                   | const_ref'''
     p[0] = p[1]
-
-
-def p_identifier_value(p):
-    '''identifier_value : IDENTIFIER'''
-    p[0] = IdentifierValue(p[1])
 
 
 def p_const_list(p):
@@ -120,29 +109,53 @@ def p_const_map(p):
     p[0] = dict(p[2])
 
 
-def p_const_map_items(p):
+def p_const_map_seq(p):
     '''const_map_seq : const_map_item sep const_map_seq
                      | const_map_item const_map_seq
-                     |
-    '''
+                     |'''
     _parse_seq(p)
 
 
 def p_const_map_item(p):
-    '''const_map_item : const_value ':'  const_value'''
+    '''const_map_item : const_value ':' const_value'''
     p[0] = [p[1], p[3]]
+
+
+def p_const_ref(p):
+    '''const_ref : IDENTIFIER'''
+    keys = p[1].split('.')
+
+    if len(keys) == 1 and 'constants' in thrift \
+            and keys[0] in thrift['constants']:
+        p[0] = thrift['constants'][keys[0]]
+        return
+    elif len(keys) == 2 and 'ttypes' in thrift and \
+        keys[0] in thrift['ttypes']:
+        enum = thrift['ttypes'][keys[0]]
+        if enum.ttype == 'enum' and keys[1] in enum:
+            p[0] = enum[keys[1]]
+            return
+    raise ThriftGrammerError('No enum value or constant found named %r' % p[1])
+
+
+def p_ttype(p):
+    '''ttype : typedef
+             | enum
+             | struct
+             | union
+             | exception
+             | service'''
 
 
 def p_typedef(p):
     '''typedef : TYPEDEF definition_type IDENTIFIER'''
-    thrift.typedefs[p[3]] = p[2]
+    thrift.setdefault('ttypes', {})[p[3]] = TTypeDef(type=p[2])
 
 
 def p_enum(p):
     '''enum : ENUM IDENTIFIER '{' enum_seq '}' '''
-
     if not p[4]:
-        thrift.enums[p[2]] = {}
+        thrift.setdefault('ttypes')[p[2]] = TEnum()
     else:
         init_val = p[4][0][1]
         vals = [-1 if init_val is None else init_val]
@@ -153,16 +166,13 @@ def p_enum(p):
                 item[1] = val
                 vals.append(val)
             vals.append(item[1])
-
-        dct = dict(p[4])
-        thrift.enums[p[2]] = dct
+        thrift.setdefault('ttypes', {})[p[2]] = TEnum(p[4])
 
 
 def p_enum_seq(p):
     '''enum_seq : enum_item sep enum_seq
                 | enum_item enum_seq
-                |
-    '''
+                |'''
     _parse_seq(p)
 
 
@@ -177,61 +187,64 @@ def p_enum_item(p):
 
 def p_struct(p):
     '''struct : STRUCT IDENTIFIER '{' field_seq '}' '''
-    thrift.structs[p[2]] = p[4]
+    thrift.setdefault('ttypes', {})[p[2]] = TStruct(p[4])
 
 
 def p_union(p):
     '''union : UNION IDENTIFIER '{' field_seq '}' '''
-    thrift.unions[p[2]] = p[4]
+    # thriftpy won't support union
 
 
 def p_exception(p):
     '''exception : EXCEPTION IDENTIFIER '{' field_seq '}' '''
-    thrift.exceptions[p[2]] = p[4]
+    thrift.setdefault('ttypes', {})[p[2]] = TException(p[4])
 
 
 def p_service(p):
-    '''service : SERVICE IDENTIFIER '{' function_seq '}'
+    '''service : SERVICE IDENTIFIER '{'  function_seq '}'
                | SERVICE IDENTIFIER EXTENDS IDENTIFIER '{' function_seq '}'
     '''
-    apis = {}
-    extends = p[4] if len(p) == 8 else None
-    functions = p[len(p) - 2]
+    if len(p) == 8:
+        extends = p[4]
+    elif len(p) == 6:
+        extends = None
 
-    for function in functions:
-        apis[function.name] = function
-
-    thrift.services[p[2]] = Service(extends=extends, apis=apis)
+    thrift.setdefault('ttypes', {})[p[2]] = TService(functions=dict(p[len(p) - 2]),
+                                                 extends=extends)
 
 
 def p_function(p):
     '''function : ONEWAY function_type IDENTIFIER '(' field_seq ')' throws
                 | ONEWAY function_type IDENTIFIER '(' field_seq ')'
                 | function_type IDENTIFIER '(' field_seq ')' throws
-                | function_type IDENTIFIER '(' field_seq ')'
-    '''
+                | function_type IDENTIFIER '(' field_seq ')' '''
 
-    if len(p) == 8:
-        p[0] = Function(p[2], p[3], fields=p[5], throws=p[7], oneway=True)
-    elif len(p) == 7 and p[1] == 'oneway':
-        p[0] = Function(p[2], p[3], fields=p[5], throws=None, oneway=True)
-    elif len(p) == 7 and p[1] != 'oneway':
-        p[0] = Function(p[1], p[2], fields=p[4], throws=p[6], oneway=False)
-    elif len(p) == 6:
-        p[0] = Function(p[1], p[2], fields=p[4], throws=None, oneway=False)
+    if p[1] == 'oneway':
+        oneway = True
+        base = 1
+    else:
+        oneway = False
+        base = 0
+
+    if p[len(p) - 1] == ')':
+        throws = None
+    else:
+        throws = dict(p[len(p) - 1])
+
+    p[0] = [p[base + 2], TFunction(oneway=oneway, throws=throws,
+                                   type=p[base + 1], fields=dict(p[base + 4]))]
 
 
 def p_function_seq(p):
     '''function_seq : function sep function_seq
                     | function function_seq
-                    |
-    '''
+                    |'''
     _parse_seq(p)
 
 
 def p_throws(p):
     '''throws : THROWS '(' field_seq ')' '''
-    p[0] = p[3]
+    p[0] = dict(p[3])
 
 
 def p_function_type(p):
@@ -243,16 +256,15 @@ def p_function_type(p):
 def p_field_seq(p):
     '''field_seq : field sep field_seq
                  | field field_seq
-                 |
-    '''
+                 |'''
     _parse_seq(p)
 
 
 def p_field(p):
     '''field : field_id field_req field_type IDENTIFIER
              | field_id field_req field_type IDENTIFIER '=' const_value'''
-    v = p[6] if len(p) == 7 else None
-    p[0] = Field(p[1], p[3], p[4], value=v, requirement=p[2])
+    p[0] = [p[4], TField(id=p[1], required=p[2], type=p[3], value=p[6]
+                         if len(p) == 7 else None)]
 
 
 def p_field_id(p):
@@ -265,13 +277,14 @@ def p_field_req(p):
                  | OPTIONAL
                  |'''
     if len(p) == 2:
-        p[0] = p[1]
+        p[0] = p[1] == 'required'
+    elif len(p) == 1:
+        p[0] = True  # default: required=True
 
 
 def p_field_type(p):
     '''field_type : IDENTIFIER
-                  | base_type
-                  | container_type'''
+                  | definition_type'''
     p[0] = p[1]
 
 
@@ -284,7 +297,6 @@ def p_base_type(p):
                  | DOUBLE
                  | STRING
                  | BINARY'''
-
     p[0] = BASE_TYPE_MAPS[p[1]]()
 
 
@@ -297,17 +309,17 @@ def p_container_type(p):
 
 def p_map_type(p):
     '''map_type : MAP '<' field_type ',' field_type '>' '''
-    p[0] = MapType(['map', p[3], p[5]])
+    p[0] = TMap(['map', p[3], p[5]])
 
 
 def p_list_type(p):
     '''list_type : LIST '<' field_type '>' '''
-    p[0] = ListType(['list', p[3]])
+    p[0] = TList(['list', p[3]])
 
 
 def p_set_type(p):
     '''set_type : SET '<' field_type '>' '''
-    p[0] = SetType(['set', p[3]])
+    p[0] = TSet(['set', p[3]])
 
 
 def p_definition_type(p):
@@ -323,7 +335,7 @@ thrift = None
 
 def parse(data):
     global thrift
-    thrift = Thrift()
+    thrift = {}
     lexer.lineno = 1
     parser.parse(data)
     return thrift
