@@ -10,6 +10,7 @@
 from __future__ import absolute_import
 
 import functools
+import inspect
 
 from ._compat import init_func_generator, with_metaclass
 
@@ -189,21 +190,20 @@ class TProcessor(object):
             iprot.skip(TType.STRUCT)
             iprot.read_message_end()
             return api, seqid, TApplicationException(TApplicationException.UNKNOWN_METHOD), None   # noqa
-        else:
-            args = getattr(self._service, api + "_args")()
-            args.read(iprot)
-            iprot.read_message_end()
-            result = getattr(self._service, api + "_result")()
 
-            # convert kwargs to args
-            api_args = [args.thrift_spec[k][1]
-                        for k in sorted(args.thrift_spec)]
+        args = getattr(self._service, api + "_args")()
+        args.read(iprot)
+        iprot.read_message_end()
+        result = getattr(self._service, api + "_result")()
 
-            def call():
-                return getattr(self._handler, api)(
-                    *(args.__dict__[k] for k in api_args)
-                )
-            return api, seqid, result, call
+        # convert kwargs to args
+        api_args = [args.thrift_spec[k][1]
+                    for k in sorted(args.thrift_spec)]
+        def call():
+            return getattr(self._handler, api)(
+                *(args.__dict__[k] for k in api_args)
+            )
+        return api, seqid, result, call
 
     def send_exception(self, oprot, api, exc, seqid):
         oprot.write_message_begin(api, TMessageType.EXCEPTION, seqid)
@@ -233,16 +233,66 @@ class TProcessor(object):
         api, seqid, result, call = self.process_in(iprot)
 
         if isinstance(result, TApplicationException):
-            self.send_exception(oprot, api, result, seqid)
-        else:
-            try:
-                result.success = call()
-            except Exception as e:
-                # raise if api don't have throws
-                self.handle_exception(e, result)
+            return self.send_exception(oprot, api, result, seqid)
 
-            if not result.oneway:
-                self.send_result(oprot, api, result, seqid)
+        try:
+            result.success = call()
+        except Exception as e:
+            # raise if api don't have throws
+            self.handle_exception(e, result)
+
+        if not result.oneway:
+            self.send_result(oprot, api, result, seqid)
+
+
+class TMultiplexingProcessor(TProcessor):
+    processors = {}
+    service_map = {}
+
+    def __init__(self):
+        pass
+
+    def register_processor(self, processor):
+        service = processor._service
+        module = inspect.getmodule(processor)
+        name = '{0}:{1}'.format(module.__name__, service.__name__)
+        if name in self.processors:
+            raise TApplicationException(
+                type=TApplicationException.INTERNAL_ERROR,
+                message='processor for `{0}` already registered'.format(name))
+
+        for srv in service.thrift_services:
+            if srv in self.service_map:
+                raise TApplicationException(
+                    type=TApplicationException.INTERNAL_ERROR,
+                    message='cannot multiplex processor for `{0}`; '
+                            '`{1}` is already a registered method for `{2}`'
+                            .format(name, srv, self.service_map[srv]))
+            self.service_map[srv] = name
+
+        self.processors[name] = processor
+
+    def process_in(self, iprot):
+        api, type, seqid = iprot.read_message_begin()
+        if api not in self.service_map:
+            iprot.skip(TType.STRUCT)
+            iprot.read_message_end()
+            e = TApplicationException(TApplicationException.UNKNOWN_METHOD)
+            return api, seqid, e, None   # noqa
+
+        proc = self.processors[self.service_map[api]]
+        args = getattr(proc._service, api + "_args")()
+        args.read(iprot)
+        iprot.read_message_end()
+        result = getattr(proc._service, api + "_result")()
+
+        # convert kwargs to args
+        api_args = [args.thrift_spec[k][1]
+                    for k in sorted(args.thrift_spec)]
+        call = lambda: getattr(proc._handler, api)(
+            *(args.__dict__[k] for k in api_args)
+        )
+        return api, seqid, result, call
 
 
 class TException(TPayload, Exception):
