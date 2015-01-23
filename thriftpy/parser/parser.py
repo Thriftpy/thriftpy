@@ -606,10 +606,7 @@ def _make_struct(name, fields, ttype=TType.STRUCT, base_cls=TPayload):
 
     for field in fields:
         ttype = field[2]
-        if isinstance(ttype, int):  # not a list
-            thrift_spec[field[0]] = ttype, field[3], field[1]
-        else:
-            thrift_spec[field[0]] = ttype[0], field[3], ttype[1], field[1]
+        thrift_spec[field[0]] = _ttype_spec(ttype, field[3], field[1])
         default_spec.append((field[3], field[4]))
         _tspec[field[3]] = field[1], ttype
     setattr(cls, 'thrift_spec', thrift_spec)
@@ -641,9 +638,16 @@ def _make_service(name, funcs, extends):
         result_oneway = func[0]
         result_cls = _make_struct(result_name, result_throws)
         setattr(result_cls, 'oneway', result_oneway)
-        result_cls.thrift_spec[0] = (result_type, 'success')
+        result_cls.thrift_spec[0] = _ttype_spec(result_type, 'success')
         result_cls.default_spec.insert(0, ('success', None))
         setattr(cls, result_name, result_cls)
         thrift_services.append(func_name)
     setattr(cls, 'thrift_services', thrift_services)
     return cls
+
+
+def _ttype_spec(ttype, name, required=True):
+    if isinstance(ttype, int):
+        return ttype, name, required
+    else:
+        return ttype[0], name, ttype[1], required
