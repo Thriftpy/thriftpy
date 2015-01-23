@@ -217,9 +217,11 @@ def p_service(p):
                 raise ThriftParserError('Can\'t find service %r for '
                                         'service %r to extend' %
                                         (p[4], p[2]))
-            if not hasattr(child, 'thrift_services'):
-                raise ThriftParserError('Can\'t extends %r, not a service'
-                                        % p[4])
+            father = child
+
+        if not hasattr(child, 'thrift_services'):
+            raise ThriftParserError('Can\'t extends %r, not a service'
+                                    % p[4])
 
         extends = child
     else:
@@ -317,15 +319,20 @@ def p_field_type(p):
 
 def p_ref_type(p):
     '''ref_type : IDENTIFIER'''
-    ttype = getattr(thrift_stack[-1], p[1], None)
+    father = thrift_stack[-1]
 
-    if ttype is None:
-        raise ThriftParserError('No type found: %r, at line %d' %
-                                (p[1], p.lineno(1)))
-    if hasattr(ttype, '_ttype'):
-        p[0] = getattr(ttype, '_ttype'), ttype
+    for name in p[1].split('.'):
+        child = getattr(father, name, None)
+        if child is None:
+            raise ThriftParserError('No type found: %r, at line %d' %
+                                    (p[1], p.lineno(1)))
+
+        father = child
+
+    if hasattr(child, '_ttype'):
+        p[0] = getattr(child, '_ttype'), child
     else:
-        p[0] = ttype
+        p[0] = child
 
 
 def p_base_type(p):  # noqa
@@ -404,12 +411,13 @@ def parse(path, module_name=None, include_dir=None, lexer=None, parser=None):
     with open(path) as fh:
         data = fh.read()
 
-    if module_name is None:
-        module_name = os.path.basename(path)[:-7] + '_thrift'
-
-    if not module_name.endswith('_thrift'):
+    if module_name is not None and not module_name.endswith('_thrift'):
         raise ThriftParserError('ThriftPy can only generate module with '
                                 '\'_thrift\' suffix')
+
+    if module_name is None:
+        module_name = os.path.basename(path)[:-7]
+
     thrift = types.ModuleType(module_name)
     thrift_stack.append(thrift)
     lexer.lineno = 1
