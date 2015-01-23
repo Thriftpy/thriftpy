@@ -392,9 +392,19 @@ def p_definition_type(p):
 
 thrift_stack = []
 include_dir_ = '.'
+thrift_cache = {}
 
 
-def parse(path, module_name=None, include_dir=None, lexer=None, parser=None):
+def parse(path, module_name=None, include_dir=None,
+          lexer=None, parser=None, enable_cache=True):
+
+    global thrift_cache
+
+    cache_key = module_name or os.path.normpath(path)
+
+    if enable_cache and cache_key in thrift_cache:
+        return thrift_cache[cache_key]
+
     if lexer is None:
         lexer = lex.lex()
     if parser is None:
@@ -422,7 +432,11 @@ def parse(path, module_name=None, include_dir=None, lexer=None, parser=None):
     thrift_stack.append(thrift)
     lexer.lineno = 1
     parser.parse(data)
-    return thrift_stack.pop()
+    thrift_stack.pop()
+
+    if enable_cache:
+        thrift_cache[cache_key] = thrift
+    return thrift
 
 
 def _parse_seq(p):

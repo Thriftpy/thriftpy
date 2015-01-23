@@ -12,25 +12,16 @@ import sys
 from .parser import parse
 
 
-_thriftloader = {}
-
-
 def load(path, module_name=None, include_dir=None):
     """Load thrift_file as a module
     The module loaded and objects inside may only be pickled if module_name
     was provided.
     """
-    global _thriftloader
-    _thriftloader_key = module_name or path
-    if _thriftloader_key in _thriftloader:
-        return _thriftloader[_thriftloader_key]
-
     real_module = bool(module_name)
     thrift = parse(path, module_name, include_dir=include_dir)
 
     if real_module:
         sys.modules[module_name] = thrift
-    _thriftloader[_thriftloader_key] = thrift
     return thrift
 
 
