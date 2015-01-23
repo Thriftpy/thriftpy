@@ -5,7 +5,7 @@ const i16 DEFAULT_LIST_SIZE = 10
 typedef i32 timestamp
 
 enum PhoneType {
-    MOBILE,
+    MOBILE = 0,
     HOME,
     WORK,
 }
