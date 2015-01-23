@@ -2,8 +2,6 @@
 
 from __future__ import absolute_import
 
-from ply import lex
-
 from .exc import ThriftLexerError
 
 
@@ -148,6 +146,3 @@ def t_IDENTIFIER(t):
         t.type = t.value.upper()
         return t
     return t
-
-
-lexer = lex.lex()
