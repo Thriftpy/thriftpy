@@ -308,7 +308,7 @@ def p_field_req(p):
     if len(p) == 2:
         p[0] = p[1] == 'required'
     elif len(p) == 1:
-        p[0] = True  # default: required=True
+        p[0] = False  # default: required=False
 
 
 def p_field_type(p):
@@ -646,7 +646,7 @@ def _make_service(name, funcs, extends):
     return cls
 
 
-def _ttype_spec(ttype, name, required=True):
+def _ttype_spec(ttype, name, required=False):
     if isinstance(ttype, int):
         return ttype, name, required
     else:
