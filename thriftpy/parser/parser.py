@@ -662,6 +662,8 @@ def _make_service(name, funcs, extends):
         gen_init(result_cls, result_cls.thrift_spec, result_cls.default_spec)
         setattr(cls, result_name, result_cls)
         thrift_services.append(func_name)
+    if extends is not None and hasattr(extends, 'thrift_services'):
+        thrift_services.extend(extends.thrift_services)
     setattr(cls, 'thrift_services', thrift_services)
     return cls
 
