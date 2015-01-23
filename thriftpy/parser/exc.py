@@ -3,13 +3,13 @@
 from __future__ import absolute_import
 
 
-class ThriftSyntaxError(SyntaxError):
+class ThriftParserError(Exception):
     pass
 
 
-class ThriftLexerError(ThriftSyntaxError):
+class ThriftLexerError(ThriftParserError):
     pass
 
 
-class ThriftGrammerError(ThriftSyntaxError):
+class ThriftGrammerError(ThriftParserError):
     pass
