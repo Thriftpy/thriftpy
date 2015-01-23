@@ -611,7 +611,8 @@ def _make_enum(name, kvs):
     return cls
 
 
-def _make_struct(name, fields, ttype=TType.STRUCT, base_cls=TPayload):
+def _make_struct(name, fields, ttype=TType.STRUCT, base_cls=TPayload,
+                 _gen_init=True):
     attrs = {'__module__': thrift_stack[-1].__name__, '_ttype': ttype}
     cls = type(name, (base_cls, ), attrs)
     thrift_spec = {}
@@ -626,7 +627,8 @@ def _make_struct(name, fields, ttype=TType.STRUCT, base_cls=TPayload):
     setattr(cls, 'thrift_spec', thrift_spec)
     setattr(cls, 'default_spec', default_spec)
     setattr(cls, '_tspec', _tspec)
-    gen_init(cls, thrift_spec, default_spec)
+    if _gen_init:
+        gen_init(cls, thrift_spec, default_spec)
     return cls
 
 
@@ -650,10 +652,13 @@ def _make_service(name, funcs, extends):
         result_type = func[1]
         result_throws = func[4]
         result_oneway = func[0]
-        result_cls = _make_struct(result_name, result_throws)
+        result_cls = _make_struct(result_name, result_throws,
+                                  _gen_init=False)
         setattr(result_cls, 'oneway', result_oneway)
-        result_cls.thrift_spec[0] = _ttype_spec(result_type, 'success')
-        result_cls.default_spec.insert(0, ('success', None))
+        if result_type != TType.VOID:
+            result_cls.thrift_spec[0] = _ttype_spec(result_type, 'success')
+            result_cls.default_spec.insert(0, ('success', None))
+        gen_init(result_cls, result_cls.thrift_spec, result_cls.default_spec)
         setattr(cls, result_name, result_cls)
         thrift_services.append(func_name)
     setattr(cls, 'thrift_services', thrift_services)
