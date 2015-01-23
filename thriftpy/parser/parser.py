@@ -426,7 +426,8 @@ def parse(path, module_name=None, include_dir=None,
                                 '\'_thrift\' suffix')
 
     if module_name is None:
-        module_name = os.path.basename(path)[:-7]
+        basename = os.path.basename(path)
+        module_name = os.path.splitext(basename)[0]
 
     thrift = types.ModuleType(module_name)
     thrift_stack.append(thrift)
