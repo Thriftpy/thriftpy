@@ -371,17 +371,17 @@ def p_container_type(p):
 
 def p_map_type(p):
     '''map_type : MAP '<' field_type ',' field_type '>' '''
-    p[0] = [TType.MAP, [p[3], p[5]]]
+    p[0] = TType.MAP, (p[3], p[5])
 
 
 def p_list_type(p):
     '''list_type : LIST '<' field_type '>' '''
-    p[0] = [TType.LIST, p[3]]
+    p[0] = TType.LIST, p[3]
 
 
 def p_set_type(p):
     '''set_type : SET '<' field_type '>' '''
-    p[0] = [TType.SET, p[3]]
+    p[0] = TType.SET, p[3]
 
 
 def p_definition_type(p):
@@ -611,7 +611,7 @@ def _make_struct(name, fields, ttype=TType.STRUCT, base_cls=TPayload):
         else:
             thrift_spec[field[0]] = ttype[0], field[3], ttype[1], field[1]
         default_spec.append((field[3], field[4]))
-        _tspec[field[3]] = [field[1], ttype]
+        _tspec[field[3]] = field[1], ttype
     setattr(cls, 'thrift_spec', thrift_spec)
     setattr(cls, 'default_spec', default_spec)
     setattr(cls, '_tspec', _tspec)
