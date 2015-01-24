@@ -603,6 +603,9 @@ def _make_enum(name, kvs):
             named_values.add(val)
     setattr(cls, '_named_values', named_values)
 
+    _values_to_names = {}
+    _names_to_values = {}
+
     if kvs:
         val = kvs[0][1]
         if val is None:
@@ -613,6 +616,10 @@ def _make_enum(name, kvs):
             val = item[1]
         for key, val in kvs:
             setattr(cls, key, val)
+            _values_to_names[val] = key
+            _names_to_values[key] = val
+    setattr(cls, '_VALUES_TO_NAMES', _values_to_names)
+    setattr(cls, '_NAMES_TO_VALUES', _names_to_values)
     return cls
 
 
