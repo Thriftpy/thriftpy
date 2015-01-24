@@ -402,6 +402,11 @@ thrift_cache = {}
 def parse(path, module_name=None, include_dir=None,
           lexer=None, parser=None, enable_cache=True):
 
+    # dead include checking on current stack
+    for thrift in thrift_stack:
+        if os.path.samefile(path, thrift.__thrift_file__):
+            raise ThriftParserError('Dead including on %s' % path)
+
     global thrift_cache
 
     cache_key = module_name or os.path.normpath(path)
@@ -434,6 +439,7 @@ def parse(path, module_name=None, include_dir=None,
         module_name = os.path.splitext(basename)[0]
 
     thrift = types.ModuleType(module_name)
+    setattr(thrift, '__thrift_file__', path)
     thrift_stack.append(thrift)
     lexer.lineno = 1
     parser.parse(data)
