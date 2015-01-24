@@ -80,7 +80,7 @@ def test_e_value_ref():
     except ThriftParserError as e:
         pass
     try:
-        t = load('parser-cases/e_value_ref_1.thrift')
+        load('parser-cases/e_value_ref_1.thrift')
     except ThriftParserError as e:
         assert str(e) == 'No named enum value found named \'Lang.Python\''
 
