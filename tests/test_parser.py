@@ -182,3 +182,10 @@ def test_service():
 def test_service_extends():
     thrift = load('parser-cases/service_extends.thrift')
     assert thrift.PingService.thrift_services == ['ping', 'getStruct']
+
+
+def test_e_service_extends():
+    try:
+        load('parser-cases/e_service_extends_0.thrift')
+    except ThriftParserError as e:
+        assert 'Can\'t find service' in str(e)
