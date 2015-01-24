@@ -87,10 +87,11 @@ def test_e_value_ref():
     try:
         load('parser-cases/e_value_ref_2.thrift')
     except ThriftParserError as e:
-        assert str(e) == 'No named enum value or constant found named \'Cookbook\''
+        assert str(e) == \
+            'No named enum value or constant found named \'Cookbook\''
 
 
-def test_enum():
+def test_enums():
     thrift = load('parser-cases/enums.thrift')
     assert thrift.Lang.C == 0
     assert thrift.Lang.Go == 1
@@ -109,7 +110,7 @@ def test_enum():
     assert thrift.OS._named_values == set([3])
 
 
-def test_struct():
+def test_structs():
     thrift = load('parser-cases/structs.thrift')
     assert thrift.Person.thrift_spec == {
         1: (TType.STRING, 'name', False),
@@ -128,7 +129,56 @@ def test_struct():
         ('subject', 'Subject'), ('content', None),
         ('sender', None), ('recver', None)
     ]
-    assert thrift.email == thrift.Email(subject='Hello', content='Long time no see',
+    assert thrift.email == thrift.Email(
+        subject='Hello',
+        content='Long time no see',
         sender=thrift.Person(name='jack', address='jack@gmail.com'),
         recver=thrift.Person(name='chao', address='chao@gmail.com')
     )
+
+
+def test_e_structs():
+    try:
+        load('parser-cases/e_structs_0.thrift')
+    except ThriftParserError as e:
+        assert str(e) == \
+            'Field \'name\' was required to create constant for type \'User\''
+
+    try:
+        load('parser-cases/e_structs_1.thrift')
+    except ThriftParserError as e:
+        assert str(e) == \
+            'No field named \'avatar\' was found in struct of type \'User\''
+
+
+def test_service():
+    thrift = load('parser-cases/service.thrift')
+    assert thrift.EmailService.thrift_services == ['ping', 'send']
+    assert thrift.EmailService.ping_args.thrift_spec == {}
+    assert thrift.EmailService.ping_args.default_spec == []
+    assert thrift.EmailService.ping_result.thrift_spec == {
+        1: (TType.STRUCT, 'network_error', thrift.NetworkError, False)
+    }
+    assert thrift.EmailService.ping_result.default_spec == [
+        ('network_error', None)
+    ]
+    assert thrift.EmailService.send_args.thrift_spec == {
+        1: (TType.STRUCT, 'recver', thrift.User, False),
+        2: (TType.STRUCT, 'sender', thrift.User, False),
+        3: (TType.STRUCT, 'email', thrift.Email, False),
+    }
+    assert thrift.EmailService.send_args.default_spec == [
+        ('recver', None), ('sender', None), ('email', None)
+    ]
+    assert thrift.EmailService.send_result.thrift_spec == {
+        0: (TType.BOOL, 'success', False),
+        1: (TType.STRUCT, 'network_error', thrift.NetworkError, False)
+    }
+    assert thrift.EmailService.send_result.default_spec == [
+        ('success', None), ('network_error', None)
+    ]
+
+
+def test_service_extends():
+    thrift = load('parser-cases/service_extends.thrift')
+    assert thrift.PingService.thrift_services == ['ping', 'getStruct']

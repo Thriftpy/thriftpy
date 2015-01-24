@@ -149,12 +149,14 @@ def p_const_ref(p):
         if child in father._named_values:
             p[0] = child
         else:
-            raise ThriftParserError('No named enum value found named %r' % p[1])
+            raise ThriftParserError('No named enum value found named %r'
+                                    % p[1])
     elif _get_ttype(child) is None:
         # child is a constant
         p[0] = child
     else:
-        raise ThriftParserError('No named enum value or constant found named %r' % p[1])
+        raise ThriftParserError('No named enum value or constant found '
+                                'named %r' % p[1])
 
 
 def p_ttype(p):
