@@ -189,3 +189,10 @@ def test_e_service_extends():
         load('parser-cases/e_service_extends_0.thrift')
     except ThriftParserError as e:
         assert 'Can\'t find service' in str(e)
+
+
+def test_e_dead_include():
+    try:
+        load('parser-cases/e_dead_include_0.thrift')
+    except ThriftParserError as e:
+        assert 'Dead including' in str(e)
