@@ -144,9 +144,12 @@ def p_const_ref(p):
             raise ThriftParserError('Cann\'t find name %r at line %d'
                                     % (p[1], p.lineno(1)))
 
-    if _get_ttype(father) == TType.I32 and child in father._named_values:
+    if _get_ttype(father) == TType.I32:
         # father is enum and child is its named value
-        p[0] = child
+        if child in father._named_values:
+            p[0] = child
+        else:
+            raise ThriftParserError('No named enum value found named %r' % p[1])
     elif _get_ttype(child) is None:
         # child is a constant
         p[0] = child
