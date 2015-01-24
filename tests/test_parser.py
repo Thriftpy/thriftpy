@@ -1,6 +1,7 @@
 # coding=utf8
 
 from thriftpy.parser import load
+from thriftpy.parser.exc import ThriftParserError
 
 
 def test_comments():
@@ -40,3 +41,31 @@ def test_tutorial():
         and work.comment is None
     assert set(thrift.Calculator.thrift_services) == set([
         'ping', 'add', 'calculate', 'zip', 'getStruct'])
+
+
+def test_e_type_error():
+    try:
+        load('parser-cases/e_type_error_0.thrift')
+    except ThriftParserError as e:
+        assert 'Type error' in str(e)
+    try:
+        load('parser-cases/e_type_error_1.thrift')
+    except ThriftParserError as e:
+        assert 'Type error' in str(e)
+
+    try:
+        load('parser-cases/e_type_error_2.thrift')
+    except ThriftParserError as e:
+        assert 'Type error' in str(e)
+
+
+def test_value_ref():
+    thrift = load('parser-cases/value_ref.thrift')
+    assert thrift.container == {'key': [1, 2, 3]}
+    assert thrift.lst == [39, 899, 123]
+
+
+def test_type_ref():
+    thrift = load('parser-cases/type_ref.thrift')
+    assert thrift.jerry == thrift.type_ref_shared.Writer(
+        name='jerry', age=26, country=thrift.type_ref_shared.Country.US)
