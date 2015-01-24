@@ -1,5 +1,6 @@
 # coding=utf8
 
+from thriftpy.thrift import TType
 from thriftpy.parser import load
 from thriftpy.parser.exc import ThriftParserError
 
@@ -69,3 +70,65 @@ def test_type_ref():
     thrift = load('parser-cases/type_ref.thrift')
     assert thrift.jerry == thrift.type_ref_shared.Writer(
         name='jerry', age=26, country=thrift.type_ref_shared.Country.US)
+    assert thrift.book == thrift.type_ref_shared.Book(name='Hello World',
+                                                      writer=thrift.jerry)
+
+
+def test_e_value_ref():
+    try:
+        load('parser-cases/e_value_ref_0.thrift')
+    except ThriftParserError as e:
+        pass
+    try:
+        t = load('parser-cases/e_value_ref_1.thrift')
+    except ThriftParserError as e:
+        assert str(e) == 'No named enum value found named \'Lang.Python\''
+
+    try:
+        load('parser-cases/e_value_ref_2.thrift')
+    except ThriftParserError as e:
+        assert str(e) == 'No named enum value or constant found named \'Cookbook\''
+
+
+def test_enum():
+    thrift = load('parser-cases/enums.thrift')
+    assert thrift.Lang.C == 0
+    assert thrift.Lang.Go == 1
+    assert thrift.Lang.Java == 2
+    assert thrift.Lang.Javascript == 3
+    assert thrift.Lang.PHP == 4
+    assert thrift.Lang.Python == 5
+    assert thrift.Lang.Ruby == 6
+    assert thrift.Country.US == 1
+    assert thrift.Country.UK == 2
+    assert thrift.Country.CN == 3
+    assert thrift.Country._named_values == set([1])
+    assert thrift.OS.OSX == 0
+    assert thrift.OS.Win == 3
+    assert thrift.OS.Linux == 4
+    assert thrift.OS._named_values == set([3])
+
+
+def test_struct():
+    thrift = load('parser-cases/structs.thrift')
+    assert thrift.Person.thrift_spec == {
+        1: (TType.STRING, 'name', False),
+        2: (TType.STRING, 'address', False)
+    }
+    assert thrift.Person.default_spec == [
+        ('name', None), ('address', None)
+    ]
+    assert thrift.Email.thrift_spec == {
+        1: (TType.STRING, 'subject', False),
+        2: (TType.STRING, 'content', False),
+        3: (TType.STRUCT, 'sender', thrift.Person, False),
+        4: (TType.STRUCT, 'recver', thrift.Person, True),
+    }
+    assert thrift.Email.default_spec == [
+        ('subject', 'Subject'), ('content', None),
+        ('sender', None), ('recver', None)
+    ]
+    assert thrift.email == thrift.Email(subject='Hello', content='Long time no see',
+        sender=thrift.Person(name='jack', address='jack@gmail.com'),
+        recver=thrift.Person(name='chao', address='chao@gmail.com')
+    )
