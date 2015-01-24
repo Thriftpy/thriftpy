@@ -135,19 +135,23 @@ def p_const_map_item(p):
 
 def p_const_ref(p):
     '''const_ref : IDENTIFIER'''
-    keys = p[1].split('.')
-    thrift = thrift_stack[-1]
+    child = thrift_stack[-1]
 
-    if len(keys) == 1 and hasattr(thrift, keys[0]):
-        p[0] = getattr(thrift, keys[0])
-        return
+    for name in p[1].split('.'):
+        father = child
+        child = getattr(child, name, None)
+        if child is None:
+            raise ThriftParserError('Cann\'t find name %r at line %d'
+                                    % (p[1], p.lineno(1)))
 
-    if len(keys) == 2 and hasattr(thrift, keys[0]):
-        enum = getattr(thrift, keys[0])
-        if hasattr(enum, keys[1]):
-            p[0] = getattr(enum, keys[1])
-            return
-    raise ThriftParserError('No enum value or constant found named %r' % p[1])
+    if _get_ttype(father) == TType.I32 and child in father._named_values:
+        # father is enum and child is its named value
+        p[0] = child
+    elif _get_ttype(child) is None:
+        # child is a constant
+        p[0] = child
+    else:
+        raise ThriftParserError('No named enum value or constant found named %r' % p[1])
 
 
 def p_ttype(p):
@@ -209,21 +213,18 @@ def p_service(p):
     thrift = thrift_stack[-1]
 
     if len(p) == 8:
-        father = thrift
-
+        extends = thrift
         for name in p[4].split('.'):
-            child = getattr(father, name, None)
-            if child is None:
+            extends = getattr(extends, name, None)
+            if extends is None:
                 raise ThriftParserError('Can\'t find service %r for '
                                         'service %r to extend' %
                                         (p[4], p[2]))
-            father = child
 
-        if not hasattr(child, 'thrift_services'):
+        if not hasattr(extends, 'thrift_services'):
             raise ThriftParserError('Can\'t extends %r, not a service'
                                     % p[4])
 
-        extends = child
     else:
         extends = None
 
@@ -319,20 +320,18 @@ def p_field_type(p):
 
 def p_ref_type(p):
     '''ref_type : IDENTIFIER'''
-    father = thrift_stack[-1]
+    ref_type = thrift_stack[-1]
 
     for name in p[1].split('.'):
-        child = getattr(father, name, None)
-        if child is None:
+        ref_type = getattr(ref_type, name, None)
+        if ref_type is None:
             raise ThriftParserError('No type found: %r, at line %d' %
                                     (p[1], p.lineno(1)))
 
-        father = child
-
-    if hasattr(child, '_ttype'):
-        p[0] = getattr(child, '_ttype'), child
+    if hasattr(ref_type, '_ttype'):
+        p[0] = getattr(ref_type, '_ttype'), ref_type
     else:
-        p[0] = child
+        p[0] = ref_type
 
 
 def p_base_type(p):  # noqa
@@ -673,3 +672,9 @@ def _ttype_spec(ttype, name, required=False):
         return ttype, name, required
     else:
         return ttype[0], name, ttype[1], required
+
+
+def _get_ttype(inst, default_ttype=None):
+    if hasattr(inst, '__dict__') and '_ttype' in inst.__dict__:
+        return inst.__dict__['_ttype']
+    return default_ttype
