@@ -42,7 +42,7 @@ class SampleTracker(Tracker):
         header.end = int(time.time() * 1000)
         header.status = status
 
-        db[header.request_id] = pickle.dumps(header.__dict__)
+        db[header.request_id.encode("ascii")] = pickle.dumps(header.__dict__)
         db.close()
 
     def gen_header(self, header):
