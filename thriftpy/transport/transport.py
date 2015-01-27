@@ -6,7 +6,7 @@ import struct
 
 from io import BytesIO
 
-from ..thrift import TType, TException
+from ..ttype import TType, TException
 
 
 class TTransportBase(object):

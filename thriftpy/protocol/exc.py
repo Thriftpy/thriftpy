@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import
 
-from ..thrift import TException
+from ..ttype import TException
 
 
 class TProtocolException(TException):
