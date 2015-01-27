@@ -22,7 +22,8 @@ import thriftpy
 from thriftpy.transport import TServerSocket, TBufferedTransportFactory, \
     TTransportException, TSocket
 from thriftpy.protocol import TBinaryProtocolFactory
-from thriftpy.thrift import TTrackedProcessor, TTrackedClient
+from thriftpy.thrift import TTrackedProcessor, TTrackedClient, \
+    TProcessorFactory
 from thriftpy.server import TThreadedServer
 from thriftpy.trace.tracker import Tracker
 
@@ -34,6 +35,9 @@ _, db_file = tempfile.mkstemp()
 
 
 class SampleTracker(Tracker):
+    def pre_handle(self, header):
+        pass
+
     def handle(self, header, status):
         db = dbm.open(db_file, 'w')
 
@@ -48,21 +52,11 @@ class SampleTracker(Tracker):
     def gen_header(self, header):
         header.request_id = request_id
         header.client = "test_client"
+        header.parent_id = ''
         header.start = int(time.time() * 1000)
         header.seq = 0
 
 tracker = SampleTracker()
-
-
-class TProcessorFactory(object):
-    def __init__(self, service, handler, tracker_handler=None):
-        self.service = service
-        self.handler = handler
-        self.tracker_handler = tracker_handler
-
-    def get_processor(self):
-        return TTrackedProcessor(self.tracker_handler, self.service,
-                                 self.handler)
 
 
 class Dispatcher(object):
@@ -105,7 +99,7 @@ class TSampleServer(TThreadedServer):
 @pytest.fixture(scope="module")
 def server(request):
     processor = TProcessorFactory(addressbook.AddressBookService, Dispatcher(),
-                                  tracker)
+                                  tracker, TTrackedProcessor)
     server_socket = TServerSocket(host="localhost", port=6029)
     server = TSampleServer(processor, server_socket,
                            prot_factory=TBinaryProtocolFactory(),
@@ -113,7 +107,7 @@ def server(request):
     ps = multiprocessing.Process(target=server.serve)
     ps.start()
 
-    time.sleep(0.3)
+    time.sleep(0.5)
 
     def fin():
         if ps.is_alive():
@@ -175,6 +169,7 @@ def test_tracker(server, client, dbm_db):
     assert data == {
         "request_id": request_id,
         "seq": 1,
+        "parent_id": '',
         "client": "test_client",
         "server": "test_server",
         "status": True

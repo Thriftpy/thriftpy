@@ -211,10 +211,10 @@ class TTrackedProcessor(TProcessor):
             result.oneway = False
             call = lambda: None
             iprot.read_message_end()
-            return api, seqid, result, call
         else:
             result, call = self._process_in(api, iprot)
-            return api, seqid, result, call
+
+        return api, seqid, result, call
 
     def process(self, iprot, oprot):
         if not self._upgraded:
@@ -223,7 +223,11 @@ class TTrackedProcessor(TProcessor):
         else:
             request_header = trace.thrift.RequestHeader()
             request_header.read(iprot)
+
+            self.track_handler.pre_handle(request_header)
+
             res = super(TTrackedProcessor, self).process_in(iprot)
+
             try:
                 self._do_process(iprot, oprot, *res)
             except Exception:
@@ -231,6 +235,22 @@ class TTrackedProcessor(TProcessor):
                 raise
             else:
                 self.track_handler.handle(request_header, status=True)
+
+
+class TProcessorFactory(object):
+    def __init__(self, service, handler, tracker_handler=None,
+                 processor_class=None):
+        self.service = service
+        self.handler = handler
+        self.tracker_handler = tracker_handler
+        self.processor_class = processor_class or TProcessor
+
+    def get_processor(self):
+        args = [self.service, self.handler]
+        if self.tracker_handler:
+            args.insert(0, self.tracker_handler)
+
+        return self.processor_class(*args)
 
 
 # backward compat

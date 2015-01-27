@@ -3,12 +3,13 @@
  */
 struct RequestHeader {
     1: string request_id // used to identify a request
-    2: i32 seq // sequence number
-    3: string client // client name
-    4: string server // server name
-    5: bool status // request status
-    6: i64 start // start timestamp
-    7: i64 end // end timestamp
+    2: string parent_id // parent request id
+    3: i32 seq // sequence number
+    4: string client // client name
+    5: string server // server name
+    6: bool status // request status
+    7: i64 start // start timestamp
+    8: i64 end // end timestamp
 }
 
 /**
