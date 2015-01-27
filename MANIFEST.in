@@ -1,3 +1,4 @@
 include README.rst CHANGES.rst
+include thriftpy/trace/tracing.thrift
 include thriftpy/protocol/cybin/*.pyx thriftpy/protocol/cybin/*.c thriftpy/protocol/cybin/*.h
 include thriftpy/transport/*.pyx thriftpy/transport/*.pxd thriftpy/transport/*.c

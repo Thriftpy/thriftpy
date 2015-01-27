@@ -234,4 +234,4 @@ class TTrackedProcessor(TProcessor):
 
 
 # backward compat
-from ..ttype import TPayloadMeta, gen_init, TPayload, TException  # noqa
+from .ttype import TPayloadMeta, gen_init, TPayload, TException  # noqa

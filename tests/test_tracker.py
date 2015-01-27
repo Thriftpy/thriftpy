@@ -39,7 +39,7 @@ class SampleTracker(Tracker):
 
         header.seq += 1
         header.server = "test_server"
-        header.end = time.time()
+        header.end = int(time.time() * 1000)
         header.status = status
 
         db[header.request_id] = pickle.dumps(header.__dict__)
@@ -48,7 +48,7 @@ class SampleTracker(Tracker):
     def gen_header(self, header):
         header.request_id = request_id
         header.client = "test_client"
-        header.start = time.time()
+        header.start = int(time.time() * 1000)
         header.seq = 0
 
 tracker = SampleTracker()
@@ -133,7 +133,8 @@ def client():
             trans = TBufferedTransportFactory().get_transport(socket)
             proto = TBinaryProtocolFactory().get_protocol(trans)
             trans.open()
-            yield TTrackedClient(tracker, addressbook.AddressBookService, proto)
+            yield TTrackedClient(tracker, addressbook.AddressBookService,
+                                 proto)
         finally:
             trans.close()
     return cli
