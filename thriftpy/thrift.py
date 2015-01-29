@@ -169,8 +169,9 @@ class TTrackedClient(TClient):
         try:
             self._negotiation()
             self._upgraded = True
-        except Exception:
-            pass
+        except TApplicationException as e:
+            if e.type != TApplicationException.UNKNOWN_METHOD:
+                raise
 
     def _negotiation(self):
         self._oprot.write_message_begin(trace.method_name, TMessageType.CALL,
@@ -180,15 +181,22 @@ class TTrackedClient(TClient):
         self._oprot.write_message_end()
         self._oprot.trans.flush()
 
-        self._iprot.read_message_begin()
-        result = trace.thrift.UpgradeReply()
-        result.read(self._iprot)
-        self._iprot.read_message_end()
+        api, msg_type, seqid = self._iprot.read_message_begin()
+        if msg_type == TMessageType.EXCEPTION:
+            x = TApplicationException()
+            x.read(self._iprot)
+            self._iprot.read_message_end()
+            raise x
+        else:
+            result = trace.thrift.UpgradeReply()
+            result.read(self._iprot)
+            self._iprot.read_message_end()
 
     def _send(self, _api, **kwargs):
-        header = trace.thrift.RequestHeader()
-        self.track_handler.gen_header(header)
-        header.write(self._oprot)
+        if self._upgraded:
+            header = trace.thrift.RequestHeader()
+            self.track_handler.gen_header(header)
+            header.write(self._oprot)
 
         super(TTrackedClient, self)._send(_api, **kwargs)
 

@@ -7,7 +7,7 @@ from stuffs import client, thrift
 def main():
     lion = thrift.Lion(name="jerry", home="africa")
     with client() as c:
-        a = c.eat(lion)
+        c.eat(lion)
 
 
 if __name__ == "__main__":

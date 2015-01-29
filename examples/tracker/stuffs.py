@@ -9,7 +9,7 @@ from thriftpy.transport import TSocket, TBufferedTransportFactory, \
     TTransportException, TServerSocket
 from thriftpy.protocol import TBinaryProtocolFactory
 from thriftpy.thrift import TTrackedClient, TTrackedProcessor, \
-    TProcessorFactory
+    TProcessorFactory, TProcessor
 from thriftpy.server import TThreadedServer
 from thriftpy.trace.tracker import Tracker
 
@@ -74,12 +74,15 @@ class Server(TThreadedServer):
 
 
 @contextlib.contextmanager
-def client():
+def client(client_class=TTrackedClient):
     socket = TSocket("localhost", 34567)
     trans = TBufferedTransportFactory().get_transport(socket)
     proto = TBinaryProtocolFactory().get_protocol(trans)
     trans.open()
-    cli = TTrackedClient(tracker, thrift.Eating, proto)
+    if client_class.__name__ == TTrackedClient.__name__:
+        cli = client_class(tracker, thrift.Eating, proto)
+    else:
+        cli = client_class(thrift.Eating, proto)
     try:
         yield cli
     finally:
@@ -89,6 +92,16 @@ def client():
 def server():
     processor = TProcessorFactory(thrift.Eating, Handler(), tracker,
                                   TTrackedProcessor)
+    server_socket = TServerSocket(host="localhost", port=34567)
+    server = Server(processor, server_socket,
+                    prot_factory=TBinaryProtocolFactory(),
+                    trans_factory=TBufferedTransportFactory())
+    return server
+
+
+def server_not_tracked():
+    processor = TProcessorFactory(thrift.Eating, Handler(), None,
+                                  TProcessor)
     server_socket = TServerSocket(host="localhost", port=34567)
     server = Server(processor, server_socket,
                     prot_factory=TBinaryProtocolFactory(),

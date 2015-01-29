@@ -2,6 +2,9 @@
 
 
 class Tracker(object):
+    def pre_handle(header):
+        raise NotImplementedError
+
     def handle(self, *args, **kwargs):
         raise NotImplementedError
 

@@ -23,7 +23,7 @@ from thriftpy.transport import TServerSocket, TBufferedTransportFactory, \
     TTransportException, TSocket
 from thriftpy.protocol import TBinaryProtocolFactory
 from thriftpy.thrift import TTrackedProcessor, TTrackedClient, \
-    TProcessorFactory
+    TProcessorFactory, TClient, TProcessor
 from thriftpy.server import TThreadedServer
 from thriftpy.trace.tracker import Tracker
 
@@ -66,6 +66,9 @@ class Dispatcher(object):
 
     def ping(self):
         return True
+
+    def hello(self, name):
+        return "hello %s" % name
 
 
 class TSampleServer(TThreadedServer):
@@ -118,20 +121,40 @@ def server(request):
 
 
 @pytest.fixture(scope="module")
-def client():
-    @contextlib.contextmanager
-    def cli():
-        socket = TSocket("localhost", 6029)
+def not_tracked_server(request):
+    processor = TProcessorFactory(addressbook.AddressBookService, Dispatcher(),
+                                  None, TProcessor)
+    server_socket = TServerSocket(host="localhost", port=6030)
+    server = TSampleServer(processor, server_socket,
+                           prot_factory=TBinaryProtocolFactory(),
+                           trans_factory=TBufferedTransportFactory())
+    ps = multiprocessing.Process(target=server.serve)
+    ps.start()
 
-        try:
-            trans = TBufferedTransportFactory().get_transport(socket)
-            proto = TBinaryProtocolFactory().get_protocol(trans)
-            trans.open()
-            yield TTrackedClient(tracker, addressbook.AddressBookService,
-                                 proto)
-        finally:
-            trans.close()
-    return cli
+    time.sleep(0.5)
+
+    def fin():
+        if ps.is_alive():
+            ps.terminate()
+    request.addfinalizer(fin)
+
+    return server
+
+
+@contextlib.contextmanager
+def client(client_class=TTrackedClient, port=6029):
+    socket = TSocket("localhost", port)
+
+    try:
+        trans = TBufferedTransportFactory().get_transport(socket)
+        proto = TBinaryProtocolFactory().get_protocol(trans)
+        trans.open()
+        args = [addressbook.AddressBookService, proto]
+        if client_class.__name__ == TTrackedClient.__name__:
+            args.insert(0, tracker)
+        yield client_class(*args)
+    finally:
+        trans.close()
 
 
 @pytest.fixture(scope="module")
@@ -147,12 +170,12 @@ def dbm_db(request):
     request.addfinalizer(fin)
 
 
-def test_negotiation(server, client):
+def test_negotiation(server):
     with client() as c:
         assert c._upgraded is True
 
 
-def test_tracker(server, client, dbm_db):
+def test_tracker(server, dbm_db):
     with client() as c:
         c.ping()
 
@@ -174,3 +197,16 @@ def test_tracker(server, client, dbm_db):
         "server": "test_server",
         "status": True
     }
+
+
+def test_not_tracked_client_tracked_server(server):
+    with client(TClient) as c:
+        c.ping()
+        c.hello("world")
+
+
+def test_tracked_client_not_tracked_server(not_tracked_server):
+    with client(port=6030) as c:
+        assert c._upgraded is False
+        c.ping()
+        c.hello("cat")
