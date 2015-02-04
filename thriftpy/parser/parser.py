@@ -430,10 +430,6 @@ def parse(path, module_name=None, include_dir=None,
     with open(path) as fh:
         data = fh.read()
 
-    if module_name is not None and not module_name.endswith('_thrift'):
-        raise ThriftParserError('ThriftPy can only generate module with '
-                                '\'_thrift\' suffix')
-
     if module_name is None:
         basename = os.path.basename(path)
         module_name = os.path.splitext(basename)[0]
