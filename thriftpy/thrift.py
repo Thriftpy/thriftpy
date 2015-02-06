@@ -192,9 +192,28 @@ class TTrackedClient(TClient):
             result.read(self._iprot)
             self._iprot.read_message_end()
 
-    def _send(self, _api, **kwargs):
+    def _req(self, *args, **kwargs):
+        try:
+            exception = None
+            res = super(TTrackedClient, self)._req(*args, **kwargs)
+        except Exception as e:
+            exception = e
+
         if self._upgraded:
             header = trace.thrift.RequestHeader()
+            header.read(self._iprot)
+            self._iprot.read_message_end()
+            header.status = not exception
+            self.track_handler.record_header(header)
+
+        if exception:
+            raise exception
+
+        return res
+
+    def _send(self, _api, **kwargs):
+        if self._upgraded:
+            header = trace.thrift.RequestHeader(api=_api)
             self.track_handler.gen_header(header)
             header.write(self._oprot)
 
@@ -225,24 +244,21 @@ class TTrackedProcessor(TProcessor):
         return api, seqid, result, call
 
     def process(self, iprot, oprot):
+        request_header = None
         if not self._upgraded:
             res = self._try_upgrade(iprot)
-            self._do_process(iprot, oprot, *res)
         else:
             request_header = trace.thrift.RequestHeader()
             request_header.read(iprot)
-
-            self.track_handler.pre_handle(request_header)
-
+            self.track_handler.handle(request_header)
             res = super(TTrackedProcessor, self).process_in(iprot)
 
-            try:
-                self._do_process(iprot, oprot, *res)
-            except Exception:
-                self.track_handler.handle(request_header, status=False)
-                raise
-            else:
-                self.track_handler.handle(request_header, status=True)
+        self._do_process(iprot, oprot, *res)
+
+        if self._upgraded and request_header:
+            request_header.write(oprot)
+            oprot.write_message_end()
+            oprot.trans.flush()
 
 
 class TProcessorFactory(object):
