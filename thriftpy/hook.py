@@ -121,18 +121,18 @@ class NamespacePathImporter(object):
         :param str name: name of the idl module.
         :return: absolute path to the module file/directory
         """
-        name = name[len(self.namespace)+1:].replace('.', os.path.sep)
+        name = name[len(self.namespace) + 1:].replace('.', os.path.sep)
         return os.path.join(self.path, name)
 
 _imp = ThriftImporter()
 
 
-def mount_namespace(namespace, path, list_modules=False):
+def mount_namespace(namespace, path):
     importer = NamespacePathImporter(namespace, path)
     sys.meta_path[:] = [x for x in sys.meta_path if x != importer] + [importer]
 
 
-def umount_namespace(namespace, path, list_modules=False):
+def umount_namespace(namespace, path):
     importer = NamespacePathImporter(namespace, path)
     sys.meta_path[:] = [x for x in sys.meta_path if importer != x]
 
