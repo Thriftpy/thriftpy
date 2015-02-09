@@ -10,6 +10,7 @@
 from __future__ import absolute_import
 
 import functools
+import inspect
 
 from ._compat import init_func_generator, with_metaclass
 
@@ -252,7 +253,8 @@ class TMultiplexingProcessor(TProcessor):
 
     def register_processor(self, processor):
         service = processor._service
-        name = service.__name__
+        module = inspect.getmodule(processor)
+        name = '{0}:{1}'.format(module.__name__, service.__name__)
         if name in self.processors:
             raise TApplicationException(
                 type=TApplicationException.INTERNAL_ERROR,
