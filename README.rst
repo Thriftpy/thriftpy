@@ -126,45 +126,6 @@ python lib):
 - Easy RPC server/client setup.
 
 
-Benchmarks
-==========
-
-Some benchmark results::
-
-    # apache thrift py binary
-    binary protocol struct benchmark for 100000 times:
-    encode  -> 3.74061203003
-    decode  -> 5.02829790115
-
-    # apache thrift c binary
-    accelerated protocol struct benchmark for 100000 times:
-    encode  -> 0.398949146271
-    decode  -> 0.536000013351
-
-    # thriftpy & pypy2.3
-    binary protocol struct benchmark for 100000 times:
-    encode  -> 0.413738965988
-    decode  -> 0.605606079102
-
-    # thriftpy & py3.4
-    binary protocol struct benchmark for 100000 times:
-    encode  -> 3.291545867919922
-    decode  -> 4.337666034698486
-
-    # thriftpy & py3.4 + cython
-    cybin protocol struct benchmark for 100000 times:
-    encode  -> 0.5828649997711182
-    decode  -> 0.8259570598602295
-
-Checkout the `benchmark/benchmark.rst` for detailed benchmark scripts and
-scores.
-
-
-Changelogs
-==========
-
-https://github.com/eleme/thriftpy/blob/master/CHANGES.rst
-
 
 Contribute
 ==========
@@ -182,3 +143,9 @@ Contributors
 ============
 
 https://github.com/eleme/thriftpy/graphs/contributors
+
+
+Changelog
+=========
+
+https://github.com/eleme/thriftpy/blob/master/CHANGES.rst

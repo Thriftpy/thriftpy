@@ -241,12 +241,6 @@ Checkout the `benchmark/benchmark.rst` for detailed benchmark scripts and
 scores.
 
 
-Changelogs
-==========
-
-https://github.com/eleme/thriftpy/blob/master/CHANGES
-
-
 Contribute
 ==========
 
@@ -263,3 +257,6 @@ Contributors
 ============
 
 https://github.com/eleme/thriftpy/graphs/contributors
+
+
+.. include:: ../CHANGES.rst
