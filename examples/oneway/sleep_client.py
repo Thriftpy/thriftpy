@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import thriftpy
-sleep_thrift = thriftpy.load("sleep.thrift", module_name="sleep_thrift")
 
 from thriftpy.rpc import make_client
+
+sleep_thrift = thriftpy.load("sleep.thrift", module_name="sleep_thrift")
 
 
 def main():

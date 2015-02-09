@@ -2,13 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import re
-from os.path import join, dirname
+import sys
 
-with open(join(dirname(__file__), 'thriftpy', '__init__.py'), 'r') as f:
-    version = re.match(r".*__version__ = '(.*?)'", f.read(), re.S).group(1)
+from os.path import join, dirname
 
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
+
+with open(join(dirname(__file__), 'thriftpy', '__init__.py'), 'r') as f:
+    version = re.match(r".*__version__ = '(.*?)'", f.read(), re.S).group(1)
 
 install_requires = [
     "ply==3.4",
@@ -36,7 +38,6 @@ except ImportError:
     CYTHON = False
 
 # pypy detection
-import sys
 PYPY = "__pypy__" in sys.modules
 
 cmdclass = {}

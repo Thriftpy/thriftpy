@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import sys
-PYPY = "__pypy__" in sys.modules
-
-import pytest
-pytestmark = pytest.mark.skipif(PYPY, reason="cybin not enabled in pypy.")
-
 import os
 import multiprocessing
 import time
+
+import sys
+import pytest
 
 from thriftpy._compat import u
 from thriftpy.thrift import TType, TPayload
@@ -19,6 +16,10 @@ from thriftpy.transport import (
     TServerSocket
 )
 from thriftpy.utils import hexlify
+
+PYPY = "__pypy__" in sys.modules
+pytestmark = pytest.mark.skipif(PYPY, reason="cybin not enabled in pypy.")
+
 
 if not PYPY:
     from thriftpy.protocol import cybin as proto

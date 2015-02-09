@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import thriftpy
-calc_thrift = thriftpy.load("calc.thrift", module_name="calc_thrift")
 
 from thriftpy.protocol import TCyBinaryProtocolFactory
 from thriftpy.transport import TCyBufferedTransportFactory
 from thriftpy.rpc import client_context
+
+calc_thrift = thriftpy.load("calc.thrift", module_name="calc_thrift")
 
 
 def main():
