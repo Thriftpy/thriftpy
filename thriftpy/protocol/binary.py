@@ -4,6 +4,7 @@ from __future__ import absolute_import
 
 import struct
 
+from .._compat import xrange
 from ..thrift import TType
 
 from .exc import TProtocolException
@@ -245,7 +246,7 @@ def read_val(inbuf, ttype, spec=None):
         if r_type != v_type:
             raise Exception("Message Corrupt")
 
-        for i in range(sz):
+        for i in xrange(sz):
             result.append(read_val(inbuf, v_type, v_spec))
         return result
 

@@ -22,6 +22,8 @@ if PY3:
 
     def u(s):
         return s
+
+    xrange = range
 else:
     text_type = unicode  # noqa
     string_types = (str, unicode)  # noqa
@@ -30,6 +32,8 @@ else:
         if not isinstance(s, text_type):
             s = s.decode("utf-8")
         return s
+
+    xrange = xrange
 
 
 def with_metaclass(meta, *bases):
