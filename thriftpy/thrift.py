@@ -203,6 +203,7 @@ class TProcessor(object):
             return getattr(self._handler, api)(
                 *(args.__dict__[k] for k in api_args)
             )
+
         return api, seqid, result, call
 
     def send_exception(self, oprot, api, exc, seqid):
@@ -289,9 +290,11 @@ class TMultiplexingProcessor(TProcessor):
         # convert kwargs to args
         api_args = [args.thrift_spec[k][1]
                     for k in sorted(args.thrift_spec)]
-        call = lambda: getattr(proc._handler, api)(
-            *(args.__dict__[k] for k in api_args)
-        )
+
+        def call():
+            f = getattr(proc._handler, api)
+            return f(*(args.__dict__[k] for k in api_args))
+
         return api, seqid, result, call
 
 
