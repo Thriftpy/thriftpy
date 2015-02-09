@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from thriftpy import load
 from thriftpy.thrift import TType
 

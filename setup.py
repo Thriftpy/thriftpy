@@ -2,13 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import re
-from os.path import join, dirname
+import sys
 
-with open(join(dirname(__file__), 'thriftpy', '__init__.py'), 'r') as f:
-    version = re.match(r".*__version__ = '(.*?)'", f.read(), re.S).group(1)
+from os.path import join, dirname
 
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
+
+with open(join(dirname(__file__), 'thriftpy', '__init__.py'), 'r') as f:
+    version = re.match(r".*__version__ = '(.*?)'", f.read(), re.S).group(1)
 
 install_requires = [
     "ply==3.4",
@@ -21,7 +23,7 @@ tornado_requires = [
 
 dev_requires = [
     "cython>=0.20.2",
-    "flake8>=2.2.2",
+    "flake8>=2.3.0",
     "pytest>=2.6.0",
     "sphinx-rtd-theme>=0.1.6",
     "sphinx>=1.2.2",
@@ -35,12 +37,11 @@ try:
 except ImportError:
     CYTHON = False
 
-# pypy detection
-import sys
-PYPY = "__pypy__" in sys.modules
-
 cmdclass = {}
 ext_modules = []
+
+# pypy detection
+PYPY = "__pypy__" in sys.modules
 
 # only build ext in CPython
 if not PYPY:

@@ -2,9 +2,10 @@
 
 import time
 import thriftpy
-sleep_thrift = thriftpy.load("sleep.thrift", module_name="sleep_thrift")
 
 from thriftpy.rpc import make_server
+
+sleep_thrift = thriftpy.load("sleep.thrift", module_name="sleep_thrift")
 
 
 class Dispatcher(object):

@@ -10,7 +10,7 @@ import time
 import pytest
 
 import thriftpy
-thriftpy.install_import_hook()
+thriftpy.install_import_hook()  # noqa
 
 from thriftpy.rpc import make_server, client_context
 
