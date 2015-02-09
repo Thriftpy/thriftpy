@@ -3,7 +3,7 @@
  */
 struct RequestHeader {
     1: string request_id // used to identify a request
-    2: string parent_id // parent request id
+    2: string api // api name
     3: i32 seq // sequence number
     4: string client // client name
     5: string server // server name
@@ -16,5 +16,4 @@ struct RequestHeader {
  * This is the struct that a successful upgrade will reply with.
  */
 struct UpgradeReply {}
-
 struct UpgradeArgs {}
