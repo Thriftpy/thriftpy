@@ -10,10 +10,7 @@ import time
 import pytest
 
 import thriftpy
-thriftpy.install_import_hook()
-
 from thriftpy.rpc import make_server, client_context
-
 
 addressbook = thriftpy.load(os.path.join(os.path.dirname(__file__),
                                          "addressbook.thrift"))

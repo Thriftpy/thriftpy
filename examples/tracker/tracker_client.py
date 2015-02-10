@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 
+import code
 from stuffs import client, thrift
 
 
 def main():
-    lion = thrift.Lion(name="jerry", home="africa")
     with client() as c:
-        c.eat(lion)
+        code.interact(local={'c': c, 't': thrift})
 
 
 if __name__ == "__main__":

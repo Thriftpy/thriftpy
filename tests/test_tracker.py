@@ -8,7 +8,6 @@ import multiprocessing
 import time
 import tempfile
 import pickle
-import uuid
 
 try:
     import dbm
@@ -25,38 +24,23 @@ from thriftpy.protocol import TBinaryProtocolFactory
 from thriftpy.thrift import TTrackedProcessor, TTrackedClient, \
     TProcessorFactory, TClient, TProcessor
 from thriftpy.server import TThreadedServer
-from thriftpy.trace.tracker import Tracker
+from thriftpy.trace.tracker import TrackerBase
 
 
 addressbook = thriftpy.load(os.path.join(os.path.dirname(__file__),
                                          "addressbook.thrift"))
-request_id = str(uuid.uuid4())
 _, db_file = tempfile.mkstemp()
 
 
-class SampleTracker(Tracker):
-    def pre_handle(self, header):
-        pass
-
-    def handle(self, header, status):
+class SampleTracker(TrackerBase):
+    def record(self, header, exception):
         db = dbm.open(db_file, 'w')
 
-        header.seq += 1
-        header.server = "test_server"
-        header.end = int(time.time() * 1000)
-        header.status = status
-
-        db[header.request_id.encode("ascii")] = pickle.dumps(header.__dict__)
+        key = "%s:%d" % (header.request_id, header.seq)
+        db[key.encode("ascii")] = pickle.dumps(header.__dict__)
         db.close()
 
-    def gen_header(self, header):
-        header.request_id = request_id
-        header.client = "test_client"
-        header.parent_id = ''
-        header.start = int(time.time() * 1000)
-        header.seq = 0
-
-tracker = SampleTracker()
+tracker = SampleTracker("test_client", "test_server")
 
 
 class Dispatcher(object):
@@ -69,6 +53,20 @@ class Dispatcher(object):
 
     def hello(self, name):
         return "hello %s" % name
+
+    def remove(self, name):
+        person = addressbook.Person(name="mary")
+        with client(port=6098) as c:
+            c.add(person)
+        return True
+
+    def add(self, person):
+        with client(port=6099) as c:
+            c.hello("jane")
+        return True
+
+    def get(self, name):
+        raise addressbook.PersonNotExistsError()
 
 
 class TSampleServer(TThreadedServer):
@@ -99,46 +97,64 @@ class TSampleServer(TThreadedServer):
         otrans.close()
 
 
-@pytest.fixture(scope="module")
+def gen_server(port=6029, tracker=tracker, processor=TTrackedProcessor):
+    processor = TProcessorFactory(addressbook.AddressBookService, Dispatcher(),
+                                  tracker, processor)
+    server_socket = TServerSocket(host="localhost", port=port)
+    server = TSampleServer(processor, server_socket,
+                           prot_factory=TBinaryProtocolFactory(),
+                           trans_factory=TBufferedTransportFactory())
+    ps = multiprocessing.Process(target=server.serve)
+    ps.start()
+    return ps, server
+
+
+@pytest.fixture
 def server(request):
-    processor = TProcessorFactory(addressbook.AddressBookService, Dispatcher(),
-                                  tracker, TTrackedProcessor)
-    server_socket = TServerSocket(host="localhost", port=6029)
-    server = TSampleServer(processor, server_socket,
-                           prot_factory=TBinaryProtocolFactory(),
-                           trans_factory=TBufferedTransportFactory())
-    ps = multiprocessing.Process(target=server.serve)
-    ps.start()
-
+    ps, ser = gen_server()
     time.sleep(0.5)
 
     def fin():
         if ps.is_alive():
             ps.terminate()
     request.addfinalizer(fin)
+    return ser
 
-    return server
+
+@pytest.fixture
+def server1(request):
+    ps, ser = gen_server(port=6098)
+    time.sleep(0.5)
+
+    def fin():
+        if ps.is_alive():
+            ps.terminate()
+    request.addfinalizer(fin)
+    return ser
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
+def server2(request):
+    ps, ser = gen_server(port=6099)
+    time.sleep(0.5)
+
+    def fin():
+        if ps.is_alive():
+            ps.terminate()
+    request.addfinalizer(fin)
+    return ser
+
+
+@pytest.fixture
 def not_tracked_server(request):
-    processor = TProcessorFactory(addressbook.AddressBookService, Dispatcher(),
-                                  None, TProcessor)
-    server_socket = TServerSocket(host="localhost", port=6030)
-    server = TSampleServer(processor, server_socket,
-                           prot_factory=TBinaryProtocolFactory(),
-                           trans_factory=TBufferedTransportFactory())
-    ps = multiprocessing.Process(target=server.serve)
-    ps.start()
-
+    ps, ser = gen_server(port=6030, tracker=None, processor=TProcessor)
     time.sleep(0.5)
 
     def fin():
         if ps.is_alive():
             ps.terminate()
     request.addfinalizer(fin)
-
-    return server
+    return ser
 
 
 @contextlib.contextmanager
@@ -157,7 +173,7 @@ def client(client_class=TTrackedClient, port=6029):
         trans.close()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def dbm_db(request):
     db = dbm.open(db_file, 'n')
     db.close()
@@ -165,7 +181,7 @@ def dbm_db(request):
     def fin():
         try:
             os.remove(db_file)
-        except IOError:
+        except OSError:
             pass
     request.addfinalizer(fin)
 
@@ -185,18 +201,55 @@ def test_tracker(server, dbm_db):
     headers = list(db.keys())
     assert len(headers) == 1
 
-    data = pickle.loads(db[headers[0]])
+    request_id = headers[0]
+    data = pickle.loads(db[request_id])
+
+    assert "start" in data and "end" in data
     data.pop("start")
     data.pop("end")
 
     assert data == {
-        "request_id": request_id,
-        "seq": 1,
-        "parent_id": '',
+        "request_id": request_id.decode("ascii").split(':')[0],
+        "seq": 0,
         "client": "test_client",
         "server": "test_server",
+        "api": "ping",
         "status": True
     }
+
+
+def test_tracker_chain(server, server1, server2, dbm_db):
+    with client() as c:
+        c.remove("jane")
+
+    time.sleep(0.6)
+
+    db = dbm.open(db_file, 'r')
+    headers = list(db.keys())
+    assert len(headers) == 3
+
+    headers.sort()
+
+    header0 = pickle.loads(db[headers[0]])
+    header1 = pickle.loads(db[headers[1]])
+    header2 = pickle.loads(db[headers[2]])
+
+    assert header0["request_id"] == header1["request_id"] == \
+        header2["request_id"] == headers[0].decode("ascii").split(':')[0]
+    assert header0["seq"] == 0 and header1["seq"] == 1 and header2["seq"] == 2
+
+
+def test_exception(server, dbm_db):
+    with pytest.raises(addressbook.PersonNotExistsError):
+        with client() as c:
+            c.get("jane")
+
+    db = dbm.open(db_file, 'r')
+    headers = list(db.keys())
+    assert len(headers) == 1
+
+    header = pickle.loads(db[headers[0]])
+    assert header["status"] is False
 
 
 def test_not_tracked_client_tracked_server(server):

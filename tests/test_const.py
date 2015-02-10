@@ -3,7 +3,7 @@
 import thriftpy
 thriftpy.install_import_hook()
 
-import const_thrift as const
+import const_thrift as const  # noqa
 
 
 def test_num_const():

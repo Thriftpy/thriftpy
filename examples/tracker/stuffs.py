@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import contextlib
-import time
-import uuid
 
 from thriftpy import load
 from thriftpy.transport import TSocket, TBufferedTransportFactory, \
@@ -11,38 +9,10 @@ from thriftpy.protocol import TBinaryProtocolFactory
 from thriftpy.thrift import TTrackedClient, TTrackedProcessor, \
     TProcessorFactory, TProcessor
 from thriftpy.server import TThreadedServer
-from thriftpy.trace.tracker import Tracker
+from thriftpy.trace.tracker import ConsoleTracker
 
 thrift = load("animal.thrift")
-
-
-class NodeTracker(Tracker):
-    def __init__(self):
-        self.transactions = []
-
-    def pre_handle(self, header):
-        self.transactions.append(header)
-
-    def handle(self, header, status):
-        trans = self.transactions.pop()
-        trans.end = int(time.time() * 1000)
-        trans.status = status
-        print(trans.__dict__)
-
-    def gen_header(self, header):
-        header.request_id = str(uuid.uuid4())
-        header.client = "example_client"
-        header.start = int(time.time() * 1000)
-        header.seq = 0
-        header.parent_id = ''
-
-        if self.transactions:
-            trans = self.transactions[-1]
-            header.parent_id = trans.request_id
-            header.seq = trans.seq + 1
-
-
-tracker = NodeTracker()
+tracker = ConsoleTracker("tracker_client", "tracker_server")
 
 
 class Server(TThreadedServer):
@@ -74,8 +44,8 @@ class Server(TThreadedServer):
 
 
 @contextlib.contextmanager
-def client(client_class=TTrackedClient):
-    socket = TSocket("localhost", 34567)
+def client(port=34567, client_class=TTrackedClient):
+    socket = TSocket("localhost", port)
     trans = TBufferedTransportFactory().get_transport(socket)
     proto = TBinaryProtocolFactory().get_protocol(trans)
     trans.open()
@@ -89,10 +59,10 @@ def client(client_class=TTrackedClient):
         trans.close()
 
 
-def server():
+def server(port=34567):
     processor = TProcessorFactory(thrift.Eating, Handler(), tracker,
                                   TTrackedProcessor)
-    server_socket = TServerSocket(host="localhost", port=34567)
+    server_socket = TServerSocket(host="localhost", port=port)
     server = Server(processor, server_socket,
                     prot_factory=TBinaryProtocolFactory(),
                     trans_factory=TBufferedTransportFactory())
@@ -123,10 +93,7 @@ class Handler(object):
         sheep = thrift.Sheep()
         sheep.name = "tom"
         sheep.age = 43
+        with client(port=34568) as c:
+            m = c.eat_grass(sheep)
+            print(m)
         return sheep
-
-    def eat(self, lion):
-        with client() as c:
-            sheep = c.eat_sheep(lion)
-            grass = c.eat_grass(sheep)
-            return grass.name
