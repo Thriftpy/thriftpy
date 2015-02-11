@@ -16,13 +16,8 @@ class TrackerBase(object):
         ctx.header = header
 
     def gen_header(self, header):
-        if hasattr(ctx, "header"):
-            cur_header = ctx.header
-            header.request_id = cur_header.request_id
-            header.seq = cur_header.seq + 1
-        else:
-            header.request_id = str(uuid.uuid4())
-            header.seq = 0
+        header.request_id = self.get_request_id()
+        header.seq = (ctx.header.seq + 1) if hasattr(ctx, "header") else 0
 
         header.client = self.client
         header.server = self.server
@@ -30,6 +25,11 @@ class TrackerBase(object):
 
     def record(self, header, exception):
         pass
+
+    def get_request_id(self):
+        if hasattr(ctx, "header"):
+            return ctx.header.request_id
+        return str(uuid.uuid4())
 
 
 class ConsoleTracker(TrackerBase):
