@@ -17,6 +17,7 @@ except ImportError:
 import pytest
 
 import thriftpy
+import thriftpy.trace as trace
 
 from thriftpy.transport import TServerSocket, TBufferedTransportFactory, \
     TTransportException, TSocket
@@ -24,7 +25,7 @@ from thriftpy.protocol import TBinaryProtocolFactory
 from thriftpy.thrift import TTrackedProcessor, TTrackedClient, \
     TProcessorFactory, TClient, TProcessor
 from thriftpy.server import TThreadedServer
-from thriftpy.trace.tracker import TrackerBase
+from thriftpy.trace.tracker import TrackerBase, ctx
 
 
 addressbook = thriftpy.load(os.path.join(os.path.dirname(__file__),
@@ -263,3 +264,18 @@ def test_tracked_client_not_tracked_server(not_tracked_server):
         assert c._upgraded is False
         c.ping()
         c.hello("cat")
+
+
+def test_request_id_func():
+    ctx.__dict__.clear()
+
+    header = trace.thrift.RequestHeader()
+    header.request_id = "hello"
+    header.seq = 0
+
+    tracker = TrackerBase()
+    tracker.handle(header)
+
+    header2 = trace.thrift.RequestHeader()
+    tracker.gen_header(header2)
+    assert header2.request_id == "hello"
