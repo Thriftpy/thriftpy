@@ -35,3 +35,12 @@ else:
     TCyBufferedTransport = TBufferedTransport
     TCyBufferedTransportFactory = TBufferedTransportFactory
     TCyFramedTransportFactory = TFramedTransportFactory
+
+__all__ = [
+    'TSocketBase', 'TSocket', 'TServerSocket',
+    'TTransportBase', 'TTransportException',
+    'TMemoryBuffer',
+    'TFramedTransport', 'TFramedTransportFactory',
+    'TBufferedTransport', 'TBufferedTransportFactory',
+    'TCyBufferedTransport', 'TCyBufferedTransportFactory',
+    ]

@@ -4,8 +4,8 @@ import thriftpy
 
 from thriftpy.rpc import client_context
 
-tutorial_thrift = thriftpy.load(
-    "tutorial.thrift", module_name="tutorial_thrift")
+tutorial_thrift = thriftpy.load("tutorial.thrift",
+                                module_name="tutorial_thrift")
 
 
 def main():

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import thriftpy
-thriftpy.install_import_hook()
+thriftpy.install_import_hook()  # noqa
 
 from thriftpy.utils import serialize, deserialize  # noqa
 import container_thrift as container  # noqa

@@ -1,4 +1,4 @@
-# coding=utf8
+# -*- coding: utf-8 -*-
 
 from thriftpy.thrift import TType
 from thriftpy.parser import load

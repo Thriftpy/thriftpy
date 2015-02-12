@@ -6,7 +6,7 @@ from thriftpy import load
 from thriftpy.thrift import TPayload, TException, TType
 
 import thriftpy
-thriftpy.install_import_hook()
+thriftpy.install_import_hook()  # noqa
 
 import addressbook as ab  # noqa
 import addressbook_thrift as ab_tt  # noqa

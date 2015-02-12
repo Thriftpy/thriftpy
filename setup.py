@@ -23,7 +23,7 @@ tornado_requires = [
 
 dev_requires = [
     "cython>=0.20.2",
-    "flake8>=2.2.2",
+    "flake8>=2.3.0",
     "pytest>=2.6.0",
     "sphinx-rtd-theme>=0.1.6",
     "sphinx>=1.2.2",
@@ -37,11 +37,11 @@ try:
 except ImportError:
     CYTHON = False
 
-# pypy detection
-PYPY = "__pypy__" in sys.modules
-
 cmdclass = {}
 ext_modules = []
+
+# pypy detection
+PYPY = "__pypy__" in sys.modules
 
 # only build ext in CPython
 if not PYPY:

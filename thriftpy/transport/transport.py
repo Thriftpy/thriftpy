@@ -9,22 +9,26 @@ from io import BytesIO
 from ..ttype import TType, TException
 
 
+def readall(read_fn, sz):
+    buff = b''
+    have = 0
+    while have < sz:
+        chunk = read_fn(sz - have)
+        have += len(chunk)
+        buff += chunk
+
+        if len(chunk) == 0:
+            raise TTransportException(TTransportException.END_OF_FILE,
+                                      "End of file reading from transport")
+
+    return buff
+
+
 class TTransportBase(object):
     """Base class for Thrift transport layer."""
 
     def read(self, sz):
-        buff = b''
-        have = 0
-        while have < sz:
-            chunk = self._read(sz - have)
-            have += len(chunk)
-            buff += chunk
-
-            if len(chunk) == 0:
-                raise TTransportException(TTransportException.END_OF_FILE,
-                                          "End of file reading from transport")
-
-        return buff
+        return readall(self._read, sz)
 
 
 class TTransportException(TException):
@@ -168,9 +172,10 @@ class TFramedTransport(TTransportBase):
         return self.__rbuf.read(sz)
 
     def read_frame(self):
-        buff = self.__trans.read(4)
+        buff = readall(self.__trans.read, 4)
         sz, = struct.unpack('!i', buff)
-        self.__rbuf = BytesIO(self.__trans.read(sz))
+        frame = readall(self.__trans.read, sz)
+        self.__rbuf = BytesIO(frame)
 
     def write(self, buf):
         wsz = len(buf)
