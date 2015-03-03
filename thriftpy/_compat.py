@@ -14,16 +14,7 @@ import types
 import sys
 PY3 = sys.version_info[0] == 3
 PYPY = "__pypy__" in sys.modules
-
-# Cython always disabled in pypy
-CYTHON = False
-if not PYPY:
-    try:
-        from thriftpy.protocol import cybin  # noqa
-        CYTHON = True
-    except ImportError:
-        pass
-
+CYTHON = not PYPY  # Cython always disabled in pypy
 
 if PY3:
     text_type = str
@@ -31,8 +22,6 @@ if PY3:
 
     def u(s):
         return s
-
-    xrange = range
 else:
     text_type = unicode  # noqa
     string_types = (str, unicode)  # noqa
@@ -41,8 +30,6 @@ else:
         if not isinstance(s, text_type):
             s = s.decode("utf-8")
         return s
-
-    xrange = xrange
 
 
 def with_metaclass(meta, *bases):
