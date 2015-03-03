@@ -24,7 +24,9 @@ from datetime import timedelta
 
 from .transport import TMemoryBuffer, TTransportException, TTransportBase
 from .thrift import TApplicationException, TProcessor, TClient
-from .protocol import TBinaryProtocolFactory
+
+# TODO need TCyTornadoStreamTransport to work with cython binary protocol
+from .protocol.binary import TBinaryProtocolFactory
 
 import logging
 import socket

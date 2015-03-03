@@ -15,6 +15,7 @@ from tornado import ioloop
 import thriftpy
 from thriftpy.tornado import make_server
 from thriftpy.rpc import make_client
+from thriftpy.protocol.binary import TBinaryProtocolFactory
 from thriftpy.transport.transport import TFramedTransportFactory
 
 from thriftpy._compat import CYTHON
@@ -48,6 +49,7 @@ class Dispatcher(object):
 
 
 class FramedTransportTestCase(TestCase):
+    PROTOCOL_FACTORY = TBinaryProtocolFactory()
     TRANSPORT_FACTORY = TFramedTransportFactory()
 
     def mk_server(self):
@@ -73,6 +75,7 @@ class FramedTransportTestCase(TestCase):
     def mk_client(self):
         return make_client(addressbook.AddressBookService,
                            '127.0.0.1', self.port,
+                           proto_factory=self.PROTOCOL_FACTORY,
                            trans_factory=self.TRANSPORT_FACTORY)
 
     def setUp(self):
@@ -96,7 +99,9 @@ class FramedTransportTestCase(TestCase):
 
 
 if CYTHON:
+    from thriftpy.protocol.cybin import TCyBinaryProtocolFactory
     from thriftpy.transport.cytransport import TCyFramedTransportFactory
 
     class CyFramedTransportTestCase(FramedTransportTestCase):
+        PROTOCOL_FACTORY = TCyBinaryProtocolFactory()
         TRANSPORT_FACTORY = TCyFramedTransportFactory()

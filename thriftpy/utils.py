@@ -5,7 +5,7 @@ from __future__ import absolute_import
 import binascii
 
 from .transport import TMemoryBuffer
-from .protocol import TBinaryProtocolFactory
+from .protocol.binary import TBinaryProtocolFactory
 
 
 def serialize(thrift_object, proto_factory=TBinaryProtocolFactory()):
