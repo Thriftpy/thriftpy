@@ -15,6 +15,15 @@ import sys
 PY3 = sys.version_info[0] == 3
 PYPY = "__pypy__" in sys.modules
 
+# Cython always disabled in pypy
+CYTHON = False
+if not PYPY:
+    try:
+        from thriftpy.protocol import cybin  # noqa
+        CYTHON = True
+    except ImportError:
+        pass
+
 
 if PY3:
     text_type = str
