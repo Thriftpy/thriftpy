@@ -62,7 +62,7 @@ if not PYPY:
 
 setup(name="thriftpy",
       version=version,
-      description="Pure python implemention of Apache Thrift.",
+      description="Pure python implementation of Apache Thrift.",
       keywords="thrift python thriftpy",
       author="Lx Yu",
       author_email="i@lxyu.net",
@@ -82,7 +82,7 @@ setup(name="thriftpy",
       ext_modules=ext_modules,
       classifiers=[
           "Topic :: Software Development",
-          "Development Status :: 3 - Alpha",
+          "Development Status :: 4 - Beta",
           "Intended Audience :: Developers",
           "License :: OSI Approved :: MIT License",
           "Programming Language :: Python :: 2.7",

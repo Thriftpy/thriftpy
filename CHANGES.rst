@@ -1,6 +1,52 @@
 Changelog
 =========
 
+0.2.x
+~~~~~
+
+Version 0.2.0
+-------------
+
+Released on March 3, 2015.
+
+- support for default enum values that reference the original enum, via
+  `#69`_.
+- support for `require` keyword, via `#72`_.
+- support for allow use and definition of types in the same file, via
+  `#77`_.
+- support for multiplexing for services, via `#88`_.
+- support for cython accelerated memory transport and framed transport,
+  via `#93`
+- bugfix for transport clean in read_struct in cybin, via `#70`_.
+- bugfix for large reading size in framed transport, via `#73`_.
+- bugfix for cython build failed in older CentOS, via `#92`_.
+- bugfix for thrift file version mis-match caused message corrupt in
+  `read_struct`, via `#95`_.
+
+Non-Backward Compatible changes:
+
+- refined new parser, the parser now behaves very similar to Apache Thrift,
+  and supports a lot more features than the old one, via `#80`_. Refer to the
+  pull request for more detailed changes.
+- refined transport, all transports have cython accelerated version. The
+  cython version of protocol and transport are enabled by default now.
+
+.. _`#69`: https://github.com/eleme/thriftpy/pull/69
+.. _`#70`: https://github.com/eleme/thriftpy/pull/70
+.. _`#72`: https://github.com/eleme/thriftpy/pull/72
+.. _`#73`: https://github.com/eleme/thriftpy/pull/73
+.. _`#77`: https://github.com/eleme/thriftpy/pull/77
+.. _`#80`: https://github.com/eleme/thriftpy/pull/80
+.. _`#88`: https://github.com/eleme/thriftpy/pull/88
+.. _`#91`: https://github.com/eleme/thriftpy/pull/91
+.. _`#92`: https://github.com/eleme/thriftpy/pull/92
+.. _`#93`: https://github.com/eleme/thriftpy/pull/93
+.. _`#95`: https://github.com/eleme/thriftpy/pull/95
+
+
+0.1.x
+~~~~~
+
 Version 0.1.15
 --------------
 
