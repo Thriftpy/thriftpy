@@ -30,5 +30,32 @@ static inline int64_t bswap64(int64_t n) {
 #define be64toh(n) bswap64(n)
 
 #else
-    #include <endian.h>
+
+#include <endian.h>
+#include <byteswap.h>
+
+#ifndef htobe16
+#define htobe16(x) bswap_16(x)
+#endif
+
+#ifndef htobe32
+#define htobe32(x) bswap_32(x)
+#endif
+
+#ifndef htobe64
+#define htobe64(x) bswap_64(x)
+#endif
+
+#ifndef be16toh
+#define be16toh(x) bswap_16(x)
+#endif
+
+#ifndef be32toh
+#define be32toh(x) bswap_32(x)
+#endif
+
+#ifndef be64toh
+#define be64toh(x) bswap_64(x)
+#endif
+
 #endif
