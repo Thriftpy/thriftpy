@@ -199,6 +199,7 @@ class TProcessor(object):
         # convert kwargs to args
         api_args = [args.thrift_spec[k][1]
                     for k in sorted(args.thrift_spec)]
+
         def call():
             return getattr(self._handler, api)(
                 *(args.__dict__[k] for k in api_args)

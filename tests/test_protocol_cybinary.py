@@ -2,7 +2,6 @@
 
 import multiprocessing
 import os
-import sys
 import time
 
 import pytest
@@ -11,17 +10,17 @@ from thriftpy._compat import u
 from thriftpy.thrift import TType, TPayload
 from thriftpy.transport import (
     TMemoryBuffer,
-    TCyBufferedTransport,
     TSocket,
     TServerSocket
 )
 from thriftpy.utils import hexlify
 
-PYPY = "__pypy__" in sys.modules
+from thriftpy._compat import PYPY
+pytestmark = pytest.mark.skipif(PYPY,
+                                reason="cython not enabled in pypy.")
 if not PYPY:
     from thriftpy.protocol import cybin as proto
-
-pytestmark = pytest.mark.skipif(PYPY, reason="cybin not enabled in pypy.")
+    from thriftpy.transport.cytransport import TCyBufferedTransport
 
 
 class TItem(TPayload):

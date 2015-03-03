@@ -15,11 +15,9 @@ from tornado import ioloop
 import thriftpy
 from thriftpy.tornado import make_server
 from thriftpy.rpc import make_client
-from thriftpy.transport import (
-    TFramedTransportFactory,
-    TCyFramedTransportFactory,
-)
+from thriftpy.transport.transport import TFramedTransportFactory
 
+from thriftpy._compat import CYTHON
 logging.basicConfig(level=logging.INFO)
 
 addressbook = thriftpy.load(path.join(path.dirname(__file__),
@@ -97,5 +95,8 @@ class FramedTransportTestCase(TestCase):
         assert success
 
 
-class CyFramedTransportTestCase(FramedTransportTestCase):
-    TRANSPORT_FACTORY = TCyFramedTransportFactory()
+if CYTHON:
+    from thriftpy.transport.cytransport import TCyFramedTransportFactory
+
+    class CyFramedTransportTestCase(FramedTransportTestCase):
+        TRANSPORT_FACTORY = TCyFramedTransportFactory()

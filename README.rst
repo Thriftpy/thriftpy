@@ -23,7 +23,7 @@ Documentation: https://thriftpy.readthedocs.org/
 Installation
 ============
 
-Install with pip
+Install with pip.
 
 .. code:: bash
 
@@ -93,7 +93,10 @@ python lib):
 
 - Supports python2.6+, python3.3+, pypy and pypy3.
 
-- Compatible with Apache Thrift.  You can use ThriftPy together with the
+- Pure python implementation. No longer need to compile & install the 'thrift'
+  package. All you need is thriftpy and thrift file.
+
+- Compatible with Apache Thrift. You can use ThriftPy together with the
   official implementation servers and clients, such as a upstream server with
   a thriftpy client or the opposite.
 
@@ -119,9 +122,6 @@ python lib):
   directly use ``import pingpong_thrift`` to import the 'pingpong.thrift' file
   as module, you may also use ``from pingpong_thrift import PingService`` to
   import specific object from the thrift module.
-
-- Pure python implementation. No longer need to compile & install the 'thrift'
-  package. All you need is thriftpy and thrift file.
 
 - Easy RPC server/client setup.
 

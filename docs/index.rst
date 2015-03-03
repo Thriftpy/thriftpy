@@ -74,7 +74,10 @@ python lib):
 
 - Supports python2.6+, python3.3+, pypy and pypy3.
 
-- Compatible with Apache Thirft.  You can use ThriftPy together with the
+- Pure python implementation. No longer need to compile & install the 'thrift'
+  package. All you need is thriftpy and thrift file.
+
+- Compatible with Apache Thrift. You can use ThriftPy together with the
   official implementation servers and clients, such as a upstream server with
   a thriftpy client or the opposite.
 
@@ -101,9 +104,6 @@ python lib):
   as module, you may also use ``from pingpong_thrift import PingService`` to
   import specific object from the thrift module.
 
-- Pure python implementation. No longer need to compile & install the 'thrift'
-  package. All you need is thriftpy and thrift file.
-
 - Easy RPC server/client setup.
 
 
@@ -111,7 +111,7 @@ python lib):
 Installation
 ============
 
-Install with pip
+Install with pip.
 
 .. code:: bash
 
@@ -127,55 +127,20 @@ You may also install cython first to build cython extension locally.
 Usage Notice
 ============
 
-Use Cython Binary Protocol
---------------------------
+Cython Binary Protocol
+----------------------
 
-The TCyBinaryProtocol can be used to accelerate serialize and deserialize.
+The cython accelerated binary protocol is enabled by default for CPython if
+available, and is disabled for Pypy.
 
-.. note::
-
-    The TCyBinaryProtocol and TCyBufferedTransport must be used together.
-
-.. code:: python
-
-    from thriftpy.protocol import TCyBinaryProtocolFactory
-    from thriftpy.transport import TCyBufferedTransportFactory
-    from thriftpy.rpc import client_context
-
-    server = make_server(
-        pingpong_thrift.PingPong, Dispatcher(), '127.0.0.1', 6000,
-        proto_factory=TCyBinaryProtocolFactory(),
-        trans_factory=TCyBufferedTransport())
-    print("serving...")
-    server.serve()
-
-The same goes for client.
+To force use pure python version of binary protocol, you must import them from
+the direct module.
 
 .. code:: python
 
-    from thriftpy.protocol import TCyBinaryProtocolFactory
-    from thriftpy.transport import TCyBufferedTransportFactory
-    from thriftpy.rpc import make_client
-
-    client = make_client(
-        pingpong_thrift.PingPong, '127.0.0.1', 6000,
-        proto_factory=TCyBinaryProtocolFactory(),
-        trans_factory=TCyBufferedTransportFactory())
-    client.ping()
-
-Or client context:
-
-.. code:: python
-
-    from thriftpy.protocol import TCyBinaryProtocolFactory
-    from thriftpy.transport import TCyBufferedTransportFactory
-    from thriftpy.rpc import client_context
-
-    with client_context(
-            pingpong_thrift.PingPong, '127.0.0.1', 6000,
-            proto_factory=TCyBinaryProtocolFactory(),
-            trans_factory=TCyBufferedTransportFactory()) as c:
-        c.ping()
+    from thriftpy.protocol.binary import TBinaryProtocolFactory
+    from thriftpy.transport.transport import TBufferedTransportFactory
+    from thriftpy.transport.transport import TFramedTransportFactory
 
 
 Better Module

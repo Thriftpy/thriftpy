@@ -13,14 +13,20 @@ from .transport import (
     TFramedTransportFactory,
 )
 
-from thriftpy._compat import PYPY
+from thriftpy._compat import PYPY, CYTHON
 if not PYPY:
-    from .cytransport import (
-        TCyBufferedTransport,
-        TCyBufferedTransportFactory,
-        TCyFramedTransportFactory,
-    )
+    # enable cython binary by default for CPython.
+    if CYTHON:
+        from .cytransport import (
+            TCyBufferedTransport,
+            TCyBufferedTransportFactory,
+            TCyFramedTransportFactory,
+        )
+        TBufferedTransport = TCyBufferedTransport  # noqa
+        TBufferedTransportFactory = TCyBufferedTransportFactory  # noqa
+        TFramedTransportFactory = TCyFramedTransportFactory  # noqa
 else:
+    # disable cython binary protocol for PYPY since it's slower.
     TCyBufferedTransport = TBufferedTransport
     TCyBufferedTransportFactory = TBufferedTransportFactory
     TCyFramedTransportFactory = TFramedTransportFactory
