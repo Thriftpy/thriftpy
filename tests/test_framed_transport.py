@@ -15,8 +15,8 @@ from tornado import ioloop
 import thriftpy
 from thriftpy.tornado import make_server
 from thriftpy.rpc import make_client
+from thriftpy.transport.framed import TFramedTransportFactory
 from thriftpy.protocol.binary import TBinaryProtocolFactory
-from thriftpy.transport.transport import TFramedTransportFactory
 
 from thriftpy._compat import CYTHON
 logging.basicConfig(level=logging.INFO)
@@ -49,8 +49,8 @@ class Dispatcher(object):
 
 
 class FramedTransportTestCase(TestCase):
-    PROTOCOL_FACTORY = TBinaryProtocolFactory()
     TRANSPORT_FACTORY = TFramedTransportFactory()
+    PROTOCOL_FACTORY = TBinaryProtocolFactory()
 
     def mk_server(self):
         self.io_loop = ioloop.IOLoop()
@@ -99,8 +99,8 @@ class FramedTransportTestCase(TestCase):
 
 
 if CYTHON:
+    from thriftpy.transport.framed import TCyFramedTransportFactory
     from thriftpy.protocol.cybin import TCyBinaryProtocolFactory
-    from thriftpy.transport.cytransport import TCyFramedTransportFactory
 
     class CyFramedTransportTestCase(FramedTransportTestCase):
         PROTOCOL_FACTORY = TCyBinaryProtocolFactory()

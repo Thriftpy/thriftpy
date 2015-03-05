@@ -7,7 +7,7 @@ import os
 import socket
 import sys
 
-from .transport import TTransportBase, TTransportException
+from . import TTransportBase, TTransportException
 
 
 class TSocketBase(TTransportBase):
