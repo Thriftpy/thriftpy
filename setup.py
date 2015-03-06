@@ -32,7 +32,7 @@ dev_requires = [
 
 # cython detection
 try:
-    from Cython.Distutils import build_ext
+    from Cython.Build import cythonize
     CYTHON = True
 except ImportError:
     CYTHON = False
@@ -46,16 +46,19 @@ PYPY = "__pypy__" in sys.modules
 # only build ext in CPython
 if not PYPY:
     if CYTHON:
-        ext_modules.append(Extension("thriftpy.transport.cytransport",
-                                     ["thriftpy/transport/cytransport.pyx"]))
-        ext_modules.append(Extension("thriftpy.protocol.cybin",
-                                     ["thriftpy/protocol/cybin/cybin.pyx"]))
-        cmdclass["build_ext"] = build_ext
-    else:
-        ext_modules.append(Extension("thriftpy.transport.cytransport",
-                                     ["thriftpy/transport/cytransport.c"]))
-        ext_modules.append(Extension("thriftpy.protocol.cybin",
-                                     ["thriftpy/protocol/cybin/cybin.c"]))
+        cythonize("thriftpy/transport/**/*.pyx")
+        cythonize("thriftpy/protocol/cybin/cybin.pyx")
+
+    ext_modules.append(Extension("thriftpy.transport.cybase",
+                                 ["thriftpy/transport/cybase.c"]))
+    ext_modules.append(Extension("thriftpy.transport.buffered.cybuffered",
+                                 ["thriftpy/transport/buffered/cybuffered.c"]))
+    ext_modules.append(Extension("thriftpy.transport.memory.cymemory",
+                                 ["thriftpy/transport/memory/cymemory.c"]))
+    ext_modules.append(Extension("thriftpy.transport.framed.cyframed",
+                                 ["thriftpy/transport/framed/cyframed.c"]))
+    ext_modules.append(Extension("thriftpy.protocol.cybin",
+                                 ["thriftpy/protocol/cybin/cybin.c"]))
 
 setup(name="thriftpy",
       version=version,

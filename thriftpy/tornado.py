@@ -22,7 +22,8 @@ from tornado import tcpserver, ioloop, iostream, gen
 from io import BytesIO
 from datetime import timedelta
 
-from .transport import TMemoryBuffer, TTransportException, TTransportBase
+from .transport import TTransportException, TTransportBase
+from .transport.memory import TMemoryBuffer
 from .thrift import TApplicationException, TProcessor, TClient
 
 # TODO need TCyTornadoStreamTransport to work with cython binary protocol

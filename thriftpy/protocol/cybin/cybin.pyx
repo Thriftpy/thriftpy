@@ -2,7 +2,7 @@ from libc.stdlib cimport free, malloc
 from libc.stdint cimport int16_t, int32_t, int64_t
 from cpython cimport bool
 
-from thriftpy.transport.cytransport cimport TCyBufferedTransport
+from thriftpy.transport.cybase cimport CyTransportBase, STACK_STRING_LEN
 
 cdef extern from "endian_port.h":
     int16_t htobe16(int16_t n)
@@ -15,8 +15,6 @@ cdef extern from "endian_port.h":
 DEF VERSION_MASK = -65536
 DEF VERSION_1 = -2147418112
 DEF TYPE_MASK = 0x000000ff
-
-DEF STACK_STRING_LEN = 4096
 
 ctypedef enum TType:
     T_STOP = 0,
@@ -43,63 +41,63 @@ class ProtocolError(Exception):
     pass
 
 
-cdef inline char read_i08(TCyBufferedTransport buf) except? -1:
+cdef inline char read_i08(CyTransportBase buf) except? -1:
     cdef char data
     buf.c_read(1, &data)
     return data
 
 
-cdef inline int16_t read_i16(TCyBufferedTransport buf) except? -1:
+cdef inline int16_t read_i16(CyTransportBase buf) except? -1:
     cdef char data[2]
     buf.c_read(2, data)
     return be16toh((<int16_t*>data)[0])
 
 
-cdef inline int32_t read_i32(TCyBufferedTransport buf) except? -1:
+cdef inline int32_t read_i32(CyTransportBase buf) except? -1:
     cdef char data[4]
     buf.c_read(4, data)
     return be32toh((<int32_t*>data)[0])
 
 
-cdef inline int64_t read_i64(TCyBufferedTransport buf) except? -1:
+cdef inline int64_t read_i64(CyTransportBase buf) except? -1:
     cdef char data[8]
     buf.c_read(8, data)
     return be64toh((<int64_t*>data)[0])
 
 
-cdef inline int write_i08(TCyBufferedTransport buf, char val) except -1:
+cdef inline int write_i08(CyTransportBase buf, char val) except -1:
     buf.c_write(&val, 1)
     return 0
 
 
-cdef inline int write_i16(TCyBufferedTransport buf, int16_t val) except -1:
+cdef inline int write_i16(CyTransportBase buf, int16_t val) except -1:
     val = htobe16(val)
     buf.c_write(<char*>(&val), 2)
     return 0
 
 
-cdef inline int write_i32(TCyBufferedTransport buf, int32_t val) except -1:
+cdef inline int write_i32(CyTransportBase buf, int32_t val) except -1:
     val = htobe32(val)
     buf.c_write(<char*>(&val), 4)
     return 0
 
 
-cdef inline int write_i64(TCyBufferedTransport buf, int64_t val) except -1:
+cdef inline int write_i64(CyTransportBase buf, int64_t val) except -1:
     val = htobe64(val)
     buf.c_write(<char*>(&val), 8)
     return 0
 
 
-cdef inline int write_double(TCyBufferedTransport buf, double val) except -1:
+cdef inline int write_double(CyTransportBase buf, double val) except -1:
     cdef int64_t v = htobe64((<int64_t*>(&val))[0])
     buf.c_write(<char*>(&v), 8)
     return 0
 
 
-cdef inline read_struct(TCyBufferedTransport buf, obj):
+cdef inline read_struct(CyTransportBase buf, obj):
     cdef dict field_specs = obj.thrift_spec
     cdef int fid, i
-    cdef TType field_type, orig_field_type, ttype
+    cdef TType field_type, ttype
     cdef tuple field_spec
     cdef str name
 
@@ -129,8 +127,8 @@ cdef inline read_struct(TCyBufferedTransport buf, obj):
     return obj
 
 
-cdef inline write_struct(TCyBufferedTransport buf, obj):
-    cdef int fid, items_len, i
+cdef inline write_struct(CyTransportBase buf, obj):
+    cdef int fid
     cdef TType f_type
     cdef dict thrift_spec = obj.thrift_spec
     cdef tuple field_spec
@@ -155,7 +153,7 @@ cdef inline write_struct(TCyBufferedTransport buf, obj):
     write_i08(buf, T_STOP)
 
 
-cdef inline c_read_string(TCyBufferedTransport buf, int32_t size):
+cdef inline c_read_string(CyTransportBase buf, int32_t size):
     cdef char string_val[STACK_STRING_LEN]
 
     if size > STACK_STRING_LEN:
@@ -173,10 +171,8 @@ cdef inline c_read_string(TCyBufferedTransport buf, int32_t size):
         return py_data
 
 
-cdef c_read_val(TCyBufferedTransport buf, TType ttype, spec=None):
+cdef c_read_val(CyTransportBase buf, TType ttype, spec=None):
     cdef int size
-    cdef char* data
-    cdef bytes py_data
     cdef int64_t n
     cdef TType v_type, k_type, orig_type, orig_key_type
 
@@ -250,7 +246,7 @@ cdef c_read_val(TCyBufferedTransport buf, TType ttype, spec=None):
         return read_struct(buf, spec())
 
 
-cdef c_write_val(TCyBufferedTransport buf, TType ttype, val, spec=None):
+cdef c_write_val(CyTransportBase buf, TType ttype, val, spec=None):
     cdef int val_len
     cdef TType e_type, v_type, k_type
 
@@ -327,7 +323,7 @@ cdef c_write_val(TCyBufferedTransport buf, TType ttype, val, spec=None):
         write_struct(buf, val)
 
 
-cpdef skip(TCyBufferedTransport buf, TType ttype):
+cpdef skip(CyTransportBase buf, TType ttype):
     cdef TType v_type, k_type, f_type
     cdef int i, size
 
@@ -363,16 +359,16 @@ cpdef skip(TCyBufferedTransport buf, TType ttype):
             skip(buf, f_type)
 
 
-def read_val(TCyBufferedTransport buf, TType ttype):
+def read_val(CyTransportBase buf, TType ttype):
     return c_read_val(buf, ttype)
 
 
-def write_val(TCyBufferedTransport buf, TType ttype, val, spec=None):
+def write_val(CyTransportBase buf, TType ttype, val, spec=None):
     c_write_val(buf, ttype, val, spec)
 
 
 cdef class TCyBinaryProtocol(object):
-    cdef public TCyBufferedTransport trans
+    cdef public CyTransportBase trans
     cdef public bool strict_read
     cdef public bool strict_write
 
