@@ -96,12 +96,12 @@ cdef inline int write_double(CyTransportBase buf, double val) except -1:
 
 cdef inline read_struct(CyTransportBase buf, obj):
     cdef dict field_specs = obj.thrift_spec
-    cdef int fid, i
+    cdef int fid
     cdef TType field_type, ttype
     cdef tuple field_spec
     cdef str name
 
-    for i in range(len(field_specs) + 1):
+    while True:
         field_type = <TType>read_i08(buf)
         if field_type == T_STOP:
             break
@@ -114,7 +114,8 @@ cdef inline read_struct(CyTransportBase buf, obj):
         field_spec = field_specs[fid]
         ttype = field_spec[0]
         if field_type != ttype:
-            raise ProtocolError("Message Corrupt")
+            skip(buf, field_type)
+            continue
 
         name = field_spec[1]
         if len(field_spec) == 2:
@@ -211,7 +212,9 @@ cdef c_read_val(CyTransportBase buf, TType ttype, spec=None):
         size = read_i32(buf)
 
         if orig_type != v_type:
-            raise ProtocolError("Message Corrupt")
+            for _ in range(size):
+                skip(buf, orig_type)
+            return []
 
         return [c_read_val(buf, v_type, v_spec) for _ in range(size)]
 
@@ -237,7 +240,10 @@ cdef c_read_val(CyTransportBase buf, TType ttype, spec=None):
         size = read_i32(buf)
 
         if orig_key_type != k_type or orig_type != v_type:
-            raise ProtocolError("Message Corrupt")
+            for _ in range(size):
+                skip(buf, orig_key_type)
+                skip(buf, orig_type)
+            return {}
 
         return {c_read_val(buf, k_type, k_spec): c_read_val(buf, v_type, v_spec)
                 for _ in range(size)}

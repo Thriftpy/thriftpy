@@ -243,7 +243,9 @@ def read_val(inbuf, ttype, spec=None):
         r_type, sz = read_list_begin(inbuf)
         # the v_type is useless here since we already get it from spec
         if r_type != v_type:
-            raise Exception("Message Corrupt")
+            for _ in range(sz):
+                skip(inbuf, r_type)
+            return []
 
         for i in range(sz):
             result.append(read_val(inbuf, v_type, v_spec))
@@ -265,7 +267,10 @@ def read_val(inbuf, ttype, spec=None):
         result = {}
         sk_type, sv_type, sz = read_map_begin(inbuf)
         if sk_type != k_type or sv_type != v_type:
-            raise Exception("Message Corrupt")
+            for _ in range(sz):
+                skip(inbuf, sk_type)
+                skip(inbuf, sv_type)
+            return {}
 
         for i in range(sz):
             k_val = read_val(inbuf, k_type, k_spec)
@@ -281,8 +286,7 @@ def read_val(inbuf, ttype, spec=None):
 
 
 def read_struct(inbuf, obj):
-    # The max loop count equals field count + a final stop byte.
-    for i in range(len(obj.thrift_spec) + 1):
+    while True:
         f_type, fid = read_field_begin(inbuf)
         if f_type == TType.STOP:
             break
@@ -300,7 +304,8 @@ def read_struct(inbuf, obj):
         # it really should equal here. but since we already wasted
         # space storing the duplicate info, let's check it.
         if f_type != sf_type:
-            raise Exception("Message Corrupt")
+            skip(inbuf, f_type)
+            continue
 
         setattr(obj, f_name, read_val(inbuf, f_type, f_container_spec))
 
