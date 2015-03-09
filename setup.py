@@ -46,6 +46,7 @@ PYPY = "__pypy__" in sys.modules
 # only build ext in CPython
 if not PYPY:
     if CYTHON:
+        cythonize("thriftpy/transport/cybase.pyx")
         cythonize("thriftpy/transport/**/*.pyx")
         cythonize("thriftpy/protocol/cybin/cybin.pyx")
 
