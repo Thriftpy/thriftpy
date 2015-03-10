@@ -318,8 +318,8 @@ class TApplicationException(TException):
     """Application level thrift exceptions."""
 
     thrift_spec = {
-        1: (TType.STRING, 'message'),
-        2: (TType.I32, 'type'),
+        1: (TType.STRING, 'message', False),
+        2: (TType.I32, 'type', False),
     }
 
     UNKNOWN = 0

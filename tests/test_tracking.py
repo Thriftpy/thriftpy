@@ -61,6 +61,10 @@ class Dispatcher(object):
             c.add(person)
         return True
 
+    def get_phonenumbers(self, name, count):
+        return [addressbook.PhoneNumber(number="sdaf"),
+                addressbook.PhoneNumber(number='saf')]
+
     def add(self, person):
         with client(port=6099) as c:
             c.hello("jane")
@@ -266,6 +270,9 @@ def test_tracked_client_not_tracked_server(not_tracked_server):
         assert c._upgraded is False
         c.ping()
         c.hello("cat")
+        a = c.get_phonenumbers("hello", 54)
+        assert len(a) == 2
+        assert a[0].number == 'sdaf' and a[1].number == 'saf'
 
 
 def test_request_id_func():
