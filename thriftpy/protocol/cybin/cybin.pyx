@@ -118,7 +118,7 @@ cdef inline read_struct(CyTransportBase buf, obj):
             continue
 
         name = field_spec[1]
-        if len(field_spec) == 2:
+        if len(field_spec) <= 3:
             spec = None
         else:
             spec = field_spec[2]
@@ -138,7 +138,7 @@ cdef inline write_struct(CyTransportBase buf, obj):
     for fid, field_spec in thrift_spec.items():
         f_type = field_spec[0]
         f_name = field_spec[1]
-        if len(field_spec) == 2:
+        if len(field_spec) <= 3:
             container_spec = None
         else:
             container_spec = field_spec[2]

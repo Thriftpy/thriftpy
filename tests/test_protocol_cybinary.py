@@ -22,8 +22,8 @@ if not PYPY:
 
 class TItem(TPayload):
     thrift_spec = {
-        1: (TType.I32, "id"),
-        2: (TType.LIST, "phones", (TType.STRING)),
+        1: (TType.I32, "id", False),
+        2: (TType.LIST, "phones", TType.STRING, False),
     }
     default_spec = [("id", None), ("phones", None)]
 
@@ -214,8 +214,8 @@ def test_read_huge_args():
 
     class Hello(TPayload):
         thrift_spec = {
-            1: (TType.STRING, "name"),
-            2: (TType.STRING, "world"),
+            1: (TType.STRING, "name", False),
+            2: (TType.STRING, "world", False),
         }
         default_spec = [("name", None), ("world", None)]
 
@@ -346,8 +346,8 @@ def test_read_wrong_arg_type():
 
     class TWrongTypeItem(TPayload):
         thrift_spec = {
-            1: (TType.STRING, "id"),
-            2: (TType.LIST, "phones", (TType.STRING)),
+            1: (TType.STRING, "id", False),
+            2: (TType.LIST, "phones", TType.STRING, False),
         }
         default_spec = [("id", None), ("phones", None)]
 

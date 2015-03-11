@@ -299,6 +299,17 @@ class TMultiplexingProcessor(TProcessor):
         return api, seqid, result, call
 
 
+class TProcessorFactory(object):
+    def __init__(self, processor_class, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+        self.processor_class = processor_class
+
+    def get_processor(self):
+        return self.processor_class(*self.args, **self.kwargs)
+
+
 class TException(TPayload, Exception):
     """Base class for all thrift exceptions."""
 
@@ -307,8 +318,8 @@ class TApplicationException(TException):
     """Application level thrift exceptions."""
 
     thrift_spec = {
-        1: (TType.STRING, 'message'),
-        2: (TType.I32, 'type'),
+        1: (TType.STRING, 'message', False),
+        2: (TType.I32, 'type', False),
     }
 
     UNKNOWN = 0
