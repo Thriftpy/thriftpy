@@ -37,7 +37,7 @@ class SampleTracker(TrackerBase):
     def record(self, header, exception):
         db = dbm.open(db_file, 'w')
 
-        key = "%s:%d" % (header.request_id, header.seq)
+        key = "%s:%s" % (header.request_id, header.seq)
         db[key.encode("ascii")] = pickle.dumps(header.__dict__)
         db.close()
 
@@ -59,6 +59,7 @@ class Dispatcher(object):
         person = addressbook.Person(name="mary")
         with client(port=6098) as c:
             c.add(person)
+
         return True
 
     def get_phonenumbers(self, name, count):
@@ -67,7 +68,10 @@ class Dispatcher(object):
 
     def add(self, person):
         with client(port=6099) as c:
-            c.hello("jane")
+            c.get_phonenumbers("jane", 1)
+
+        with client(port=6099) as c:
+            c.ping()
         return True
 
     def get(self, name):
@@ -217,7 +221,7 @@ def test_tracker(server, dbm_db):
 
     assert data == {
         "request_id": request_id.decode("ascii").split(':')[0],
-        "seq": 0,
+        "seq": '1',
         "client": "test_client",
         "server": "test_server",
         "api": "ping",
@@ -233,17 +237,20 @@ def test_tracker_chain(server, server1, server2, dbm_db):
 
     db = dbm.open(db_file, 'r')
     headers = list(db.keys())
-    assert len(headers) == 3
+    assert len(headers) == 4
 
     headers.sort()
 
     header0 = pickle.loads(db[headers[0]])
     header1 = pickle.loads(db[headers[1]])
     header2 = pickle.loads(db[headers[2]])
+    header3 = pickle.loads(db[headers[3]])
 
     assert header0["request_id"] == header1["request_id"] == \
-        header2["request_id"] == headers[0].decode("ascii").split(':')[0]
-    assert header0["seq"] == 0 and header1["seq"] == 1 and header2["seq"] == 2
+        header2["request_id"] == header3["request_id"] == \
+        headers[0].decode("ascii").split(':')[0]
+    assert header0["seq"] == '1' and header1["seq"] == '1.1' and \
+        header2["seq"] == '1.1.1' and header3["seq"] == '1.1.2'
 
 
 def test_exception(server, dbm_db):
