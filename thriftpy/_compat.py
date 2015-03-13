@@ -118,3 +118,57 @@ def init_func_generator(spec):
     return types.FunctionType(new_code,
                               {"__builtins__": __builtins__},
                               argdefs=defaults)
+
+
+def calling_func_generator(partial, args, doc):
+    """Generate `def {methodname}` function based on TPayload.default_spec for a given service call
+
+    """
+    varnames, defaults = zip(*args.default_spec)
+
+    def func():
+        # The funciton is defined as a global in the __builtins__ associated with the function created later.
+        return __partial_internal(**locals())
+
+    code = func.__code__
+    if PY3:
+        new_code = types.CodeType(len(varnames),
+                                  0,
+                                  len(varnames),
+                                  code.co_stacksize,
+                                  code.co_flags,
+                                  code.co_code,
+                                  code.co_consts,
+                                  code.co_names,
+                                  varnames,
+                                  code.co_filename,
+                                  args.__name__.split('_args')[0],
+                                  code.co_firstlineno,
+                                  code.co_lnotab,
+                                  code.co_freevars,
+                                  code.co_cellvars)
+    else:
+        new_code = types.CodeType(len(varnames),
+                                  len(varnames),
+                                  code.co_stacksize,
+                                  code.co_flags,
+                                  code.co_code,
+                                  code.co_consts,
+                                  code.co_names,
+                                  varnames,
+                                  code.co_filename,
+                                  args.__name__.split('_args')[0],
+                                  code.co_firstlineno,
+                                  code.co_lnotab,
+                                  code.co_freevars,
+                                  code.co_cellvars)
+
+    # To keep our argument list nice and clean we make a copy of the builtins here and add the partial function to global
+    builtins = dict(__builtins__)
+    builtins['__partial_internal'] = partial
+    f = types.FunctionType(new_code,
+                            {"__builtins__": builtins},
+                            argdefs=defaults,
+                           )
+    f.__doc__ = doc
+    return f
