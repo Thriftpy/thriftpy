@@ -4,7 +4,7 @@
 struct RequestInfo {
     1: string request_id // used to identify a request
     2: string api // api name
-    3: i32 seq // sequence number
+    3: string seq // sequence number
     4: string client // client name
     5: string server // server name
     6: bool status // request status
@@ -17,7 +17,7 @@ struct RequestInfo {
  */
 struct RequestHeader {
     1: string request_id
-    2: i32 seq
+    2: string seq
 }
 
 /**
