@@ -15,6 +15,7 @@ class TrackerBase(object):
 
     def handle(self, header):
         ctx.header = header
+        ctx.counter = 0
 
     def gen_header(self, header):
         header.request_id = self.get_request_id()
