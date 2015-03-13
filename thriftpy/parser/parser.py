@@ -68,6 +68,11 @@ def p_sep(p):
     '''
 
 
+def p_sep_optional(p):
+    '''sep_optional : sep
+                    | '''
+
+
 def p_definition(p):
     '''definition : definition definition_unit_
                   |'''
@@ -113,7 +118,7 @@ def p_const(p):
 
 
 def p_iconst(p):
-    '''iconst : CONST field_type IDENTIFIER '=' const_value'''
+    '''iconst : CONST field_type IDENTIFIER '=' const_value sep_optional'''
     try:
         val = _cast(p[2])(p[5])
     except AssertionError:
@@ -139,8 +144,7 @@ def p_const_list(p):
 
 
 def p_const_list_seq(p):
-    '''const_list_seq : const_value sep const_list_seq
-                      | const_value const_list_seq
+    '''const_list_seq : const_value sep_optional const_list_seq
                       |'''
     _parse_seq(p)
 
@@ -151,8 +155,7 @@ def p_const_map(p):
 
 
 def p_const_map_seq(p):
-    '''const_map_seq : const_map_item sep const_map_seq
-                     | const_map_item const_map_seq
+    '''const_map_seq : const_map_item sep_optional const_map_seq
                      |'''
     _parse_seq(p)
 
@@ -225,8 +228,7 @@ def p_ienum(p):  # noqa
 
 
 def p_enum_seq(p):
-    '''enum_seq : enum_item sep enum_seq
-                | enum_item enum_seq
+    '''enum_seq : enum_item sep_optional enum_seq
                 |'''
     _parse_seq(p)
 
@@ -378,8 +380,7 @@ def p_ifunction(p):
 
 
 def p_function_seq(p):
-    '''function_seq : function sep function_seq
-                    | function function_seq
+    '''function_seq : function sep_optional function_seq
                     | function_seq
                     | doc
                     | function_seq doc
@@ -409,8 +410,7 @@ def p_function_type(p):
 
 
 def p_field_seq(p):
-    '''field_seq : field sep field_seq
-                 | field field_seq
+    '''field_seq : field sep_optional field_seq
                  | doc
                  | field_seq doc
                  | '''
