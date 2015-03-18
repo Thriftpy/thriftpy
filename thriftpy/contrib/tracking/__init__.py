@@ -71,13 +71,14 @@ class TTrackedClient(TClient):
             return super(TTrackedClient, self)._req(_api, *args, **kwargs)
 
         exception = None
+        status = False
+
         try:
             res = super(TTrackedClient, self)._req(_api, *args, **kwargs)
             status = True
             return res
-        except Exception as e:
+        except BaseException as e:
             exception = e
-            status = False
             raise
         finally:
             header_info = trace_thrift.RequestInfo(
