@@ -812,10 +812,10 @@ def _get_type_name(thrift_spec):
         elif sf_type == TType.MAP:
             k_name = _get_container_elem_typename(f_container_spec[0])
             v_name = _get_container_elem_typename(f_container_spec[0])
-            elem_name = '{}, {}'.format(k_name, v_name)
+            elem_name = '{0}, {1}'.format(k_name, v_name)
         else:
             raise ThriftParserError("Unexpected container type %s" % sf_type)
-        return '{}<{}>'.format(container_name, elem_name)
+        return '{0}<{1}>'.format(container_name, elem_name)
 
 
 def _doc_text_chunk(doc):
