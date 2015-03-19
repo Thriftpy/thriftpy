@@ -197,12 +197,23 @@ def dbm_db(request):
     request.addfinalizer(fin)
 
 
+@pytest.fixture
+def tracker_ctx(request):
+    def fin():
+        if hasattr(ctx, "header"):
+            del ctx.header
+        if hasattr(ctx, "counter"):
+            del ctx.counter
+
+    request.addfinalizer(fin)
+
+
 def test_negotiation(server):
     with client() as c:
         assert c._upgraded is True
 
 
-def test_tracker(server, dbm_db):
+def test_tracker(server, dbm_db, tracker_ctx):
     with client() as c:
         c.ping()
 
@@ -229,31 +240,27 @@ def test_tracker(server, dbm_db):
     }
 
 
-def test_tracker_chain(server, server1, server2, dbm_db):
+def test_tracker_chain(server, server1, server2, dbm_db, tracker_ctx):
     with client() as c:
         c.remove("jane")
+        c.hello("yes")
 
     time.sleep(0.2)
 
     db = dbm.open(db_file, 'r')
     headers = list(db.keys())
-    assert len(headers) == 4
+    assert len(headers) == 5
 
-    headers.sort()
+    headers = [pickle.loads(db[i]) for i in headers]
+    headers.sort(key=lambda x: x["seq"])
 
-    header0 = pickle.loads(db[headers[0]])
-    header1 = pickle.loads(db[headers[1]])
-    header2 = pickle.loads(db[headers[2]])
-    header3 = pickle.loads(db[headers[3]])
+    assert len(set([i["request_id"] for i in headers])) == 2
 
-    assert header0["request_id"] == header1["request_id"] == \
-        header2["request_id"] == header3["request_id"] == \
-        headers[0].decode("ascii").split(':')[0]
-    assert header0["seq"] == '1' and header1["seq"] == '1.1' and \
-        header2["seq"] == '1.1.1' and header3["seq"] == '1.1.2'
+    seqs = [i["seq"] for i in headers]
+    assert seqs == ['1', '1.1', '1.1.1', '1.1.2', '2']
 
 
-def test_exception(server, dbm_db):
+def test_exception(server, dbm_db, tracker_ctx):
     with pytest.raises(addressbook.PersonNotExistsError):
         with client() as c:
             c.get("jane")

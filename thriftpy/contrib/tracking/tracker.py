@@ -20,13 +20,14 @@ class TrackerBase(object):
     def gen_header(self, header):
         header.request_id = self.get_request_id()
 
-        if not hasattr(ctx, "header"):
-            header.seq = '1'
-        else:
-            if not hasattr(ctx, "counter"):
-                ctx.counter = 0
+        if not hasattr(ctx, "counter"):
+            ctx.counter = 0
 
-            ctx.counter += 1
+        ctx.counter += 1
+
+        if not hasattr(ctx, "header"):
+            header.seq = str(ctx.counter)
+        else:
             header.seq = "{prev_seq}.{cur_counter}".format(
                 prev_seq=ctx.header.seq, cur_counter=ctx.counter)
 
