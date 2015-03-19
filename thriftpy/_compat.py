@@ -167,7 +167,11 @@ def calling_func_generator(partial, args, doc):
                                   code.co_cellvars)
 
     # To keep our argument list nice and clean we make a copy of the builtins here and add the partial function to global
-    builtins = dict(__builtins__)
+    if isinstance(__builtins__, dict):
+        builtins = dict(__builtins__)
+    else:
+        builtins = dict(__builtins__.__dict__)
+
     builtins['__partial_internal'] = partial
     f = types.FunctionType(new_code,
                             {"__builtins__": builtins},
