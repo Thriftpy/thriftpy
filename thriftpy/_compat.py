@@ -124,7 +124,10 @@ def calling_func_generator(partial, args, doc):
     """Generate `def {methodname}` function based on TPayload.default_spec for a given service call
 
     """
-    varnames, defaults = zip(*args.default_spec)
+    if args.default_spec:
+        varnames, defaults = zip(*args.default_spec)
+    else:
+        varnames, defaults = (), ()
 
     def func():
         # The funciton is defined as a global in the __builtins__ associated with the function created later.
