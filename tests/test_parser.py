@@ -2,7 +2,7 @@
 
 from thriftpy.thrift import TType
 from thriftpy.parser import load
-from thriftpy.parser.exc import ThriftParserError
+from thriftpy.parser.exc import ThriftParserError, ThriftGrammerError
 
 
 def test_comments():
@@ -49,15 +49,21 @@ def test_e_type_error():
         load('parser-cases/e_type_error_0.thrift')
     except ThriftParserError as e:
         assert 'Type error' in str(e)
+    else:
+        raise
     try:
         load('parser-cases/e_type_error_1.thrift')
     except ThriftParserError as e:
         assert 'Type error' in str(e)
+    else:
+        raise
 
     try:
         load('parser-cases/e_type_error_2.thrift')
     except ThriftParserError as e:
         assert 'Type error' in str(e)
+    else:
+        raise
 
 
 def test_value_ref():
@@ -79,16 +85,24 @@ def test_e_value_ref():
         load('parser-cases/e_value_ref_0.thrift')
     except ThriftParserError as e:
         pass
+    else:
+        raise
+
     try:
         load('parser-cases/e_value_ref_1.thrift')
     except ThriftParserError as e:
-        assert str(e) == 'No named enum value found named \'Lang.Python\''
+        assert str(e) == ('Couldn\'t find a named value in enum Lang '
+                          'for value 3')
+    else:
+        raise
 
     try:
         load('parser-cases/e_value_ref_2.thrift')
     except ThriftParserError as e:
         assert str(e) == \
-            'No named enum value or constant found named \'Cookbook\''
+            'No enum value or constant found named \'Cookbook\''
+    else:
+        raise
 
 
 def test_enums():
@@ -103,11 +117,9 @@ def test_enums():
     assert thrift.Country.US == 1
     assert thrift.Country.UK == 2
     assert thrift.Country.CN == 3
-    assert thrift.Country._named_values == set([1])
     assert thrift.OS.OSX == 0
     assert thrift.OS.Win == 3
     assert thrift.OS.Linux == 4
-    assert thrift.OS._named_values == set([3])
 
 
 def test_structs():
@@ -143,12 +155,16 @@ def test_e_structs():
     except ThriftParserError as e:
         assert str(e) == \
             'Field \'name\' was required to create constant for type \'User\''
+    else:
+        raise
 
     try:
         load('parser-cases/e_structs_1.thrift')
     except ThriftParserError as e:
         assert str(e) == \
             'No field named \'avatar\' was found in struct of type \'User\''
+    else:
+        raise
 
 
 def test_service():
@@ -189,6 +205,8 @@ def test_e_service_extends():
         load('parser-cases/e_service_extends_0.thrift')
     except ThriftParserError as e:
         assert 'Can\'t find service' in str(e)
+    else:
+        raise
 
 
 def test_e_dead_include():
@@ -196,3 +214,14 @@ def test_e_dead_include():
         load('parser-cases/e_dead_include_0.thrift')
     except ThriftParserError as e:
         assert 'Dead including' in str(e)
+    else:
+        raise
+
+
+def test_e_grammer_error_at_eof():
+    try:
+        load('parser-cases/e_grammer_error_at_eof.thrift')
+    except ThriftGrammerError as e:
+        assert str(e) == 'Grammer error at EOF'
+    else:
+        raise

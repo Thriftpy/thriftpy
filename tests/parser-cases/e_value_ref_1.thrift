@@ -4,4 +4,4 @@ enum Lang {
     Ruby = 2,
 }
 
-const i32 my_lang = Lang.Python;
+const Lang my_lang = 3
