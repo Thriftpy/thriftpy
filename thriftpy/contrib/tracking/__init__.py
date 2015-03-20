@@ -89,7 +89,8 @@ class TTrackedClient(TClient):
                 api=_api,
                 status=status,
                 start=self.send_start,
-                end=int(time.time() * 1000)
+                end=int(time.time() * 1000),
+                annotation=self.tracer.annotation
             )
             self.tracer.record(header_info, exception)
 

@@ -10,6 +10,7 @@ struct RequestInfo {
     6: bool status // request status
     7: i64 start // start timestamp
     8: i64 end // end timestamp
+    9: map<string, string> annotation // application-level key-value datas
 }
 
 /*
