@@ -236,7 +236,8 @@ def test_tracker(server, dbm_db, tracker_ctx):
         "client": "test_client",
         "server": "test_server",
         "api": "ping",
-        "status": True
+        "status": True,
+        "annotation": {}
     }
 
 
@@ -302,3 +303,24 @@ def test_request_id_func():
     header2 = trace_thrift.RequestHeader()
     tracker.gen_header(header2)
     assert header2.request_id == "hello"
+
+
+def test_annotation(server, dbm_db, tracker_ctx):
+    with client() as c:
+        with SampleTracker.annotate(ann="value"):
+            c.ping()
+
+        with SampleTracker.annotate() as ann:
+            ann.update({"sig": "c.hello()", "user_id": "125"})
+            c.hello()
+
+    time.sleep(0.2)
+
+    db = dbm.open(db_file, 'r')
+    headers = list(db.keys())
+
+    data = [pickle.loads(db[i]) for i in headers]
+    data.sort(key=lambda x: x["seq"])
+
+    assert data[0]["annotation"] == {"ann": "value"} and \
+        data[1]["annotation"] == {"sig": "c.hello()", "user_id": "125"}

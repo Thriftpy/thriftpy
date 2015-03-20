@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import
 
+import contextlib
 import threading
 import uuid
 
@@ -33,6 +34,19 @@ class TrackerBase(object):
 
     def record(self, header, exception):
         pass
+
+    @classmethod
+    @contextlib.contextmanager
+    def annotate(cls, **kwargs):
+        ctx.annotation = kwargs
+        try:
+            yield ctx.annotation
+        finally:
+            del ctx.annotation
+
+    @property
+    def annotation(self):
+        return ctx.annotation if hasattr(ctx, "annotation") else {}
 
     def get_request_id(self):
         if hasattr(ctx, "header"):
