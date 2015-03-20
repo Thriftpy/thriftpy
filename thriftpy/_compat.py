@@ -132,7 +132,7 @@ def calling_func_generator(partial, args, doc):
     def func():
         # The funciton is defined as a global in the __builtins__ associated with the function created later.
         # This ugly way of grabbing the variable out is needed since pypy optimizes the name lookup away.
-        return __builtins__['__partial_internal__'](**locals())
+        return __builtins__['__partial_internal'](**locals())
 
     code = func.__code__
     if PY3:
