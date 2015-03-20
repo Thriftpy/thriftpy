@@ -16,6 +16,8 @@ from ..thrift import gen_init, TType, TPayload, TException
 
 
 def p_error(p):
+    if p is None:
+        raise ThriftGrammerError('Grammer error at EOF')
     raise ThriftGrammerError('Grammer error %r at line %d' %
                              (p.value, p.lineno))
 
@@ -144,18 +146,11 @@ def p_const_ref(p):
             raise ThriftParserError('Cann\'t find name %r at line %d'
                                     % (p[1], p.lineno(1)))
 
-    if _get_ttype(father) == TType.I32:
-        # father is enum and child is its named value
-        if child in father._named_values:
-            p[0] = child
-        else:
-            raise ThriftParserError('No named enum value found named %r'
-                                    % p[1])
-    elif _get_ttype(child) is None:
-        # child is a constant
+    if _get_ttype(child) is None or _get_ttype(father) == TType.I32:
+        # child is a constant or enum value
         p[0] = child
     else:
-        raise ThriftParserError('No named enum value or constant found '
+        raise ThriftParserError('No enum value or constant found '
                                 'named %r' % p[1])
 
 
@@ -567,7 +562,7 @@ def _cast_enum(t):
 
     def __cast_enum(v):
         assert isinstance(v, int)
-        if v in getattr(t[1], '_named_values'):
+        if v in t[1]._VALUES_TO_NAMES:
             return v
         raise ThriftParserError('Couldn\'t find a named value in enum '
                                 '%s for value %d' % (t[1].__name__, v))
@@ -603,11 +598,6 @@ def _cast_struct(t):   # struct/exception/union
 def _make_enum(name, kvs):
     attrs = {'__module__': thrift_stack[-1].__name__, '_ttype': TType.I32}
     cls = type(name, (object, ), attrs)
-    named_values = set()
-    for key, val in kvs:
-        if val is not None:
-            named_values.add(val)
-    setattr(cls, '_named_values', named_values)
 
     _values_to_names = {}
     _names_to_values = {}
