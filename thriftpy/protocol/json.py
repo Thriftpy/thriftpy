@@ -117,7 +117,10 @@ def struct_to_json(val):
             field_type, field_name = field_spec
             field_type_spec = None
         else:
-            field_type, field_name, field_type_spec = field_spec
+            try:
+                field_type, field_name, field_type_spec = field_spec
+            except ValueError:
+                field_type, field_name, clazz, field_type_spec = field_spec
 
         v = getattr(val, field_name)
         if v is None:
@@ -134,7 +137,10 @@ def struct_to_obj(val, obj):
             field_type, field_name = field_spec
             field_type_spec = None
         else:
-            field_type, field_name, field_type_spec = field_spec
+            try:
+                field_type, field_name, field_type_spec = field_spec
+            except ValueError:
+                field_type, field_name, clazz, field_type_spec = field_spec
 
         if field_name in val:
             setattr(obj, field_name,

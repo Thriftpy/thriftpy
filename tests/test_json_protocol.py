@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from thriftpy.protocol import TJSONProtocol
+from thriftpy.protocol import json
 from thriftpy.thrift import TPayload, TType
 from thriftpy.transport import TMemoryBuffer
 from thriftpy._compat import u
+from thriftpy import load
 
 import thriftpy.protocol.json as proto
 
@@ -14,6 +16,15 @@ class TItem(TPayload):
         2: (TType.LIST, "phones", (TType.STRING)),
     }
     default_spec = [("id", None), ("phones", None)]
+
+
+def test_nested_structures():
+    addressbook = load("addressbook.thrift", "addressbook_thrift")
+    book = addressbook.PhoneNumber(
+        type=addressbook.PhoneType.HOME,
+        number="911")
+
+    assert {'type': 1, 'number': '911'} == json.struct_to_json(book)
 
 
 def test_map_to_obj():
