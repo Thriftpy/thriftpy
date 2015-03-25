@@ -16,19 +16,45 @@ from ...thrift import TClient, TApplicationException, TMessageType, \
     TProcessor, TType
 from ...parser import load
 
-trace_method = "__thriftpy_tracing_method_name__v2"
-trace_thrift = load(os.path.join(os.path.dirname(__file__), "tracking.thrift"))
+track_method = "__thriftpy_tracing_method_name__v2"
+track_thrift = load(os.path.join(os.path.dirname(__file__), "tracking.thrift"))
 
 
 __all__ = ["TTrackedClient", "TTrackedProcessor", "TrackerBase",
            "ConsoleTracker"]
 
 
+class RequestInfo(object):
+    def __init__(self, request_id, api, seq, client, server, status, start,
+                 end, annotation):
+        """Used to store call info.
+
+        :request_id: used to identity a request
+        :api: api name
+        :seq: sequence number
+        :client: client name
+        :server: server name
+        :status: request status
+        :start: start timestamp
+        :end: end timestamp
+        :annotation: application-level key-value datas
+        """
+        self.request_id = request_id
+        self.api = api
+        self.seq = seq
+        self.client = client
+        self.server = server
+        self.status = status
+        self.start = start
+        self.end = end
+        self.annotation = annotation
+
+
 class TTrackedClient(TClient):
     def __init__(self, tracker_handler, *args, **kwargs):
         super(TTrackedClient, self).__init__(*args, **kwargs)
 
-        self.tracer = tracker_handler
+        self.tracker = tracker_handler
         self._upgraded = False
 
         try:
@@ -39,9 +65,9 @@ class TTrackedClient(TClient):
                 raise
 
     def _negotiation(self):
-        self._oprot.write_message_begin(trace_method, TMessageType.CALL,
+        self._oprot.write_message_begin(track_method, TMessageType.CALL,
                                         self._seqid)
-        args = trace_thrift.UpgradeArgs()
+        args = track_thrift.UpgradeArgs()
         args.write(self._oprot)
         self._oprot.write_message_end()
         self._oprot.trans.flush()
@@ -53,14 +79,14 @@ class TTrackedClient(TClient):
             self._iprot.read_message_end()
             raise x
         else:
-            result = trace_thrift.UpgradeReply()
+            result = track_thrift.UpgradeReply()
             result.read(self._iprot)
             self._iprot.read_message_end()
 
     def _send(self, _api, **kwargs):
         if self._upgraded:
-            self._header = trace_thrift.RequestHeader()
-            self.tracer.gen_header(self._header)
+            self._header = track_thrift.RequestHeader()
+            self.tracker.gen_header(self._header)
             self._header.write(self._oprot)
 
         self.send_start = int(time.time() * 1000)
@@ -81,46 +107,46 @@ class TTrackedClient(TClient):
             exception = e
             raise
         finally:
-            header_info = trace_thrift.RequestInfo(
+            header_info = RequestInfo(
                 request_id=self._header.request_id,
                 seq=self._header.seq,
-                client=self.tracer.client,
-                server=self.tracer.server,
+                client=self.tracker.client,
+                server=self.tracker.server,
                 api=_api,
                 status=status,
                 start=self.send_start,
                 end=int(time.time() * 1000),
-                annotation=self.tracer.annotation
+                annotation=self.tracker.annotation
             )
-            self.tracer.record(header_info, exception)
+            self.tracker.record(header_info, exception)
 
 
 class TTrackedProcessor(TProcessor):
     def __init__(self, tracker_handler, *args, **kwargs):
         super(TTrackedProcessor, self).__init__(*args, **kwargs)
 
-        self.tracer = tracker_handler
+        self.tracker = tracker_handler
         self._upgraded = False
 
     def process(self, iprot, oprot):
         if not self._upgraded:
             res = self._try_upgrade(iprot)
         else:
-            request_header = trace_thrift.RequestHeader()
+            request_header = track_thrift.RequestHeader()
             request_header.read(iprot)
-            self.tracer.handle(request_header)
+            self.tracker.handle(request_header)
             res = super(TTrackedProcessor, self).process_in(iprot)
 
         self._do_process(iprot, oprot, *res)
 
     def _try_upgrade(self, iprot):
         api, msg_type, seqid = iprot.read_message_begin()
-        if msg_type == TMessageType.CALL and api == trace_method:
+        if msg_type == TMessageType.CALL and api == track_method:
             self._upgraded = True
 
-            args = trace_thrift.UpgradeArgs()
+            args = track_thrift.UpgradeArgs()
             args.read(iprot)
-            result = trace_thrift.UpgradeReply()
+            result = track_thrift.UpgradeReply()
             result.oneway = False
 
             def call():
