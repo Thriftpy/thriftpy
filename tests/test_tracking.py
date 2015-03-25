@@ -18,7 +18,7 @@ except ImportError:
 import pytest
 
 from thriftpy.contrib.tracking import TTrackedProcessor, TTrackedClient, \
-    TrackerBase, trace_thrift
+    TrackerBase, track_thrift
 from thriftpy.contrib.tracking.tracker import ctx
 
 from thriftpy.thrift import TProcessorFactory, TClient, TProcessor
@@ -293,14 +293,14 @@ def test_tracked_client_not_tracked_server(not_tracked_server):
 def test_request_id_func():
     ctx.__dict__.clear()
 
-    header = trace_thrift.RequestHeader()
+    header = track_thrift.RequestHeader()
     header.request_id = "hello"
     header.seq = 0
 
     tracker = TrackerBase()
     tracker.handle(header)
 
-    header2 = trace_thrift.RequestHeader()
+    header2 = track_thrift.RequestHeader()
     tracker.gen_header(header2)
     assert header2.request_id == "hello"
 
