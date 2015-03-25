@@ -113,11 +113,12 @@ def list_to_json(val, spec):
 def struct_to_json(val):
     outobj = {}
     for fid, field_spec in val.thrift_spec.items():
-        if len(field_spec) == 2:
-            field_type, field_name = field_spec
+        field_type, field_name = field_spec[:2]
+
+        if len(field_spec) <= 3:
             field_type_spec = None
         else:
-            field_type, field_name, field_type_spec = field_spec
+            field_type_spec = field_spec[2]
 
         v = getattr(val, field_name)
         if v is None:
@@ -130,11 +131,12 @@ def struct_to_json(val):
 
 def struct_to_obj(val, obj):
     for fid, field_spec in obj.thrift_spec.items():
-        if len(field_spec) == 2:
-            field_type, field_name = field_spec
+        field_type, field_name = field_spec[:2]
+
+        if len(field_spec) <= 3:
             field_type_spec = None
         else:
-            field_type, field_name, field_type_spec = field_spec
+            field_type_spec = field_spec[2]
 
         if field_name in val:
             setattr(obj, field_name,

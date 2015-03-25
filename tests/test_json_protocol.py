@@ -10,8 +10,8 @@ import thriftpy.protocol.json as proto
 
 class TItem(TPayload):
     thrift_spec = {
-        1: (TType.I32, "id"),
-        2: (TType.LIST, "phones", (TType.STRING)),
+        1: (TType.I32, "id", False),
+        2: (TType.LIST, "phones", TType.STRING, False),
     }
     default_spec = [("id", None), ("phones", None)]
 
@@ -98,7 +98,7 @@ def test_json_proto_api_read():
 def test_unicode_string():
     class Foo(TPayload):
         thrift_spec = {
-            1: (TType.STRING, "name")
+            1: (TType.STRING, "name", False)
         }
         default_spec = [("name", None)]
 
