@@ -225,3 +225,12 @@ def test_e_grammer_error_at_eof():
         assert str(e) == 'Grammer error at EOF'
     else:
         raise
+
+
+def test_e_use_thrift_reserved_keywords():
+    try:
+        load('parser-cases/e_use_thrift_reserved_keywords.thrift')
+    except ThriftParserError as e:
+        assert 'Cannot use reserved language keyword' in str(e)
+    else:
+        raise
