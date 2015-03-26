@@ -9,8 +9,10 @@ import time
 import pytest
 
 import thriftpy
-from thriftpy.protocol import TBinaryProtocolFactory
-from thrift.protocol import TMultiplexingProtocolFactory
+from thriftpy.protocol import (
+    TBinaryProtocolFactory,
+    TMultiplexingProtocolFactory
+    )
 from thriftpy.rpc import client_context
 from thriftpy.server import TThreadedServer
 from thriftpy.thrift import TProcessor, TMultiplexingProcessor

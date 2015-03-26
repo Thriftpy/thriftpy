@@ -10,6 +10,8 @@ from thriftpy.transport import TBufferedTransportFactory, TServerSocket
 dd_thrift = thriftpy.load("dingdong.thrift", module_name="dd_thrift")
 pp_thrift = thriftpy.load("pingpong.thrift", module_name="pp_thrift")
 
+DD_SERVICE_NAME = "dd_thrift"
+PP_SERVICE_NAME = "pp_thrift"
 
 class DingDispatcher(object):
     def ding(self):
@@ -28,8 +30,8 @@ def main():
     pp_proc = TProcessor(pp_thrift.PingService, PingDispatcher())
 
     mux_proc = TMultiplexingProcessor()
-    mux_proc.register_processor("dd_thrift", dd_proc)
-    mux_proc.register_processor("pp_thrift", pp_proc)
+    mux_proc.register_processor(DD_SERVICE_NAME, dd_proc)
+    mux_proc.register_processor(PP_SERVICE_NAME, pp_proc)
 
     server = TThreadedServer(mux_proc, TServerSocket(),
                              iprot_factory=TBinaryProtocolFactory(),

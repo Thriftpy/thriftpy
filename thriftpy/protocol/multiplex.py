@@ -21,7 +21,7 @@ class TMultiplexingProtocol(object):
 
     def write_message_begin(self, name, ttype, seqid):
         self.proto.write_message_begin(
-            self.service_name + TMultiplexingProcessor.Separator + name,
+            self.service_name + TMultiplexingProcessor.SEPARATOR + name,
             ttype, seqid)
 
 

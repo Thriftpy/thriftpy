@@ -247,7 +247,7 @@ class TProcessor(object):
 
 
 class TMultiplexingProcessor(TProcessor):
-    Separator = ":"
+    SEPARATOR = ":"
 
     processors = {}
     service_map = {}
@@ -268,7 +268,7 @@ class TMultiplexingProcessor(TProcessor):
     def process_in(self, iprot):
         api, type, seqid = iprot.read_message_begin()
 
-        service_name, api = api.split(TMultiplexingProcessor.Separator)
+        service_name, api = api.split(TMultiplexingProcessor.SEPARATOR)
 
         if service_name not in self.processors:
             iprot.skip(TType.STRUCT)
