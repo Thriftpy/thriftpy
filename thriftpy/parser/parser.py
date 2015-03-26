@@ -8,6 +8,7 @@ IDL Ref:
 from __future__ import absolute_import
 
 import os
+from textwrap import TextWrapper, dedent
 import types
 from ply import lex, yacc
 from .lexer import *  # noqa
@@ -38,7 +39,8 @@ def p_header_unit_(p):
 
 def p_header_unit(p):
     '''header_unit : include
-                   | namespace'''
+                   | namespace
+                   | doc'''
 
 
 def p_include(p):
@@ -68,6 +70,11 @@ def p_sep(p):
     '''
 
 
+def p_sep_optional(p):
+    '''sep_optional : sep
+                    | '''
+
+
 def p_definition(p):
     '''definition : definition definition_unit_
                   |'''
@@ -81,18 +88,45 @@ def p_definition_unit_(p):
 def p_definition_unit(p):
     '''definition_unit : const
                        | ttype
+                       | doc
     '''
 
 
-def p_const(p):
-    '''const : CONST field_type IDENTIFIER '=' const_value'''
+def p_doc(p):
+    '''doc : DOCTEXT doc
+           | DOCTEXT '''
+    if len(p) == 3:
+        p[0] = p[2]
+    else:
+        p[0] = p[1]
 
+
+def p_const(p):
+    '''const : doc iconst
+             | iconst '''
+    if len(p) == 3:
+        doc = p[1]
+        const = p[2]
+    else:
+        doc = None
+        const = p[1]
+    setattr(thrift_stack[-1], const[0], const[1])
+    if doc is not None:
+        const_doc = getattr(thrift_stack[-1], '_const_doc', None)
+        if const_doc is None:
+            const_doc = {}
+            setattr(thrift_stack[-1], '_const_doc', const_doc)
+        const_doc[const[0]] = doc
+
+
+def p_iconst(p):
+    '''iconst : CONST field_type IDENTIFIER '=' const_value sep_optional'''
     try:
         val = _cast(p[2])(p[5])
     except AssertionError:
         raise ThriftParserError('Type error for constant %s at line %d' %
                                 (p[3], p.lineno(3)))
-    setattr(thrift_stack[-1], p[3], val)
+    p[0] = [p[3], val]
 
 
 def p_const_value(p):
@@ -112,8 +146,7 @@ def p_const_list(p):
 
 
 def p_const_list_seq(p):
-    '''const_list_seq : const_value sep const_list_seq
-                      | const_value const_list_seq
+    '''const_list_seq : const_value sep_optional const_list_seq
                       |'''
     _parse_seq(p)
 
@@ -124,8 +157,7 @@ def p_const_map(p):
 
 
 def p_const_map_seq(p):
-    '''const_map_seq : const_map_item sep const_map_seq
-                     | const_map_item const_map_seq
+    '''const_map_seq : const_map_item sep_optional const_map_seq
                      |'''
     _parse_seq(p)
 
@@ -164,24 +196,49 @@ def p_ttype(p):
 
 
 def p_typedef(p):
-    '''typedef : TYPEDEF definition_type IDENTIFIER'''
+    '''typedef : doc itypedef
+               | itypedef '''
+
+
+def p_itypedef(p):
+    '''itypedef : TYPEDEF field_type IDENTIFIER'''
     setattr(thrift_stack[-1], p[3], p[2])
 
 
-def p_enum(p):  # noqa
-    '''enum : ENUM IDENTIFIER '{' enum_seq '}' '''
-    setattr(thrift_stack[-1], p[2], _make_enum(p[2], p[4]))
+def p_enum(p):
+    '''enum : ienum
+            | doc ienum '''
+    if len(p) == 3:
+        ienum = p[2]
+        doctext = p[1]
+    else:
+        ienum = p[1]
+        doctext = ''
+    setattr(thrift_stack[-1], ienum[2], _make_enum(ienum[2], ienum[4], doctext=doctext))
+
+
+def p_ienum(p):  # noqa
+    '''ienum : ENUM IDENTIFIER '{' enum_seq '}' '''
+    p[0] = [x.value for x in p.slice[0:]]
 
 
 def p_enum_seq(p):
-    '''enum_seq : enum_item sep enum_seq
-                | enum_item enum_seq
+    '''enum_seq : enum_item sep_optional enum_seq
                 |'''
     _parse_seq(p)
 
 
 def p_enum_item(p):
-    '''enum_item : IDENTIFIER '=' INTCONSTANT
+    '''enum_item : ienum_item
+                 | doc ienum_item '''
+    if len(p) == 3:
+        p[0] = p[2]
+    else:
+        p[0] = p[1]
+
+
+def p_ienum_item(p):
+    '''ienum_item : IDENTIFIER '=' INTCONSTANT
                  | IDENTIFIER
                  |'''
     if len(p) == 4:
@@ -191,48 +248,113 @@ def p_enum_item(p):
 
 
 def p_struct(p):
-    '''struct : STRUCT IDENTIFIER '{' field_seq '}' '''
-    setattr(thrift_stack[-1], p[2], _make_struct(p[2], p[4]))
+    '''struct : istruct
+              | doc istruct '''
+
+    if len(p) == 3:
+        struct = p[2]
+        doctext = p[1]
+    else:
+        struct = p[1]
+        doctext = ''
+
+    setattr(thrift_stack[-1], struct[2], _make_struct(struct[2], struct[4], doctext=doctext))
+
+
+def p_istruct(p):
+    '''istruct : STRUCT IDENTIFIER '{' field_seq '}' '''
+    p[0] = [x.value for x in p.slice[0:]]
 
 
 def p_union(p):
-    '''union : UNION IDENTIFIER '{' field_seq '}' '''
-    setattr(thrift_stack[-1], p[2], _make_struct(p[2], p[4]))
+    '''union : doc iunion
+             | iunion '''
+    if len(p) == 3:
+        iunion = p[2]
+        doctext = p[1]
+    else:
+        iunion = p[1]
+        doctext = ''
+    setattr(thrift_stack[-1], iunion[2], _make_struct(iunion[2], iunion[4], doctext=doctext))
+
+
+def p_iunion(p):
+    '''iunion : UNION IDENTIFIER '{' field_seq '}' '''
+    p[0] = [x.value for x in p.slice[0:]]
 
 
 def p_exception(p):
-    '''exception : EXCEPTION IDENTIFIER '{' field_seq '}' '''
-    setattr(thrift_stack[-1], p[2], _make_struct(p[2], p[4],
-                                                 base_cls=TException))
+    '''exception : iexception
+                 | doc iexception '''
+    if len(p) == 3:
+        exceptdef  = p[2]
+        doctext = p[1]
+    else:
+        exceptdef  = p[1]
+        doctext = ''
+
+    setattr(thrift_stack[-1], exceptdef[0], _make_struct(exceptdef[0], exceptdef[1],
+                                                 base_cls=TException, doctext=doctext))
+
+def p_iexception(p):
+    '''iexception : EXCEPTION IDENTIFIER '{' field_seq '}' '''
+    p[0] = [p[2], p[4]]
 
 
 def p_service(p):
-    '''service : SERVICE IDENTIFIER '{' function_seq '}'
-               | SERVICE IDENTIFIER EXTENDS IDENTIFIER '{' function_seq '}'
-    '''
+    '''service : doc iservice
+               | iservice '''
     thrift = thrift_stack[-1]
 
-    if len(p) == 8:
+    if len(p) == 3:
+        doc = p[1]
+        svc = p[2]
+    else:
+        doc = ''
+        svc = p[1]
+
+    if len(svc) == 8:
         extends = thrift
-        for name in p[4].split('.'):
+        for name in svc[4].split('.'):
             extends = getattr(extends, name, None)
             if extends is None:
                 raise ThriftParserError('Can\'t find service %r for '
                                         'service %r to extend' %
-                                        (p[4], p[2]))
+                                        (svc[4], svc[2]))
 
         if not hasattr(extends, 'thrift_services'):
-            raise ThriftParserError('Can\'t extends %r, not a service'
-                                    % p[4])
+            raise ThriftParserError("Can't extends %r, not a service"
+                                    % p[svc])
 
     else:
         extends = None
 
-    setattr(thrift, p[2], _make_service(p[2], p[len(p) - 2], extends))
+    setattr(thrift, svc[2], _make_service(svc[2], svc[len(svc) - 2], extends, docstring=doc))
+
+
+def p_iservice(p):
+    '''iservice : SERVICE IDENTIFIER '{' function_seq '}'
+               | SERVICE IDENTIFIER EXTENDS IDENTIFIER '{' function_seq '}'
+    '''
+    p[0] = [x.value for x in p.slice[0:]]
 
 
 def p_function(p):
-    '''function : ONEWAY function_type IDENTIFIER '(' field_seq ')' throws
+    '''function : doc ifunction
+                | ifunction '''
+    if len(p) == 3:
+        ifunction = p[2]
+        doc = p[1]
+    else:
+        ifunction = p[1]
+        doc = ''
+    ifunction.append(doc)
+    p[0] = ifunction
+
+
+
+def p_ifunction(p):
+    '''ifunction : ONEWAY function_type IDENTIFIER '(' field_seq ')' throws
                 | ONEWAY function_type IDENTIFIER '(' field_seq ')'
                 | function_type IDENTIFIER '(' field_seq ')' throws
                 | function_type IDENTIFIER '(' field_seq ')' '''
@@ -253,10 +375,19 @@ def p_function(p):
 
 
 def p_function_seq(p):
-    '''function_seq : function sep function_seq
-                    | function function_seq
+    '''function_seq : function sep_optional function_seq
+                    | function_seq
+                    | doc
+                    | function_seq doc
                     |'''
-    _parse_seq(p)
+    if (len(p) == 2) and (p.slice[1].type == 'doc'):
+        p[0] = [p[0]]
+    else:
+        # Rule to deal with trailing doc
+        if (len(p) == 3) and (p.slice[2].type == 'doc'):
+            _parse_seq(p[:2])
+        else:
+            _parse_seq(p)
 
 
 def p_throws(p):
@@ -274,15 +405,37 @@ def p_function_type(p):
 
 
 def p_field_seq(p):
-    '''field_seq : field sep field_seq
-                 | field field_seq
-                 |'''
-    _parse_seq(p)
+    '''field_seq : field sep_optional field_seq
+                 | doc
+                 | field_seq doc
+                 | '''
+    if (len(p) == 2) and (p.slice[1].type == 'doc'):
+        p[0] = [p[0]]
+    else:
+        # Rule to deal with trailing doc
+        if (len(p) == 3) and (p.slice[2].type == 'doc'):
+            _parse_seq(p[:2])
+        else:
+            _parse_seq(p)
 
 
 def p_field(p):
-    '''field : field_id field_req field_type IDENTIFIER
-             | field_id field_req field_type IDENTIFIER '=' const_value'''
+    '''field : doc ifield
+             | ifield '''
+    if len(p) == 3:
+        doctext = p[1]
+        ifield = p[2]
+    else:
+        doctext = ''
+        ifield = p[1]
+    ifield.append(doctext)
+    p[0] = ifield
+
+
+def p_ifield(p):
+    '''ifield : field_id field_req field_type IDENTIFIER
+             | field_id field_req field_type IDENTIFIER '=' const_value
+             '''
 
     if len(p) == 7:
         try:
@@ -595,8 +748,8 @@ def _cast_struct(t):   # struct/exception/union
     return __cast_struct
 
 
-def _make_enum(name, kvs):
-    attrs = {'__module__': thrift_stack[-1].__name__, '_ttype': TType.I32}
+def _make_enum(name, kvs, doctext=''):
+    attrs = {'__module__': thrift_stack[-1].__name__, '_ttype': TType.I32, '__doc__': doctext}
     cls = type(name, (object, ), attrs)
 
     _values_to_names = {}
@@ -619,59 +772,167 @@ def _make_enum(name, kvs):
     return cls
 
 
+def _get_container_elem_typename(container_spec):
+    if isinstance(container_spec, tuple):
+        v_type, v_spec = container_spec[0], container_spec[1]
+    else:
+        v_type, v_spec = container_spec, None
+
+    return _get_type_name((v_type, '', v_spec, True))
+
+
+def _get_type_name(thrift_spec):
+
+    if len(thrift_spec) == 3:
+        sf_type, f_name, f_req = thrift_spec
+        f_container_spec = None
+    else:
+        sf_type, f_name, f_container_spec, f_req = thrift_spec
+
+    if sf_type == TType.STRUCT:
+        return str(f_container_spec)
+    elif (sf_type < TType.STRUCT) or (sf_type == TType.UTF8) or (sf_type == TType.UTF16):
+        # Primitive
+        return str(TType._VALUES_TO_NAMES[sf_type]).capitalize()
+    else:
+        # Complex type
+        container_name = TType._VALUES_TO_NAMES[sf_type].capitalize()
+        if (sf_type == TType.LIST) or (sf_type == TType.SET):
+            elem_name = _get_container_elem_typename(f_container_spec)
+        elif sf_type == TType.MAP:
+            k_name = _get_container_elem_typename(f_container_spec[0])
+            v_name = _get_container_elem_typename(f_container_spec[0])
+            elem_name = '{0}, {1}'.format(k_name, v_name)
+        else:
+            raise ThriftParserError("Unexpected container type %s" % sf_type)
+        return '{0}<{1}>'.format(container_name, elem_name)
+
+
+def _doc_text_chunk(doc):
+    out = []
+    for elem in doc.split('\n'):
+        if elem:
+            out.append(elem)
+        else:
+            yield '\n'.join(out)
+            out = []
+    if len(out):
+        yield '\n'.join(out)
+
+
+def _doc_reformat_par(doc, tw):
+    for c in _doc_text_chunk(doc):
+        yield '\n'.join(tw.wrap(c))
+
+
+def _docstring_reformat(doc, tw):
+    return '\n\n'.join(list(_doc_reformat_par(doc, tw)))
+
+
+def _make_field_docstring(field, tw=TextWrapper(initial_indent=' '*4, subsequent_indent=' '*4, width=110)):
+    name = field[3]
+    ttype = field[2]
+    typespec = _ttype_spec(ttype, field[3], field[1])
+
+    type_string = _get_type_name(typespec)
+
+    if len(field) == 6:
+        _field_doc = field[5]
+    else:
+        _field_doc = ''
+    doc = name + ' : ' + type_string + '\n' + _docstring_reformat(_field_doc, tw)
+    return doc.rstrip()
+
+
 def _make_struct(name, fields, ttype=TType.STRUCT, base_cls=TPayload,
-                 _gen_init=True):
+                 _gen_init=True, doctext='', field_header='Parameters'):
     attrs = {'__module__': thrift_stack[-1].__name__, '_ttype': ttype}
     cls = type(name, (base_cls, ), attrs)
     thrift_spec = {}
     default_spec = []
     _tspec = {}
+    _doc = []
 
     for field in fields:
+        if field is None:
+            continue
         ttype = field[2]
         thrift_spec[field[0]] = _ttype_spec(ttype, field[3], field[1])
         default_spec.append((field[3], field[4]))
         _tspec[field[3]] = field[1], ttype
+        _doc.append(_make_field_docstring(field))
+
+    #TODO : Append doctext for class memnbers
+
     setattr(cls, 'thrift_spec', thrift_spec)
     setattr(cls, 'default_spec', default_spec)
     setattr(cls, '_tspec', _tspec)
+
+    if len(_doc):
+        doctext += dedent('''
+
+            {field_header}
+            {line}
+            '''.format(field_header=field_header, line='-'* len(field_header))) + '\n'.join(_doc)
+
+    setattr(cls, '__doc__', doctext)
     if _gen_init:
         gen_init(cls, thrift_spec, default_spec)
     return cls
 
 
-def _make_service(name, funcs, extends):
+def _make_service(name, funcs, extends, docstring=''):
+    if (extends is not None) and (not docstring):
+        docstring = extends.__doc__
+
     if extends is None:
         extends = object
 
-    attrs = {'__module__': thrift_stack[-1].__name__}
+    attrs = {'__module__': thrift_stack[-1].__name__, '__doc__': docstring}
     cls = type(name, (extends, ), attrs)
     thrift_services = []
+    thrift_services_doc = {}
 
     for func in funcs:
+        if func is None:
+            continue
         func_name = func[2]
         # args payload cls
         args_name = '%s_args' % func_name
         args_fields = func[3]
-        args_cls = _make_struct(args_name, args_fields)
+        #print(func)
+        doctext = func[5] if len(func) == 6 else ''
+        args_cls = _make_struct(args_name, args_fields, doctext=doctext)
         setattr(cls, args_name, args_cls)
         # result payload cls
         result_name = '%s_result' % func_name
         result_type = func[1]
         result_throws = func[4]
         result_oneway = func[0]
-        result_cls = _make_struct(result_name, result_throws,
-                                  _gen_init=False)
+        result_cls = _make_struct(result_name, result_throws, _gen_init=False, field_header='Raises')
         setattr(result_cls, 'oneway', result_oneway)
         if result_type != TType.VOID:
             result_cls.thrift_spec[0] = _ttype_spec(result_type, 'success')
             result_cls.default_spec.insert(0, ('success', None))
+            result_type_docstring = dedent('''
+             Returns
+             -------
+             success : ''' + _get_type_name(result_cls.thrift_spec[0]))
+        else:
+            result_type_docstring = ''
+
+        function_docstring = '\n\n'.join(x.strip() for x in (args_cls.__doc__, result_cls.__doc__, result_type_docstring) if x)
+
         gen_init(result_cls, result_cls.thrift_spec, result_cls.default_spec)
         setattr(cls, result_name, result_cls)
         thrift_services.append(func_name)
+        thrift_services_doc[func_name] = function_docstring
     if extends is not None and hasattr(extends, 'thrift_services'):
         thrift_services.extend(extends.thrift_services)
+    if extends is not None and hasattr(extends, 'thrift_services_doc'):
+        thrift_services_doc.update(extends.thrift_services_doc)
     setattr(cls, 'thrift_services', thrift_services)
+    setattr(cls, 'thrift_services_doc', thrift_services_doc)
     return cls
 
 

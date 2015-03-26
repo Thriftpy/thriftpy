@@ -4,6 +4,7 @@ from __future__ import absolute_import
 
 from .exc import ThriftLexerError
 
+import re
 
 literals = ':;,=*{}()<>[]'
 
@@ -151,6 +152,7 @@ tokens = (
     'DUBCONSTANT',
     'LITERAL',
     'IDENTIFIER',
+    'DOCTEXT',
 ) + tuple(map(lambda kw: kw.upper(), keywords))
 
 
@@ -177,9 +179,14 @@ def t_ignore_MULTICOMM(t):
     t.lexer.lineno += t.value.count('\n')
 
 
-def t_ignore_DOCTEXT(t):
+_re_DOCTEXT_LINE_PREFIX = re.compile('^\s*\*\s?')
+
+
+def t_DOCTEXT(t):
     r'\/\*\*([^*/]|[^*]\/|\*[^/])*\**\*\/'
-    t.lexer.lineno += t.value.count('\n')
+    chunks = [_re_DOCTEXT_LINE_PREFIX.sub('', line) for line in t.value.strip('/* ').split('\n')]
+    t.value = '\n'.join(chunks).strip('\n')
+    return t
 
 
 def t_ignore_UNIXCOMMENT(t):
