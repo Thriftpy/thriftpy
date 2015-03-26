@@ -4,6 +4,7 @@ from __future__ import absolute_import
 
 from .binary import TBinaryProtocol, TBinaryProtocolFactory
 from .json import TJSONProtocol, TJSONProtocolFactory
+from .multiplex import TMultiplexingProtocol, TMultiplexingProtocolFactory
 
 from thriftpy._compat import PYPY, CYTHON
 if not PYPY:
@@ -19,4 +20,5 @@ else:
 
 __all__ = ['TBinaryProtocol', 'TBinaryProtocolFactory',
            'TCyBinaryProtocol', 'TCyBinaryProtocolFactory',
-           'TJSONProtocol', 'TJSONProtocolFactory']
+           'TJSONProtocol', 'TJSONProtocolFactory',
+           'TMultiplexingProtocol']

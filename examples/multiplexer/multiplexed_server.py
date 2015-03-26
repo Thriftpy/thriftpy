@@ -28,8 +28,8 @@ def main():
     pp_proc = TProcessor(pp_thrift.PingService, PingDispatcher())
 
     mux_proc = TMultiplexingProcessor()
-    mux_proc.register_processor(dd_proc)
-    mux_proc.register_processor(pp_proc)
+    mux_proc.register_processor("dd_thrift", dd_proc)
+    mux_proc.register_processor("pp_thrift", pp_proc)
 
     server = TThreadedServer(mux_proc, TServerSocket(),
                              iprot_factory=TBinaryProtocolFactory(),
