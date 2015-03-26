@@ -3,6 +3,7 @@
 
 import re
 import sys
+import platform
 
 from os.path import join, dirname
 
@@ -42,9 +43,11 @@ ext_modules = []
 
 # pypy detection
 PYPY = "__pypy__" in sys.modules
+UNIX = platform.system() in ("Linux", "Darwin")
 
-# only build ext in CPython
-if not PYPY:
+# only build ext in CPython with UNIX platform
+if UNIX and not PYPY:
+    # rebuild .c files if cython available
     if CYTHON:
         cythonize("thriftpy/transport/cybase.pyx")
         cythonize("thriftpy/transport/**/*.pyx")
