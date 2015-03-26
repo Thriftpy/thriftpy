@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import pytest
 from thriftpy.thrift import TType
 from thriftpy.parser import load
 from thriftpy.parser.exc import ThriftParserError, ThriftGrammerError
@@ -45,25 +46,17 @@ def test_tutorial():
 
 
 def test_e_type_error():
-    try:
+    with pytest.raises(ThriftParserError) as excinfo:
         load('parser-cases/e_type_error_0.thrift')
-    except ThriftParserError as e:
-        assert 'Type error' in str(e)
-    else:
-        raise
-    try:
-        load('parser-cases/e_type_error_1.thrift')
-    except ThriftParserError as e:
-        assert 'Type error' in str(e)
-    else:
-        raise
+    assert 'Type error' in str(excinfo.value)
 
-    try:
+    with pytest.raises(ThriftParserError) as excinfo:
+        load('parser-cases/e_type_error_1.thrift')
+    assert 'Type error' in str(excinfo.value)
+
+    with pytest.raises(ThriftParserError) as excinfo:
         load('parser-cases/e_type_error_2.thrift')
-    except ThriftParserError as e:
-        assert 'Type error' in str(e)
-    else:
-        raise
+    assert 'Type error' in str(excinfo.value)
 
 
 def test_value_ref():
@@ -81,28 +74,18 @@ def test_type_ref():
 
 
 def test_e_value_ref():
-    try:
+    with pytest.raises(ThriftParserError) as excinfo:
         load('parser-cases/e_value_ref_0.thrift')
-    except ThriftParserError as e:
-        pass
-    else:
-        raise
+    assert excinfo.value
 
-    try:
+    with pytest.raises(ThriftParserError) as excinfo:
         load('parser-cases/e_value_ref_1.thrift')
-    except ThriftParserError as e:
-        assert str(e) == ('Couldn\'t find a named value in enum Lang '
-                          'for value 3')
-    else:
-        raise
-
-    try:
+    assert str(excinfo.value) == ('Couldn\'t find a named value in enum Lang '
+                                  'for value 3')
+    with pytest.raises(ThriftParserError) as excinfo:
         load('parser-cases/e_value_ref_2.thrift')
-    except ThriftParserError as e:
-        assert str(e) == \
-            'No enum value or constant found named \'Cookbook\''
-    else:
-        raise
+    assert str(excinfo.value) == \
+        'No enum value or constant found named \'Cookbook\''
 
 
 def test_enums():
@@ -150,21 +133,15 @@ def test_structs():
 
 
 def test_e_structs():
-    try:
+    with pytest.raises(ThriftParserError) as excinfo:
         load('parser-cases/e_structs_0.thrift')
-    except ThriftParserError as e:
-        assert str(e) == \
-            'Field \'name\' was required to create constant for type \'User\''
-    else:
-        raise
+    assert str(excinfo.value) == \
+        'Field \'name\' was required to create constant for type \'User\''
 
-    try:
+    with pytest.raises(ThriftParserError) as excinfo:
         load('parser-cases/e_structs_1.thrift')
-    except ThriftParserError as e:
-        assert str(e) == \
-            'No field named \'avatar\' was found in struct of type \'User\''
-    else:
-        raise
+    assert str(excinfo.value) == \
+        'No field named \'avatar\' was found in struct of type \'User\''
 
 
 def test_service():
@@ -201,27 +178,24 @@ def test_service_extends():
 
 
 def test_e_service_extends():
-    try:
+    with pytest.raises(ThriftParserError) as excinfo:
         load('parser-cases/e_service_extends_0.thrift')
-    except ThriftParserError as e:
-        assert 'Can\'t find service' in str(e)
-    else:
-        raise
+    assert 'Can\'t find service' in str(excinfo.value)
 
 
 def test_e_dead_include():
-    try:
+    with pytest.raises(ThriftParserError) as excinfo:
         load('parser-cases/e_dead_include_0.thrift')
-    except ThriftParserError as e:
-        assert 'Dead including' in str(e)
-    else:
-        raise
+    assert 'Dead including' in str(excinfo.value)
 
 
 def test_e_grammer_error_at_eof():
-    try:
+    with pytest.raises(ThriftGrammerError) as excinfo:
         load('parser-cases/e_grammer_error_at_eof.thrift')
-    except ThriftGrammerError as e:
-        assert str(e) == 'Grammer error at EOF'
-    else:
-        raise
+    assert str(excinfo.value) == 'Grammer error at EOF'
+
+
+def test_e_use_thrift_reserved_keywords():
+    with pytest.raises(ThriftParserError) as excinfo:
+        load('parser-cases/e_use_thrift_reserved_keywords.thrift')
+    assert 'Cannot use reserved language keyword' in str(excinfo.value)
