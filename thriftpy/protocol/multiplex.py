@@ -24,6 +24,7 @@ class TMultiplexingProtocol(object):
             self.service_name + TMultiplexingProcessor.Separator + name,
             ttype, seqid)
 
+
 class TMultiplexingProtocolFactory(object):
 
     def __init__(self, proto_factory, service_name):

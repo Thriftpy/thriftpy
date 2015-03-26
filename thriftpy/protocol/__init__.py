@@ -21,4 +21,4 @@ else:
 __all__ = ['TBinaryProtocol', 'TBinaryProtocolFactory',
            'TCyBinaryProtocol', 'TCyBinaryProtocolFactory',
            'TJSONProtocol', 'TJSONProtocolFactory',
-           'TMultiplexingProtocol']
+           'TMultiplexingProtocol', 'TMultiplexingProtocolFactory']

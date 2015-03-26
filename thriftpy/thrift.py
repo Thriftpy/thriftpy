@@ -10,7 +10,6 @@
 from __future__ import absolute_import
 
 import functools
-import inspect
 
 from ._compat import init_func_generator, with_metaclass
 
@@ -257,7 +256,6 @@ class TMultiplexingProcessor(TProcessor):
         pass
 
     def register_processor(self, service_name, processor):
-        service = processor._service
 
         if service_name in self.processors:
             raise TApplicationException(
