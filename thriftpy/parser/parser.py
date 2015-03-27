@@ -169,7 +169,7 @@ def p_ttype(p):
 
 
 def p_typedef(p):
-    '''typedef : TYPEDEF definition_type IDENTIFIER'''
+    '''typedef : TYPEDEF field_type IDENTIFIER'''
     setattr(thrift_stack[-1], p[3], p[2])
 
 
