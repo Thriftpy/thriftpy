@@ -60,7 +60,11 @@ cdef class TCyBufferedTransport(CyTransportBase):
             raise MemoryError("Write to buffer error")
 
     cdef c_read(self, int sz, char* out):
+        if sz <= 0:
+            return 0
+
         self.read_trans(sz, out)
+        return sz
 
     cdef read_trans(self, int sz, char *out):
         cdef int i = self.rbuf.read_trans(self.trans, sz, out)
