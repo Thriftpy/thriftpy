@@ -27,6 +27,9 @@ cdef class TCyBuffer(object):
             int cap = self.buf_size - self.data_size
             int remain = cap - self.cur
 
+        if sz <= 0:
+            return 0
+
         if remain < sz:
             self.move_to_start()
 
@@ -44,6 +47,9 @@ cdef class TCyBuffer(object):
 
     cdef read_trans(self, trans, int sz, char *out):
         cdef int cap, new_data_len
+
+        if sz <= 0:
+            return 0
 
         if self.data_size < sz:
             if self.buf_size < sz:

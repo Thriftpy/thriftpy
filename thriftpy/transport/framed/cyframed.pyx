@@ -42,7 +42,7 @@ cdef class TCyFramedTransport(CyTransportBase):
             raise MemoryError("Write to buffer error")
 
     cdef c_read(self, int sz, char *out):
-        if sz == 0:
+        if sz <= 0:
             return 0
 
         while self.rframe_buf.data_size < sz:
@@ -55,7 +55,9 @@ cdef class TCyFramedTransport(CyTransportBase):
         return sz
 
     cdef c_write(self, const char *data, int sz):
-        self.wframe_buf.write(sz, data)
+        cdef int r = self.wframe_buf.write(sz, data)
+        if r == -1:
+            raise MemoryError("Write to buffer error")
 
     cdef read_frame(self):
         cdef:
@@ -66,6 +68,9 @@ cdef class TCyFramedTransport(CyTransportBase):
 
         self.read_trans(4, frame_len)
         frame_size = be32toh((<int32_t*>frame_len)[0])
+
+        if frame_size <= 0:
+            raise TTransportException("No frame.", TTransportException.UNKNOWN)
 
         if frame_size <= STACK_STRING_LEN:
             self.read_trans(frame_size, stack_frame)
