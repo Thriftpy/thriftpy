@@ -249,10 +249,8 @@ class TProcessor(object):
 class TMultiplexingProcessor(TProcessor):
     SEPARATOR = ":"
 
-    processors = {}
-    service_map = {}
-
     def __init__(self):
+        self.processors = {}
         pass
 
     def register_processor(self, service_name, processor):
