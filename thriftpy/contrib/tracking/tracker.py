@@ -37,6 +37,24 @@ class TrackerBase(object):
 
     @classmethod
     @contextlib.contextmanager
+    def counter(cls, init=0):
+        """Context for manually setting counter of seq number.
+
+        :init: init value
+        """
+        if not hasattr(ctx, "counter"):
+            ctx.counter = 0
+
+        old = ctx.counter
+        ctx.counter = init
+
+        try:
+            yield
+        finally:
+            ctx.counter = old
+
+    @classmethod
+    @contextlib.contextmanager
     def annotate(cls, **kwargs):
         ctx.annotation = kwargs
         try:
