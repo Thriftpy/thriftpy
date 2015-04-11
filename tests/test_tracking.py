@@ -55,6 +55,9 @@ class Dispatcher(object):
     def hello(self, name):
         return "hello %s" % name
 
+    def sleep(self, ms):
+        return True
+
     def remove(self, name):
         person = addressbook.Person(name="mary")
         with client(port=6098) as c:
@@ -324,3 +327,28 @@ def test_annotation(server, dbm_db, tracker_ctx):
 
     assert data[0]["annotation"] == {"ann": "value"} and \
         data[1]["annotation"] == {"sig": "c.hello()", "user_id": "125"}
+
+
+def test_counter(server, dbm_db, tracker_ctx):
+    with client() as c:
+        c.get_phonenumbers("hello", 1)
+
+        with SampleTracker.counter():
+            c.ping()
+            c.hello("counter")
+
+        c.sleep(8)
+
+    time.sleep(0.2)
+
+    db = dbm.open(db_file, 'r')
+    headers = list(db.keys())
+
+    data = [pickle.loads(db[i]) for i in headers]
+    data.sort(key=lambda x: x["api"])
+    get, hello, ping, sleep = data
+
+    assert get["api"] == "get_phonenumbers" and get["seq"] == '1'
+    assert ping["api"] == "ping" and ping["seq"] == '1'
+    assert hello["api"] == "hello" and hello["seq"] == '2'
+    assert sleep["api"] == "sleep" and sleep["seq"] == '2'
