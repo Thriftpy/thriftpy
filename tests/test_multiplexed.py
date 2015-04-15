@@ -11,11 +11,11 @@ import pytest
 import thriftpy
 from thriftpy.protocol import (
     TBinaryProtocolFactory,
-    TMultiplexingProtocolFactory
-    )
+    TMultiplexedProtocolFactory
+)
 from thriftpy.rpc import client_context
 from thriftpy.server import TThreadedServer
-from thriftpy.thrift import TProcessor, TMultiplexingProcessor
+from thriftpy.thrift import TProcessor, TMultiplexedProcessor
 from thriftpy.transport import TBufferedTransportFactory, TServerSocket
 
 
@@ -39,7 +39,7 @@ def server(request):
     p1 = TProcessor(mux.ThingOneService, DispatcherOne())
     p2 = TProcessor(mux.ThingTwoService, DispatcherTwo())
 
-    mux_proc = TMultiplexingProcessor()
+    mux_proc = TMultiplexedProcessor()
     mux_proc.register_processor("ThingOneService", p1)
     mux_proc.register_processor("ThingTwoService", p2)
 
@@ -62,8 +62,8 @@ def server(request):
 
 def client_one(timeout=3000):
     binary_factory = TBinaryProtocolFactory()
-    multiplexing_factory = TMultiplexingProtocolFactory(binary_factory,
-                                                        "ThingOneService")
+    multiplexing_factory = TMultiplexedProtocolFactory(binary_factory,
+                                                       "ThingOneService")
     return client_context(mux.ThingOneService, unix_socket=sock_path,
                           timeout=timeout,
                           proto_factory=multiplexing_factory)
@@ -71,8 +71,8 @@ def client_one(timeout=3000):
 
 def client_two(timeout=3000):
     binary_factory = TBinaryProtocolFactory()
-    multiplexing_factory = TMultiplexingProtocolFactory(binary_factory,
-                                                        "ThingTwoService")
+    multiplexing_factory = TMultiplexedProtocolFactory(binary_factory,
+                                                       "ThingTwoService")
     return client_context(mux.ThingTwoService, unix_socket=sock_path,
                           timeout=timeout,
                           proto_factory=multiplexing_factory)
