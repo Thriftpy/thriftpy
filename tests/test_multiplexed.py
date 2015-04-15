@@ -9,10 +9,13 @@ import time
 import pytest
 
 import thriftpy
-from thriftpy.protocol import TBinaryProtocolFactory
+from thriftpy.protocol import (
+    TBinaryProtocolFactory,
+    TMultiplexedProtocolFactory
+)
 from thriftpy.rpc import client_context
 from thriftpy.server import TThreadedServer
-from thriftpy.thrift import TProcessor, TMultiplexingProcessor
+from thriftpy.thrift import TProcessor, TMultiplexedProcessor
 from thriftpy.transport import TBufferedTransportFactory, TServerSocket
 
 
@@ -36,9 +39,9 @@ def server(request):
     p1 = TProcessor(mux.ThingOneService, DispatcherOne())
     p2 = TProcessor(mux.ThingTwoService, DispatcherTwo())
 
-    mux_proc = TMultiplexingProcessor()
-    mux_proc.register_processor(p1)
-    mux_proc.register_processor(p2)
+    mux_proc = TMultiplexedProcessor()
+    mux_proc.register_processor("ThingOneService", p1)
+    mux_proc.register_processor("ThingTwoService", p2)
 
     _server = TThreadedServer(mux_proc, TServerSocket(unix_socket=sock_path),
                               iprot_factory=TBinaryProtocolFactory(),
@@ -58,13 +61,21 @@ def server(request):
 
 
 def client_one(timeout=3000):
+    binary_factory = TBinaryProtocolFactory()
+    multiplexing_factory = TMultiplexedProtocolFactory(binary_factory,
+                                                       "ThingOneService")
     return client_context(mux.ThingOneService, unix_socket=sock_path,
-                          timeout=timeout)
+                          timeout=timeout,
+                          proto_factory=multiplexing_factory)
 
 
 def client_two(timeout=3000):
+    binary_factory = TBinaryProtocolFactory()
+    multiplexing_factory = TMultiplexedProtocolFactory(binary_factory,
+                                                       "ThingTwoService")
     return client_context(mux.ThingTwoService, unix_socket=sock_path,
-                          timeout=timeout)
+                          timeout=timeout,
+                          proto_factory=multiplexing_factory)
 
 
 def test_multiplexed_server(server):

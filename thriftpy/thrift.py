@@ -10,7 +10,6 @@
 from __future__ import absolute_import
 
 import functools
-import inspect
 
 from ._compat import init_func_generator, with_metaclass
 
@@ -86,7 +85,6 @@ def gen_init(cls, thrift_spec=None, default_spec=None):
 
 
 class TPayload(with_metaclass(TPayloadMeta, object)):
-
     def read(self, iprot):
         iprot.read_struct(self)
 
@@ -189,7 +187,7 @@ class TProcessor(object):
         if api not in self._service.thrift_services:
             iprot.skip(TType.STRUCT)
             iprot.read_message_end()
-            return api, seqid, TApplicationException(TApplicationException.UNKNOWN_METHOD), None   # noqa
+            return api, seqid, TApplicationException(TApplicationException.UNKNOWN_METHOD), None  # noqa
 
         args = getattr(self._service, api + "_args")()
         args.read(iprot)
@@ -197,13 +195,11 @@ class TProcessor(object):
         result = getattr(self._service, api + "_result")()
 
         # convert kwargs to args
-        api_args = [args.thrift_spec[k][1]
-                    for k in sorted(args.thrift_spec)]
+        api_args = [args.thrift_spec[k][1] for k in sorted(args.thrift_spec)]
 
         def call():
-            return getattr(self._handler, api)(
-                *(args.__dict__[k] for k in api_args)
-            )
+            f = getattr(self._handler, api)
+            return f(*(args.__dict__[k] for k in api_args))
 
         return api, seqid, result, call
 
@@ -247,50 +243,43 @@ class TProcessor(object):
             self.send_result(oprot, api, result, seqid)
 
 
-class TMultiplexingProcessor(TProcessor):
-    processors = {}
-    service_map = {}
+class TMultiplexedProcessor(TProcessor):
+    SEPARATOR = ":"
 
     def __init__(self):
-        pass
+        self.processors = {}
 
-    def register_processor(self, processor):
-        service = processor._service
-        module = inspect.getmodule(processor)
-        name = '{0}:{1}'.format(module.__name__, service.__name__)
-        if name in self.processors:
+    def register_processor(self, service_name, processor):
+        if service_name in self.processors:
             raise TApplicationException(
                 type=TApplicationException.INTERNAL_ERROR,
-                message='processor for `{0}` already registered'.format(name))
-
-        for srv in service.thrift_services:
-            if srv in self.service_map:
-                raise TApplicationException(
-                    type=TApplicationException.INTERNAL_ERROR,
-                    message='cannot multiplex processor for `{0}`; '
-                            '`{1}` is already a registered method for `{2}`'
-                            .format(name, srv, self.service_map[srv]))
-            self.service_map[srv] = name
-
-        self.processors[name] = processor
+                message='processor for `{0}` already registered'
+                .format(service_name))
+        self.processors[service_name] = processor
 
     def process_in(self, iprot):
         api, type, seqid = iprot.read_message_begin()
-        if api not in self.service_map:
+        if type not in (TMessageType.CALL, TMessageType.ONEWAY):
+            raise TException("TMultiplex protocol only supports CALL & ONEWAY")
+        if TMultiplexedProcessor.SEPARATOR not in api:
+            raise TException("Service name not found in message. "
+                             "You should use TMultiplexedProtocol in client.")
+
+        service_name, api = api.split(TMultiplexedProcessor.SEPARATOR)
+        if service_name not in self.processors:
             iprot.skip(TType.STRUCT)
             iprot.read_message_end()
             e = TApplicationException(TApplicationException.UNKNOWN_METHOD)
-            return api, seqid, e, None   # noqa
+            return api, seqid, e, None
 
-        proc = self.processors[self.service_map[api]]
+        proc = self.processors[service_name]
         args = getattr(proc._service, api + "_args")()
         args.read(iprot)
         iprot.read_message_end()
         result = getattr(proc._service, api + "_result")()
 
         # convert kwargs to args
-        api_args = [args.thrift_spec[k][1]
-                    for k in sorted(args.thrift_spec)]
+        api_args = [args.thrift_spec[k][1] for k in sorted(args.thrift_spec)]
 
         def call():
             f = getattr(proc._handler, api)
