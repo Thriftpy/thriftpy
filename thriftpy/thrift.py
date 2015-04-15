@@ -10,7 +10,6 @@
 from __future__ import absolute_import
 
 import functools
-import inspect
 
 from ._compat import init_func_generator, with_metaclass
 
@@ -248,41 +247,34 @@ class TProcessor(object):
 
 
 class TMultiplexingProcessor(TProcessor):
-    processors = {}
-    service_map = {}
+    SEPARATOR = ":"
 
     def __init__(self):
+        self.processors = {}
         pass
 
-    def register_processor(self, processor):
-        service = processor._service
-        module = inspect.getmodule(processor)
-        name = '{0}:{1}'.format(module.__name__, service.__name__)
-        if name in self.processors:
+    def register_processor(self, service_name, processor):
+
+        if service_name in self.processors:
             raise TApplicationException(
                 type=TApplicationException.INTERNAL_ERROR,
-                message='processor for `{0}` already registered'.format(name))
+                message='processor for `{0}` already registered'
+                        .format(service_name))
 
-        for srv in service.thrift_services:
-            if srv in self.service_map:
-                raise TApplicationException(
-                    type=TApplicationException.INTERNAL_ERROR,
-                    message='cannot multiplex processor for `{0}`; '
-                            '`{1}` is already a registered method for `{2}`'
-                            .format(name, srv, self.service_map[srv]))
-            self.service_map[srv] = name
-
-        self.processors[name] = processor
+        self.processors[service_name] = processor
 
     def process_in(self, iprot):
         api, type, seqid = iprot.read_message_begin()
-        if api not in self.service_map:
+
+        service_name, api = api.split(TMultiplexingProcessor.SEPARATOR)
+
+        if service_name not in self.processors:
             iprot.skip(TType.STRUCT)
             iprot.read_message_end()
             e = TApplicationException(TApplicationException.UNKNOWN_METHOD)
             return api, seqid, e, None   # noqa
 
-        proc = self.processors[self.service_map[api]]
+        proc = self.processors[service_name]
         args = getattr(proc._service, api + "_args")()
         args.read(iprot)
         iprot.read_message_end()
