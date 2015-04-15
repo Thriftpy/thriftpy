@@ -1,6 +1,19 @@
 Changelog
 =========
 
+Version 0.3.0
+-------------
+
+Released on April 15, 2015.
+
+Non-Backward Compatible changes:
+
+- migrate multiplexed protocol implementation to the same with upstream,
+  via `#117`_.
+
+.. _`#117`: https://github.com/eleme/thriftpy/pull/117
+
+
 0.2.x
 ~~~~~
 
