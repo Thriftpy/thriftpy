@@ -4,6 +4,25 @@ Changelog
 0.2.x
 ~~~~~
 
+Version 0.2.1
+-------------
+
+Released on April 15, 2015.
+
+- add an experimental tracking feature in `thriftpy.contrib`, via `#96`_.
+- add limitation on thrift reserved keyword for compatible with upstream, via
+  `#115`_.
+- bugfix EOF grammar error, via `#103`_.
+- bugfix for mis-mach transport in client caused server crash, via `#119`_.
+- bugfix for typedef on included thrift files, via `#121`_.
+
+.. _`#96`: https://github.com/eleme/thriftpy/pull/96
+.. _`#103`: https://github.com/eleme/thriftpy/pull/103
+.. _`#115`: https://github.com/eleme/thriftpy/pull/115
+.. _`#119`: https://github.com/eleme/thriftpy/pull/119
+.. _`#121`: https://github.com/eleme/thriftpy/pull/121
+
+
 Version 0.2.0
 -------------
 
