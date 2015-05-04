@@ -14,7 +14,7 @@ with open(join(dirname(__file__), 'thriftpy', '__init__.py'), 'r') as f:
     version = re.match(r".*__version__ = '(.*?)'", f.read(), re.S).group(1)
 
 install_requires = [
-    "ply==3.4",
+    "ply>=3.4",
 ]
 
 tornado_requires = [
