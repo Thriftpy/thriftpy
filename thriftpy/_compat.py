@@ -9,12 +9,15 @@
 
 from __future__ import absolute_import
 
+import platform
 import types
 
 import sys
 PY3 = sys.version_info[0] == 3
 PYPY = "__pypy__" in sys.modules
-CYTHON = not PYPY  # Cython always disabled in pypy
+
+UNIX = platform.system() in ("Linux", "Darwin")
+CYTHON = UNIX and not PYPY  # Cython always disabled in pypy and windows
 
 if PY3:
     text_type = str
