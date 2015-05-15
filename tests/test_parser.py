@@ -28,12 +28,12 @@ def test_constants():
 
 
 def test_include():
-    thrift = load('parser-cases/include.thrift', include_dir='./parser-cases')
+    thrift = load('parser-cases/include.thrift', include_dirs=['./parser-cases'])
     assert thrift.datetime == 1422009523
 
 
 def test_tutorial():
-    thrift = load('parser-cases/tutorial.thrift', include_dir='./parser-cases')
+    thrift = load('parser-cases/tutorial.thrift', include_dirs=['./parser-cases'])
     assert thrift.INT32CONSTANT == 9853
     assert thrift.MAPCONSTANT == {'hello': 'world', 'goodnight': 'moon'}
     assert thrift.Operation.ADD == 1 and thrift.Operation.SUBTRACT == 2 \

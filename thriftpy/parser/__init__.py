@@ -15,13 +15,13 @@ import sys
 from .parser import parse
 
 
-def load(path, module_name=None, include_dir=None):
+def load(path, module_name=None, include_dirs=None):
     """Load thrift_file as a module
     The module loaded and objects inside may only be pickled if module_name
     was provided.
     """
     real_module = bool(module_name)
-    thrift = parse(path, module_name, include_dir=include_dir)
+    thrift = parse(path, module_name, include_dirs=include_dirs)
 
     if real_module:
         sys.modules[module_name] = thrift
