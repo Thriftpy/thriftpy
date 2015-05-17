@@ -400,7 +400,7 @@ include_dirs_ = ['.']
 thrift_cache = {}
 
 
-def parse(path, module_name=None, include_dirs=None,
+def parse(path, module_name=None, include_dirs=None, include_dir=None,
           lexer=None, parser=None, enable_cache=True):
 
     # dead include checking on current stack
@@ -424,6 +424,8 @@ def parse(path, module_name=None, include_dirs=None,
 
     if include_dirs is not None:
         include_dirs_ = include_dirs
+    if include_dir is not None:
+        include_dirs_.append(include_dir)
 
     if not path.endswith('.thrift'):
         raise ThriftParserError('Path should end with .thrift')
