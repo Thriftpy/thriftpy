@@ -44,9 +44,15 @@ def p_header_unit(p):
 def p_include(p):
     '''include : INCLUDE LITERAL'''
     thrift = thrift_stack[-1]
-    path = os.path.join(include_dir_, p[2])
-    child = parse(path)
-    setattr(thrift, child.__name__, child)
+
+    for include_dir in include_dirs_:
+        path = os.path.join(include_dir, p[2])
+        if os.path.exists(path):
+            child = parse(path)
+            setattr(thrift, child.__name__, child)
+            return
+    raise ThriftParserError(('Couldn\'t include thrift %s in any '
+                             'directories provided') % p[2])
 
 
 def p_namespace(p):
@@ -390,11 +396,11 @@ def p_definition_type(p):
 
 
 thrift_stack = []
-include_dir_ = '.'
+include_dirs_ = ['.']
 thrift_cache = {}
 
 
-def parse(path, module_name=None, include_dir=None,
+def parse(path, module_name=None, include_dirs=None, include_dir=None,
           lexer=None, parser=None, enable_cache=True):
 
     # dead include checking on current stack
@@ -414,10 +420,12 @@ def parse(path, module_name=None, include_dir=None,
     if parser is None:
         parser = yacc.yacc(debug=False, write_tables=0)
 
-    global include_dir_
+    global include_dirs_
 
+    if include_dirs is not None:
+        include_dirs_ = include_dirs
     if include_dir is not None:
-        include_dir_ = include_dir
+        include_dirs_.append(include_dir)
 
     if not path.endswith('.thrift'):
         raise ThriftParserError('Path should end with .thrift')
