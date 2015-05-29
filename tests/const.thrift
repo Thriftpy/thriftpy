@@ -8,6 +8,9 @@ const double DOUBLE_CONST = 123.456
 const string DOUBLE_QUOTED_CONST = "hello"
 const string SINGLE_QUOTED_CONST = 'hello'
 
+const string CONST_WITH_SEP1 = "hello",
+const string CONST_WITH_SEP2 = "hello";
+
 const list<i32> I32_LIST_CONST = [1, 2, 3]
 const list<double> DOUBLE_LIST_CONST = [1.1, 2.2, 3.3]
 const list<string> STRING_LIST_CONST = ["hello", "world"]
