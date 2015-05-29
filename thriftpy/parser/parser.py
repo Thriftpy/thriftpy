@@ -91,7 +91,8 @@ def p_definition_unit(p):
 
 
 def p_const(p):
-    '''const : CONST field_type IDENTIFIER '=' const_value'''
+    '''const : CONST field_type IDENTIFIER '=' const_value
+             | CONST field_type IDENTIFIER '=' const_value sep'''
 
     try:
         val = _cast(p[2])(p[5])

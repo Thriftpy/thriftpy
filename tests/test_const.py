@@ -20,6 +20,11 @@ def test_string_const():
     assert "hello" == const.SINGLE_QUOTED_CONST
 
 
+def test_const_with_sep():
+    assert "hello" == const.CONST_WITH_SEP1
+    assert "hello" == const.CONST_WITH_SEP2
+
+
 def test_list_const():
     assert [1, 2, 3] == const.I32_LIST_CONST
     assert [1.1, 2.2, 3.3] == const.DOUBLE_LIST_CONST
