@@ -4,6 +4,20 @@ Changelog
 0.3.x
 ~~~~~
 
+Version 0.3.1
+-------------
+
+Released on May 29, 2015.
+
+- lock down to use pure python only in windows env. (this avoid the cython
+  stuffs on windows totally)
+- enable multiple include dirs, via `#131`_.
+- bugfix for parsing of constants with separators, via `#134`_.
+
+.. _`#131`: https://github.com/eleme/thriftpy/pull/131
+.. _`#134`: https://github.com/eleme/thriftpy/pull/134
+
+
 Version 0.3.0
 -------------
 
