@@ -50,6 +50,7 @@ def p_include(p):
         if os.path.exists(path):
             child = parse(path)
             setattr(thrift, child.__name__, child)
+            _add_thrift_meta('includes', child)
             return
     raise ThriftParserError(('Couldn\'t include thrift %s in any '
                              'directories provided') % p[2])
@@ -100,6 +101,7 @@ def p_const(p):
         raise ThriftParserError('Type error for constant %s at line %d' %
                                 (p[3], p.lineno(3)))
     setattr(thrift_stack[-1], p[3], val)
+    _add_thrift_meta('consts', val)
 
 
 def p_const_value(p):
@@ -177,7 +179,9 @@ def p_typedef(p):
 
 def p_enum(p):  # noqa
     '''enum : ENUM IDENTIFIER '{' enum_seq '}' '''
-    setattr(thrift_stack[-1], p[2], _make_enum(p[2], p[4]))
+    val = _make_enum(p[2], p[4])
+    setattr(thrift_stack[-1], p[2], val)
+    _add_thrift_meta('enums', val)
 
 
 def p_enum_seq(p):
@@ -199,18 +203,23 @@ def p_enum_item(p):
 
 def p_struct(p):
     '''struct : STRUCT IDENTIFIER '{' field_seq '}' '''
-    setattr(thrift_stack[-1], p[2], _make_struct(p[2], p[4]))
+    val = _make_struct(p[2], p[4])
+    setattr(thrift_stack[-1], p[2], val)
+    _add_thrift_meta('structs', val)
 
 
 def p_union(p):
     '''union : UNION IDENTIFIER '{' field_seq '}' '''
-    setattr(thrift_stack[-1], p[2], _make_struct(p[2], p[4]))
+    val = _make_struct(p[2], p[4])
+    setattr(thrift_stack[-1], p[2], val)
+    _add_thrift_meta('unions', val)
 
 
 def p_exception(p):
     '''exception : EXCEPTION IDENTIFIER '{' field_seq '}' '''
-    setattr(thrift_stack[-1], p[2], _make_struct(p[2], p[4],
-                                                 base_cls=TException))
+    val = _make_struct(p[2], p[4], base_cls=TException)
+    setattr(thrift_stack[-1], p[2], val)
+    _add_thrift_meta('exceptions', val)
 
 
 def p_service(p):
@@ -235,7 +244,9 @@ def p_service(p):
     else:
         extends = None
 
-    setattr(thrift, p[2], _make_service(p[2], p[len(p) - 2], extends))
+    val = _make_service(p[2], p[len(p) - 2], extends)
+    setattr(thrift, p[2], val)
+    _add_thrift_meta('services', val)
 
 
 def p_function(p):
@@ -452,6 +463,21 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
     if enable_cache:
         thrift_cache[cache_key] = thrift
     return thrift
+
+
+def _add_thrift_meta(key, val):
+    thrift = thrift_stack[-1]
+
+    if not hasattr(thrift, '__thrift_meta__'):
+        meta = {}
+        setattr(thrift, '__thrift_meta__', meta)
+    else:
+        meta = getattr(thrift, '__thrift_meta__')
+
+    if key not in meta:
+        meta[key] = []
+
+    meta[key].append(val)
 
 
 def _parse_seq(p):
