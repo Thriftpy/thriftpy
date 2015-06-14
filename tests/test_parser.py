@@ -201,3 +201,14 @@ def test_e_use_thrift_reserved_keywords():
     with pytest.raises(ThriftParserError) as excinfo:
         load('parser-cases/e_use_thrift_reserved_keywords.thrift')
     assert 'Cannot use reserved language keyword' in str(excinfo.value)
+
+
+def test_thrift_meta():
+    thrift = load('parser-cases/tutorial.thrift')
+    meta = thrift.__thrift_meta__
+    assert meta['consts'] == [thrift.INT32CONSTANT, thrift.MAPCONSTANT]
+    assert meta['enums'] == [thrift.Operation]
+    assert meta['structs'] == [thrift.Work]
+    assert meta['exceptions'] == [thrift.InvalidOperation]
+    assert meta['services'] == [thrift.Calculator]
+    assert meta['includes'] == [thrift.shared]
