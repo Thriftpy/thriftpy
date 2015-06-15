@@ -7,6 +7,7 @@ IDL Ref:
 
 from __future__ import absolute_import
 
+import collections
 import os
 import types
 from ply import lex, yacc
@@ -469,13 +470,10 @@ def _add_thrift_meta(key, val):
     thrift = thrift_stack[-1]
 
     if not hasattr(thrift, '__thrift_meta__'):
-        meta = {}
-        setattr(thrift, '__thrift_meta__', meta)
+        meta = collections.defaultdict(list)
+        setattr(thrift, '__thrift_meta__',  meta)
     else:
         meta = getattr(thrift, '__thrift_meta__')
-
-    if key not in meta:
-        meta[key] = []
 
     meta[key].append(val)
 
