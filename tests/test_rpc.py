@@ -17,6 +17,7 @@ from thriftpy.rpc import make_server, client_context
 
 addressbook = thriftpy.load(os.path.join(os.path.dirname(__file__),
                                          "addressbook.thrift"))
+unix_sock = "/tmp/thriftpy_test.sock"
 
 
 class Dispatcher(object):
@@ -68,7 +69,7 @@ class Dispatcher(object):
 @pytest.fixture(scope="module")
 def server(request):
     server = make_server(addressbook.AddressBookService, Dispatcher(),
-                         unix_socket="./thriftpy_test.sock")
+                         unix_socket=unix_sock)
     ps = multiprocessing.Process(target=server.serve)
     ps.start()
 
@@ -78,7 +79,7 @@ def server(request):
         if ps.is_alive():
             ps.terminate()
         try:
-            os.remove("./thriftpy_test.sock")
+            os.remove(unix_sock)
         except IOError:
             pass
     request.addfinalizer(fin)
@@ -106,8 +107,7 @@ def person():
 
 def client(timeout=3000):
     return client_context(addressbook.AddressBookService,
-                          unix_socket="./thriftpy_test.sock",
-                          timeout=timeout)
+                          unix_socket=unix_sock, timeout=timeout)
 
 
 def test_void_api(server):

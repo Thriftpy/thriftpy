@@ -297,21 +297,25 @@ def test_skip_struct():
 def test_read_long_data():
     val = 'z' * 97 * 1024
 
+    unix_sock = "/tmp/thriftpy_test.sock"
+
     def serve():
-        server_sock = TServerSocket(
-            unix_socket="./thriftpy_test.sock")
+        server_sock = TServerSocket(unix_socket=unix_sock)
         server_sock.listen()
         client = server_sock.accept()
         t = TCyBufferedTransport(client)
         proto.write_val(t, TType.STRING, val)
         t.flush()
 
+        # wait for client to read
+        time.sleep(1)
+
     p = multiprocessing.Process(target=serve)
     p.start()
     time.sleep(0.1)
 
     try:
-        sock = TSocket(unix_socket="./thriftpy_test.sock")
+        sock = TSocket(unix_socket=unix_sock)
         b = TCyBufferedTransport(sock)
         b.open()
         assert val == proto.read_val(b, TType.STRING)
@@ -319,7 +323,7 @@ def test_read_long_data():
     finally:
         p.terminate()
         try:
-            os.remove("./thriftpy_test.sock")
+            os.remove(unix_sock)
         except IOError:
             pass
 

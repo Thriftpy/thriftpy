@@ -21,7 +21,7 @@ from thriftpy.transport import TBufferedTransportFactory, TServerSocket
 
 mux = thriftpy.load(os.path.join(os.path.dirname(__file__),
                                  "multiplexed.thrift"))
-sock_path = "./thriftpy_test.sock"
+sock_path = "/tmp/thriftpy_test.sock"
 
 
 class DispatcherOne(object):
