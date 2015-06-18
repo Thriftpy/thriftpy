@@ -661,6 +661,10 @@ def _make_struct(name, fields, ttype=TType.STRUCT, base_cls=TPayload,
     _tspec = {}
 
     for field in fields:
+        if field[0] in thrift_spec or field[3] in _tspec:
+            raise ThriftGrammerError(('\'%d:%s\' field identifier/name has '
+                                      'already been used') % (
+                                          field[0], field[3]))
         ttype = field[2]
         thrift_spec[field[0]] = _ttype_spec(ttype, field[3], field[1])
         default_spec.append((field[3], field[4]))
