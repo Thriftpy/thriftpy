@@ -203,6 +203,15 @@ def test_e_use_thrift_reserved_keywords():
     assert 'Cannot use reserved language keyword' in str(excinfo.value)
 
 
+def test_e_duplicate_field_id_or_name():
+    with pytest.raises(ThriftGrammerError) as excinfo:
+        load('parser-cases/e_duplicate_field_id.thrift')
+    assert 'field identifier/name has already been used' in str(excinfo.value)
+    with pytest.raises(ThriftGrammerError) as excinfo:
+        load('parser-cases/e_duplicate_field_name.thrift')
+    assert 'field identifier/name has already been used' in str(excinfo.value)
+
+
 def test_thrift_meta():
     thrift = load('parser-cases/tutorial.thrift')
     meta = thrift.__thrift_meta__
