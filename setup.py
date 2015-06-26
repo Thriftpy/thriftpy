@@ -46,12 +46,11 @@ PYPY = "__pypy__" in sys.modules
 UNIX = platform.system() in ("Linux", "Darwin")
 
 # only build ext in CPython with UNIX platform
-if UNIX and not PYPY:
-    # rebuild .c files if cython available
-    if CYTHON:
-        cythonize("thriftpy/transport/cybase.pyx")
-        cythonize("thriftpy/transport/**/*.pyx")
-        cythonize("thriftpy/protocol/cybin/cybin.pyx")
+if CYTHON and UNIX and not PYPY:
+    # build .c files if cython available
+    cythonize("thriftpy/transport/cybase.pyx")
+    cythonize("thriftpy/transport/**/*.pyx")
+    cythonize("thriftpy/protocol/cybin/cybin.pyx")
 
     ext_modules.append(Extension("thriftpy.transport.cybase",
                                  ["thriftpy/transport/cybase.c"]))
