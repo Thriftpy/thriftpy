@@ -25,10 +25,15 @@ class TSocketBase(TTransportBase):
                 socket.AI_PASSIVE | socket.AI_ADDRCONFIG)
 
     def close(self):
-        if self.handle:
+        if not self.handle:
+            return
+
+        try:
             self.handle.shutdown(socket.SHUT_RDWR)
             self.handle.close()
-            self.handle = None
+        except socket.error:
+            pass
+        self.handle = None
 
 
 class TSocket(TSocketBase):
