@@ -69,6 +69,7 @@ class TMessageType(object):
 
 
 class TPayloadMeta(type):
+
     def __new__(cls, name, bases, attrs):
         if "default_spec" in attrs:
             attrs["__init__"] = init_func_generator(attrs.pop("default_spec"))
@@ -79,12 +80,13 @@ def gen_init(cls, thrift_spec=None, default_spec=None):
     if thrift_spec is not None:
         cls.thrift_spec = thrift_spec
 
-    if "default_spec" is not None:
+    if default_spec is not None:
         cls.__init__ = init_func_generator(default_spec)
     return cls
 
 
 class TPayload(with_metaclass(TPayloadMeta, object)):
+
     def read(self, iprot):
         iprot.read_struct(self)
 
@@ -110,6 +112,7 @@ class TPayload(with_metaclass(TPayloadMeta, object)):
 
 
 class TClient(object):
+
     def __init__(self, service, iprot, oprot=None):
         self._service = service
         self._iprot = self._oprot = iprot
@@ -167,7 +170,7 @@ class TClient(object):
 
         # check throws
         for k, v in result.__dict__.items():
-            if k != "success" and v is not None:
+            if k != "success" and v:
                 raise v
 
         # no throws & not void api
@@ -289,6 +292,7 @@ class TMultiplexedProcessor(TProcessor):
 
 
 class TProcessorFactory(object):
+
     def __init__(self, processor_class, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
