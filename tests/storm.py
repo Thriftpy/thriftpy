@@ -48,7 +48,7 @@ class Grouping(TPayload):
 
 class StreamInfo(TPayload):
     thrift_spec = {1: (TType.LIST, 'output_fields', TType.STRING),
-                   2: (2, 'direct')}
+                   2: (TType.BOOL, 'direct')}
 
 
 class ShellComponent(TPayload):
