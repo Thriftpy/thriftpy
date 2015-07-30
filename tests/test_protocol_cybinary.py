@@ -73,6 +73,15 @@ def test_read_i16():
     assert 12345 == val
 
 
+def test_byteswap_i16():
+    i = 128
+    b = TCyMemoryBuffer()
+    proto.write_val(b, TType.I16, i)
+    b.flush()
+    v = proto.read_val(b, TType.I16)
+    assert v == i
+
+
 def test_write_i32():
     b = TCyMemoryBuffer()
     proto.write_val(b, TType.I32, 1234567890)
