@@ -7,7 +7,7 @@ import time
 import pytest
 
 from thriftpy._compat import u
-from thriftpy.thrift import TType, TPayload
+from thriftpy.thrift import TType, TPayload, TDecodeException
 from thriftpy.transport import TSocket, TServerSocket
 from thriftpy.utils import hexlify
 
@@ -402,3 +402,30 @@ def test_multiple_read_struct():
     p.read_struct(_item2)
 
     assert _item1 == item1 and _item2 == item2
+
+
+def test_write_decode_error():
+    t = TCyMemoryBuffer()
+    p = proto.TCyBinaryProtocol(t)
+
+    class T(TPayload):
+        thrift_spec = {
+            1: (TType.I32, "id", False),
+            2: (TType.LIST, "phones", TType.STRING, False),
+            3: (TType.STRUCT, "item", TItem, False),
+            4: (TType.MAP, "mm", (TType.STRING, (TType.STRUCT, TItem)), False)
+        }
+        default_spec = [("id", None), ("phones", None), ("item", None),
+                        ("mm", None)]
+
+    cases = [
+        (T(id="hello"), "Field 'id(1)' of 'T' needs type 'I32', but the value is `'hello'`"),  # noqa
+        (T(phones=[90, 12]), "Field 'phones(2)' of 'T' needs type 'LIST<STRING>', but the value is `[90, 12]`"),  # noqa
+        (T(item=12), "Field 'item(3)' of 'T' needs type 'TItem', but the value is `12`"),  # noqa
+        (T(mm=[45, 56]), "Field 'mm(4)' of 'T' needs type 'MAP<STRING, TItem>', but the value is `[45, 56]`")  # noqa
+    ]
+
+    for obj, res in cases:
+        with pytest.raises(TDecodeException) as exc:
+            p.write_struct(obj)
+        assert str(exc.value) == res

@@ -4,6 +4,8 @@ from cpython cimport bool
 
 from thriftpy.transport.cybase cimport CyTransportBase, STACK_STRING_LEN
 
+from ..thrift import TDecodeException
+
 cdef extern from "endian_port.h":
     int16_t htobe16(int16_t n)
     int32_t htobe32(int32_t n)
@@ -94,6 +96,63 @@ cdef inline int write_double(CyTransportBase buf, double val) except -1:
     return 0
 
 
+cdef inline write_list(CyTransportBase buf, list val, spec):
+    cdef TType e_type
+    cdef int val_len
+
+    if isinstance(spec, int):
+        e_type = spec
+        e_spec = None
+    else:
+        e_type = spec[0]
+        e_spec = spec[1]
+
+    val_len = len(val)
+    write_i08(buf, e_type)
+    write_i32(buf, val_len)
+
+    for e_val in val:
+        c_write_val(buf, e_type, e_val, e_spec)
+
+
+cdef inline write_string(CyTransportBase buf, bytes val):
+    cdef int val_len = len(val)
+    write_i32(buf, val_len)
+
+    buf.c_write(<char*>val, val_len)
+
+
+cdef inline write_dict(CyTransportBase buf, dict val, spec):
+    cdef int val_len
+    cdef TType v_type, k_type
+
+    key = spec[0]
+    if isinstance(key, int):
+        k_type = key
+        k_spec = None
+    else:
+        k_type = key[0]
+        k_spec = key[1]
+
+    value = spec[1]
+    if isinstance(value, int):
+        v_type = value
+        v_spec = None
+    else:
+        v_type = value[0]
+        v_spec = value[1]
+
+    val_len = len(val)
+
+    write_i08(buf, k_type)
+    write_i08(buf, v_type)
+    write_i32(buf, val_len)
+
+    for k, v in val.items():
+        c_write_val(buf, k_type, k, k_spec)
+        c_write_val(buf, v_type, v, v_spec)
+
+
 cdef inline read_struct(CyTransportBase buf, obj):
     cdef dict field_specs = obj.thrift_spec
     cdef int fid
@@ -149,7 +208,11 @@ cdef inline write_struct(CyTransportBase buf, obj):
 
         write_i08(buf, f_type)
         write_i16(buf, fid)
-        c_write_val(buf, f_type, v, container_spec)
+        try:
+            c_write_val(buf, f_type, v, container_spec)
+        except (TypeError, AttributeError):
+            raise TDecodeException(obj.__class__.__name__, fid, f_name, v,
+                                   f_type, container_spec)
 
     write_i08(buf, T_STOP)
 
@@ -253,9 +316,6 @@ cdef c_read_val(CyTransportBase buf, TType ttype, spec=None):
 
 
 cdef c_write_val(CyTransportBase buf, TType ttype, val, spec=None):
-    cdef int val_len
-    cdef TType e_type, v_type, k_type
-
     if ttype == T_BOOL:
         write_i08(buf, 1 if val else 0)
 
@@ -276,54 +336,19 @@ cdef c_write_val(CyTransportBase buf, TType ttype, val, spec=None):
 
     elif ttype == T_STRING:
         if not isinstance(val, bytes):
-            val = val.encode("utf-8")
-
-        val_len = len(val)
-        write_i32(buf, val_len)
-
-        buf.c_write(<char*>val, val_len)
+            try:
+                val = val.encode("utf-8")
+            except Exception:
+                pass
+        write_string(buf, val)
 
     elif ttype == T_SET or ttype == T_LIST:
-        if isinstance(spec, int):
-            e_type = spec
-            e_spec = None
-        else:
-            e_type = spec[0]
-            e_spec = spec[1]
-
-        val_len = len(val)
-        write_i08(buf, e_type)
-        write_i32(buf, val_len)
-
-        for e_val in val:
-            c_write_val(buf, e_type, e_val, e_spec)
+        if isinstance(val, (tuple, dict, set)):
+            val = list(val)
+        write_list(buf, val, spec)
 
     elif ttype == T_MAP:
-        key = spec[0]
-        if isinstance(key, int):
-            k_type = key
-            k_spec = None
-        else:
-            k_type = key[0]
-            k_spec = key[1]
-
-        value = spec[1]
-        if isinstance(value, int):
-            v_type = value
-            v_spec = None
-        else:
-            v_type = value[0]
-            v_spec = value[1]
-
-        val_len = len(val)
-
-        write_i08(buf, k_type)
-        write_i08(buf, v_type)
-        write_i32(buf, val_len)
-
-        for k, v in val.items():
-            c_write_val(buf, k_type, k, k_spec)
-            c_write_val(buf, v_type, v, v_spec)
+        write_dict(buf, val, spec)
 
     elif ttype == T_STRUCT:
         write_struct(buf, val)
