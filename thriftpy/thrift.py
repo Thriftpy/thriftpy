@@ -19,6 +19,23 @@ def args2kwargs(thrift_spec, *args):
     return dict(zip(arg_names, args))
 
 
+def parse_spec(ttype, spec=None):
+    name_map = TType._VALUES_TO_NAMES
+    _type = lambda s: parse_spec(*s) if isinstance(s, tuple) else name_map[s]
+
+    if spec is None:
+        return name_map[ttype]
+
+    if ttype == TType.STRUCT:
+        return spec.__name__
+
+    if ttype in (TType.LIST, TType.SET):
+        return "%s<%s>" % (name_map[ttype], _type(spec))
+
+    if ttype == TType.MAP:
+        return "MAP<%s, %s>" % (_type(spec[0]), _type(spec[1]))
+
+
 class TType(object):
     STOP = 0
     VOID = 1
@@ -305,6 +322,23 @@ class TProcessorFactory(object):
 
 class TException(TPayload, Exception):
     """Base class for all thrift exceptions."""
+
+
+class TDecodeException(TException):
+    def __init__(self, name, fid, field, value, ttype, spec=None):
+        self.struct_name = name
+        self.fid = fid
+        self.field = field
+        self.value = value
+
+        self.type_repr = parse_spec(ttype, spec)
+
+    def __str__(self):
+        return (
+            "Field '%s(%s)' of '%s' needs type '%s', "
+            "but the value is `%r`"
+        ) % (self.field, self.fid, self.struct_name, self.type_repr,
+             self.value)
 
 
 class TApplicationException(TException):
