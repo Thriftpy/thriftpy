@@ -44,7 +44,7 @@ class ProtocolError(Exception):
 
 
 cdef inline char read_i08(CyTransportBase buf) except? -1:
-    cdef char data
+    cdef char data = 0
     buf.c_read(1, &data)
     return data
 
@@ -96,7 +96,7 @@ cdef inline int write_double(CyTransportBase buf, double val) except -1:
     return 0
 
 
-cdef inline write_list(CyTransportBase buf, list val, spec):
+cdef inline write_list(CyTransportBase buf, object val, spec):
     cdef TType e_type
     cdef int val_len
 
@@ -122,7 +122,7 @@ cdef inline write_string(CyTransportBase buf, bytes val):
     buf.c_write(<char*>val, val_len)
 
 
-cdef inline write_dict(CyTransportBase buf, dict val, spec):
+cdef inline write_dict(CyTransportBase buf, object val, spec):
     cdef int val_len
     cdef TType v_type, k_type
 
@@ -210,7 +210,7 @@ cdef inline write_struct(CyTransportBase buf, obj):
         write_i16(buf, fid)
         try:
             c_write_val(buf, f_type, v, container_spec)
-        except (TypeError, AttributeError):
+        except (TypeError, AttributeError, AssertionError):
             raise TDecodeException(obj.__class__.__name__, fid, f_name, v,
                                    f_type, container_spec)
 
@@ -343,8 +343,7 @@ cdef c_write_val(CyTransportBase buf, TType ttype, val, spec=None):
         write_string(buf, val)
 
     elif ttype == T_SET or ttype == T_LIST:
-        if isinstance(val, (tuple, dict, set)):
-            val = list(val)
+        assert not isinstance(val, basestring)
         write_list(buf, val, spec)
 
     elif ttype == T_MAP:
@@ -356,7 +355,7 @@ cdef c_write_val(CyTransportBase buf, TType ttype, val, spec=None):
 
 cpdef skip(CyTransportBase buf, TType ttype):
     cdef TType v_type, k_type, f_type
-    cdef int i, size
+    cdef int size
 
     if ttype == T_BOOL or ttype == T_I08:
         read_i08(buf)
@@ -372,13 +371,13 @@ cpdef skip(CyTransportBase buf, TType ttype):
     elif ttype == T_SET or ttype == T_LIST:
         v_type = <TType>read_i08(buf)
         size = read_i32(buf)
-        for i in range(size):
+        for _ in range(size):
             skip(buf, v_type)
     elif ttype == T_MAP:
         k_type = <TType>read_i08(buf)
         v_type = <TType>read_i08(buf)
         size = read_i32(buf)
-        for i in range(size):
+        for _ in range(size):
             skip(buf, k_type)
             skip(buf, v_type)
     elif ttype == T_STRUCT:

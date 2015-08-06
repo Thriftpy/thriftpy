@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import collections
 import multiprocessing
 import os
 import time
@@ -429,3 +430,32 @@ def test_write_decode_error():
         with pytest.raises(TDecodeException) as exc:
             p.write_struct(obj)
         assert str(exc.value) == res
+
+
+def test_type_tolerance():
+    t = TCyMemoryBuffer()
+    p = proto.TCyBinaryProtocol(t)
+
+    class T(TPayload):
+        thrift_spec = {
+            1: (TType.LIST, "phones", TType.STRING, False),
+            2: (TType.MAP, "mm", (TType.I32, (TType.LIST, TType.I32)), False)
+        }
+        default_spec = [("phones", None), ("mm", None)]
+
+    defaultdict = collections.defaultdict(list)
+    defaultdict.update({234: [3, 4, 5], 123: [6, 7, 8]})
+
+    cases = [
+        T(phones=["123", "234"]),
+        T(phones=("123", "234")),
+        T(phones=set(["123", "234"])),
+        T(phones={"123": 'a', "234": 'b'}),
+
+        T(mm={234: [3, 4, 5], 123: [6, 7, 8]}),
+        T(mm=collections.defaultdict(list)),
+        T(mm=defaultdict)
+    ]
+
+    for obj in cases:
+        p.write_struct(obj)
