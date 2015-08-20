@@ -210,7 +210,7 @@ cdef inline write_struct(CyTransportBase buf, obj):
         write_i16(buf, fid)
         try:
             c_write_val(buf, f_type, v, container_spec)
-        except (TypeError, AttributeError, AssertionError):
+        except (TypeError, AttributeError, AssertionError, OverflowError):
             raise TDecodeException(obj.__class__.__name__, fid, f_name, v,
                                    f_type, container_spec)
 
