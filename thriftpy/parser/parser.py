@@ -487,6 +487,51 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
     return thrift
 
 
+def parse_fp(source, module_name, lexer=None, parser=None, enable_cache=True):
+    """Parse a file-like object to thrift module object, e.g.::
+
+        >>> from thriftpy.parser.parser import parse_fp
+        >>> note_thrift = parse_fp(open("path/to/note.thrift"))
+        <module 'note_thrift' (built-in)>
+
+    :param source: file-like object, expected to have a method named `read`.
+    :param module_name: the name for parsed module, shoule be endswith
+                        '_thrift'.
+    :param lexer: ply lexer to use, if not provided, `parse` will new one.
+    :param parser: ply parser to use, if not provided, `parse` will new one.
+    :param enable_cache: if this is set to be `True`, parsed module will be
+                         cached by `module_name`, this is enabled by default.
+    """
+    if not module_name.endswith('_thrift'):
+        raise ThriftParserError('ThriftPy can only generate module with '
+                                '\'_thrift\' suffix')
+
+    if enable_cache and module_name in thrift_cache:
+        return thrift_cache[module_name]
+
+    if not hasattr(source, 'read'):
+        raise ThriftParserError('Except `source` to be a file-like object with'
+                                'a method named \'read\'')
+
+    if lexer is None:
+        lexer = lex.lex()
+    if parser is None:
+        parser = yacc.yacc(debug=False, write_tables=0)
+
+    data = source.read()
+
+    thrift = types.ModuleType(module_name)
+    setattr(thrift, '__thrift_source__', source)
+    thrift_stack.append(thrift)
+    lexer.lineno = 1
+    parser.parse(data)
+    thrift_stack.pop()
+
+    if enable_cache:
+        thrift_cache[module_name] = thrift
+    return thrift
+
+
 def _add_thrift_meta(key, val):
     thrift = thrift_stack[-1]
 
