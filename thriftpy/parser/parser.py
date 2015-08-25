@@ -432,8 +432,8 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
                          the `include` directive, by default: ['.'].
     :param include_dir: directory to find child thrift files. Note this keyword
                         parameter will be deprecated in the future, it exists
-                        for compatiable reason. If it's provided (not `None`), it
-                        will be appended to `include_dirs`.
+                        for compatiable reason. If it's provided (not `None`), 
+                        it will be appended to `include_dirs`.
     :param lexer: ply lexer to use, if not provided, `parse` will new one.
     :param parser: ply parser to use, if not provided, `parse` will new one.
     :param enable_cache: if this is set to be `True`, parsed module will be
