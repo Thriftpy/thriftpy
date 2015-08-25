@@ -12,11 +12,12 @@ from __future__ import absolute_import
 import os
 import sys
 
-from .parser import parse
+from .parser import parse, parse_fp
 
 
 def load(path, module_name=None, include_dirs=None, include_dir=None):
-    """Load thrift_file as a module
+    """Load thrift file as a module.
+
     The module loaded and objects inside may only be pickled if module_name
     was provided.
 
@@ -30,6 +31,14 @@ def load(path, module_name=None, include_dirs=None, include_dir=None):
 
     if real_module:
         sys.modules[module_name] = thrift
+    return thrift
+
+
+def load_fp(source, module_name):
+    """Load thrift file like object as a module.
+    """
+    thrift = parse_fp(source, module_name)
+    sys.modules[module_name] = thrift
     return thrift
 
 

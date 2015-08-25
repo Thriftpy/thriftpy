@@ -46,6 +46,10 @@ def p_include(p):
     '''include : INCLUDE LITERAL'''
     thrift = thrift_stack[-1]
 
+    if thrift.__thrift_file__ is None:
+        raise ThriftParserError('Unexcepted include statement while loading'
+                                'from file like object.')
+
     for include_dir in include_dirs_:
         path = os.path.join(include_dir, p[2])
         if os.path.exists(path):
@@ -439,7 +443,8 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
 
     # dead include checking on current stack
     for thrift in thrift_stack:
-        if os.path.samefile(path, thrift.__thrift_file__):
+        if thrift.__thrift_file__ is not None and \
+                os.path.samefile(path, thrift.__thrift_file__):
             raise ThriftParserError('Dead including on %s' % path)
 
     global thrift_cache
@@ -491,7 +496,8 @@ def parse_fp(source, module_name, lexer=None, parser=None, enable_cache=True):
     """Parse a file-like object to thrift module object, e.g.::
 
         >>> from thriftpy.parser.parser import parse_fp
-        >>> note_thrift = parse_fp(open("path/to/note.thrift"))
+        >>> with open("path/to/note.thrift") as fp:
+                parse_fp(fp, "note_thrift")
         <module 'note_thrift' (built-in)>
 
     :param source: file-like object, expected to have a method named `read`.
@@ -521,7 +527,7 @@ def parse_fp(source, module_name, lexer=None, parser=None, enable_cache=True):
     data = source.read()
 
     thrift = types.ModuleType(module_name)
-    setattr(thrift, '__thrift_source__', source)
+    setattr(thrift, '__thrift_file__', None)
     thrift_stack.append(thrift)
     lexer.lineno = 1
     parser.parse(data)
