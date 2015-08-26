@@ -2,7 +2,7 @@
 
 import pytest
 from thriftpy.thrift import TType
-from thriftpy.parser import load
+from thriftpy.parser import load, load_fp
 from thriftpy.parser.exc import ThriftParserError, ThriftGrammerError
 
 
@@ -221,3 +221,21 @@ def test_thrift_meta():
     assert meta['exceptions'] == [thrift.InvalidOperation]
     assert meta['services'] == [thrift.Calculator]
     assert meta['includes'] == [thrift.shared]
+
+
+def test_load_fp():
+    thrift = None
+    with open('parser-cases/shared.thrift') as thrift_fp:
+        thrift = load_fp(thrift_fp, 'shared_thrift')
+    assert thrift.__name__ == 'shared_thrift'
+    assert thrift.__thrift_file__ is None
+    assert thrift.__thrift_meta__['structs'] == [thrift.SharedStruct]
+    assert thrift.__thrift_meta__['services'] == [thrift.SharedService]
+
+
+def test_e_load_fp():
+    with pytest.raises(ThriftParserError) as excinfo:
+        with open('parser-cases/tutorial.thrift') as thrift_fp:
+            load_fp(thrift_fp, 'tutorial_thrift')
+        assert ('Unexcepted include statement while loading'
+                'from file like object.') == str(excinfo.value)

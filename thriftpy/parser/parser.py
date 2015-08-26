@@ -46,6 +46,10 @@ def p_include(p):
     '''include : INCLUDE LITERAL'''
     thrift = thrift_stack[-1]
 
+    if thrift.__thrift_file__ is None:
+        raise ThriftParserError('Unexcepted include statement while loading'
+                                'from file like object.')
+
     for include_dir in include_dirs_:
         path = os.path.join(include_dir, p[2])
         if os.path.exists(path):
@@ -415,10 +419,32 @@ thrift_cache = {}
 
 def parse(path, module_name=None, include_dirs=None, include_dir=None,
           lexer=None, parser=None, enable_cache=True):
+    """Parse a single thrift file to module object, e.g.::
+
+        >>> from thriftpy.parser.parser import parse
+        >>> note_thrift = parse("path/to/note.thrift")
+        <module 'note_thrift' (built-in)>
+
+    :param path: file path to parse, should be a string ending with '.thrift'.
+    :param module_name: the name for parsed module, the default is the basename
+                        without extension of `path`.
+    :param include_dirs: directories to find thrift files while processing
+                         the `include` directive, by default: ['.'].
+    :param include_dir: directory to find child thrift files. Note this keyword
+                        parameter will be deprecated in the future, it exists
+                        for compatiable reason. If it's provided (not `None`), 
+                        it will be appended to `include_dirs`.
+    :param lexer: ply lexer to use, if not provided, `parse` will new one.
+    :param parser: ply parser to use, if not provided, `parse` will new one.
+    :param enable_cache: if this is set to be `True`, parsed module will be
+                         cached, this is enabled by default. If `module_name`
+                         is provided, use it as cache key, else use the `path`.
+    """
 
     # dead include checking on current stack
     for thrift in thrift_stack:
-        if os.path.samefile(path, thrift.__thrift_file__):
+        if thrift.__thrift_file__ is not None and \
+                os.path.samefile(path, thrift.__thrift_file__):
             raise ThriftParserError('Dead including on %s' % path)
 
     global thrift_cache
@@ -463,6 +489,52 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
 
     if enable_cache:
         thrift_cache[cache_key] = thrift
+    return thrift
+
+
+def parse_fp(source, module_name, lexer=None, parser=None, enable_cache=True):
+    """Parse a file-like object to thrift module object, e.g.::
+
+        >>> from thriftpy.parser.parser import parse_fp
+        >>> with open("path/to/note.thrift") as fp:
+                parse_fp(fp, "note_thrift")
+        <module 'note_thrift' (built-in)>
+
+    :param source: file-like object, expected to have a method named `read`.
+    :param module_name: the name for parsed module, shoule be endswith
+                        '_thrift'.
+    :param lexer: ply lexer to use, if not provided, `parse` will new one.
+    :param parser: ply parser to use, if not provided, `parse` will new one.
+    :param enable_cache: if this is set to be `True`, parsed module will be
+                         cached by `module_name`, this is enabled by default.
+    """
+    if not module_name.endswith('_thrift'):
+        raise ThriftParserError('ThriftPy can only generate module with '
+                                '\'_thrift\' suffix')
+
+    if enable_cache and module_name in thrift_cache:
+        return thrift_cache[module_name]
+
+    if not hasattr(source, 'read'):
+        raise ThriftParserError('Except `source` to be a file-like object with'
+                                'a method named \'read\'')
+
+    if lexer is None:
+        lexer = lex.lex()
+    if parser is None:
+        parser = yacc.yacc(debug=False, write_tables=0)
+
+    data = source.read()
+
+    thrift = types.ModuleType(module_name)
+    setattr(thrift, '__thrift_file__', None)
+    thrift_stack.append(thrift)
+    lexer.lineno = 1
+    parser.parse(data)
+    thrift_stack.pop()
+
+    if enable_cache:
+        thrift_cache[module_name] = thrift
     return thrift
 
 
