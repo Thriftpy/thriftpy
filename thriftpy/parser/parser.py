@@ -203,10 +203,16 @@ def p_enum_item(p):
 
 
 def p_struct(p):
-    '''struct : STRUCT IDENTIFIER '{' field_seq '}' '''
-    val = _make_struct(p[2], p[4])
-    setattr(thrift_stack[-1], p[2], val)
+    '''struct : seen_struct '{' field_seq '}' '''
+    val = _fill_in_struct(p[1], p[3])
     _add_thrift_meta('structs', val)
+
+
+def p_seen_struct(p):
+    '''seen_struct : STRUCT IDENTIFIER '''
+    val = _make_empty_struct(p[2])
+    setattr(thrift_stack[-1], p[2], val)
+    p[0] = val
 
 
 def p_union(p):
@@ -652,10 +658,12 @@ def _make_enum(name, kvs):
     return cls
 
 
-def _make_struct(name, fields, ttype=TType.STRUCT, base_cls=TPayload,
-                 _gen_init=True):
+def _make_empty_struct(name, ttype=TType.STRUCT, base_cls=TPayload):
     attrs = {'__module__': thrift_stack[-1].__name__, '_ttype': ttype}
-    cls = type(name, (base_cls, ), attrs)
+    return type(name, (base_cls, ), attrs)
+
+
+def _fill_in_struct(cls, fields, _gen_init=True):
     thrift_spec = {}
     default_spec = []
     _tspec = {}
@@ -675,6 +683,12 @@ def _make_struct(name, fields, ttype=TType.STRUCT, base_cls=TPayload,
     if _gen_init:
         gen_init(cls, thrift_spec, default_spec)
     return cls
+
+
+def _make_struct(name, fields, ttype=TType.STRUCT, base_cls=TPayload,
+                 _gen_init=True):
+    cls = _make_empty_struct(name, ttype=ttype, base_cls=base_cls)
+    return _fill_in_struct(cls, fields, _gen_init=_gen_init)
 
 
 def _make_service(name, funcs, extends):
