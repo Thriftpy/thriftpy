@@ -68,7 +68,7 @@ class TTornadoStreamTransport(TTransportBase):
         try:
             yield self.with_timeout(timeout, self.stream.connect(
                 (self.host, self.port)))
-        except (socket.error, IOError):
+        except (socket.error, OSError, IOError):
             message = 'could not connect to {}:{}'.format(self.host, self.port)
             raise TTransportException(
                 type=TTransportException.NOT_OPEN,
@@ -94,7 +94,7 @@ class TTornadoStreamTransport(TTransportBase):
     def io_exception_context(self):
         try:
             yield
-        except (socket.error, IOError) as e:
+        except (socket.error, OSError, IOError) as e:
             raise TTransportException(
                 type=TTransportException.END_OF_FILE,
                 message=str(e))
