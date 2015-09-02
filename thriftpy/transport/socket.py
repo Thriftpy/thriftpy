@@ -31,7 +31,7 @@ class TSocketBase(TTransportBase):
         try:
             self.handle.shutdown(socket.SHUT_RDWR)
             self.handle.close()
-        except socket.error:
+        except (socket.error, OSError):
             pass
         self.handle = None
 
@@ -73,13 +73,13 @@ class TSocket(TSocketBase):
                 self.handle.settimeout(self._timeout)
                 try:
                     self.handle.connect(res[4])
-                except socket.error as e:
+                except (socket.error, OSError) as e:
                     if res is not res0[-1]:
                         continue
                     else:
                         raise e
                 break
-        except socket.error as e:
+        except (socket.error, OSError) as e:
             if self._unix_socket:
                 message = 'Could not connect to socket %s' % self._unix_socket
             else:
@@ -143,7 +143,7 @@ class TServerSocket(TSocketBase):
             tmp = socket.socket(res[0], res[1])
             try:
                 tmp.connect(res[4])
-            except socket.error as err:
+            except (socket.error, OSError) as err:
                 eno, message = err.args
                 if eno == errno.ECONNREFUSED:
                     os.unlink(res[4])
