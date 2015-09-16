@@ -220,10 +220,16 @@ def p_seen_struct(p):
 
 
 def p_union(p):
-    '''union : UNION IDENTIFIER '{' field_seq '}' '''
-    val = _make_struct(p[2], p[4])
-    setattr(thrift_stack[-1], p[2], val)
+    '''union : seen_union '{' field_seq '}' '''
+    val = _fill_in_struct(p[1], p[3])
     _add_thrift_meta('unions', val)
+
+
+def p_seen_union(p):
+    '''seen_union : UNION IDENTIFIER '''
+    val = _make_empty_struct(p[2])
+    setattr(thrift_stack[-1], p[2], val)
+    p[0] = val
 
 
 def p_exception(p):
@@ -438,7 +444,7 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
                          the `include` directive, by default: ['.'].
     :param include_dir: directory to find child thrift files. Note this keyword
                         parameter will be deprecated in the future, it exists
-                        for compatiable reason. If it's provided (not `None`), 
+                        for compatiable reason. If it's provided (not `None`),
                         it will be appended to `include_dirs`.
     :param lexer: ply lexer to use, if not provided, `parse` will new one.
     :param parser: ply parser to use, if not provided, `parse` will new one.
