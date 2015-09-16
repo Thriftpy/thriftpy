@@ -239,3 +239,16 @@ def test_e_load_fp():
             load_fp(thrift_fp, 'tutorial_thrift')
         assert ('Unexcepted include statement while loading'
                 'from file like object.') == str(excinfo.value)
+
+
+def test_recursive_union():
+    thrift = load('parser-cases/recursive_union.thrift')
+    assert thrift.Dynamic.thrift_spec == {
+        1: (TType.BOOL, 'boolean', False),
+        2: (TType.I64, 'integer', False),
+        3: (TType.DOUBLE, 'doubl', False),
+        4: (TType.STRING, 'str', False),
+        5: (TType.LIST, 'arr', (TType.STRUCT, thrift.Dynamic), False),
+        6: (TType.MAP, 'object', (TType.STRING, (TType.STRUCT,
+                                                 thrift.Dynamic)), False)
+    }
