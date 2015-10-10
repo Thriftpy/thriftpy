@@ -1,3 +1,5 @@
+const bool tbool = true
+const bool tboolint = 1
 const i16 int16 = 3
 const i32 int32 = 800
 const i64 int64 = 123456789

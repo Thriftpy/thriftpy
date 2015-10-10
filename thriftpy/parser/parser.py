@@ -601,8 +601,8 @@ def _cast(t):  # noqa
 
 
 def _cast_bool(v):
-    assert isinstance(v, bool)
-    return v
+    assert isinstance(v, (bool, int))
+    return bool(v)
 
 
 def _cast_byte(v):
