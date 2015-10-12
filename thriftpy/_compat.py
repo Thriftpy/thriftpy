@@ -81,9 +81,8 @@ def init_func_generator(spec):
     varnames = ('self', ) + varnames
 
     def init(self):
-        kwargs = locals()
-        kwargs.pop('self')
-        self.__dict__.update(kwargs)
+        self.__dict__ = locals().copy()
+        del self.__dict__['self']
 
     code = init.__code__
     if PY3:
