@@ -241,7 +241,7 @@ cdef c_read_val(CyTransportBase buf, TType ttype, spec=None):
     cdef TType v_type, k_type, orig_type, orig_key_type
 
     if ttype == T_BOOL:
-        return bool(read_i08(buf))
+        return <bint>read_i08(buf)
 
     elif ttype == T_I08:
         return read_i08(buf)
