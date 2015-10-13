@@ -33,6 +33,7 @@ Released on Oct 12, 2015.
 .. _`#149`: https://github.com/eleme/thriftpy/pull/149
 .. _`#150`: https://github.com/eleme/thriftpy/pull/150
 .. _`#154`: https://github.com/eleme/thriftpy/pull/154
+.. _`#155`: https://github.com/eleme/thriftpy/pull/155
 .. _`#161`: https://github.com/eleme/thriftpy/pull/161
 .. _`#162`: https://github.com/eleme/thriftpy/pull/162
 .. _`#163`: https://github.com/eleme/thriftpy/pull/163
