@@ -4,6 +4,40 @@ Changelog
 0.3.x
 ~~~~~
 
+Version 0.3.2
+-------------
+
+Released on Oct 12, 2015.
+
+- add `__thrift_meta__` attribute to loaded module, via `#138`_.
+- add type validation before write data to transport, via `#149`_ and `#150`_.
+- add load_fp api to load thrift from file like object, via `#154`_.
+- add support for recursive struct definition, via `#155`_.
+- add support for integer boolean constants, via `#161`_.
+
+- simplify the read_i08() bool result cast, via `#162`_.
+- performance improvements on payload `init()` func, via `#163`_.
+
+- bugfix for parsing of duplicate field name or id, now will raise error
+  when duplicates detected, via `#139`_.
+- bugfix for server side transport not connected error when closing socket,
+  via `#143`_.
+- bugfix for a typo error in `default_spec` generation, via `#145`_.
+- bugfix for i16 byte swap bug in OS X, via `#148`_.
+
+.. _`#138`: https://github.com/eleme/thriftpy/pull/138
+.. _`#139`: https://github.com/eleme/thriftpy/pull/139
+.. _`#143`: https://github.com/eleme/thriftpy/pull/143
+.. _`#145`: https://github.com/eleme/thriftpy/pull/145
+.. _`#148`: https://github.com/eleme/thriftpy/pull/148
+.. _`#149`: https://github.com/eleme/thriftpy/pull/149
+.. _`#150`: https://github.com/eleme/thriftpy/pull/150
+.. _`#154`: https://github.com/eleme/thriftpy/pull/154
+.. _`#161`: https://github.com/eleme/thriftpy/pull/161
+.. _`#162`: https://github.com/eleme/thriftpy/pull/162
+.. _`#163`: https://github.com/eleme/thriftpy/pull/163
+
+
 Version 0.3.1
 -------------
 
