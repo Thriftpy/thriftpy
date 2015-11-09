@@ -12,6 +12,9 @@ from thriftpy.transport import (
 )
 
 
+logger = logging.getLogger(__name__)
+
+
 class TServer(object):
     def __init__(self, processor, trans,
                  itrans_factory=None, iprot_factory=None,
@@ -52,7 +55,7 @@ class TSimpleServer(TServer):
             except TTransportException:
                 pass
             except Exception as x:
-                logging.exception(x)
+                logger.exception(x)
 
             itrans.close()
             otrans.close()
@@ -80,7 +83,7 @@ class TThreadedServer(TServer):
             except KeyboardInterrupt:
                 raise
             except Exception as x:
-                logging.exception(x)
+                logger.exception(x)
 
     def handle(self, client):
         itrans = self.itrans_factory.get_transport(client)
@@ -93,7 +96,7 @@ class TThreadedServer(TServer):
         except TTransportException:
             pass
         except Exception as x:
-            logging.exception(x)
+            logger.exception(x)
 
         itrans.close()
         otrans.close()
