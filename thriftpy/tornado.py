@@ -35,6 +35,9 @@ import struct
 import toro
 
 
+logger = logging.getLogger(__name__)
+
+
 class TTornadoStreamTransport(TTransportBase):
     """a framed, buffered transport over a Tornado stream"""
     DEFAULT_CONNECT_TIMEOUT = timedelta(seconds=1)
@@ -61,7 +64,7 @@ class TTornadoStreamTransport(TTransportBase):
 
     @gen.coroutine
     def open(self, timeout=DEFAULT_CONNECT_TIMEOUT):
-        logging.debug('socket connecting')
+        logger.debug('socket connecting')
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         self.stream = iostream.IOStream(sock)
 
@@ -117,10 +120,10 @@ class TTornadoStreamTransport(TTransportBase):
                     raise iostream.StreamClosedError(
                         'Read zero bytes from stream')
                 frame_length, = struct.unpack('!i', frame_header)
-                logging.debug('received frame header, frame length = %d',
+                logger.debug('received frame header, frame length = %d',
                               frame_length)
                 frame = yield self._read_bytes(frame_length)
-                logging.debug('received frame payload: %r', frame)
+                logger.debug('received frame payload: %r', frame)
                 raise gen.Return(frame)
 
     def _read_bytes(self, n):
@@ -183,10 +186,10 @@ class TTornadoServer(tcpserver.TCPServer):
 
                     self._processor.send_result(oprot, api, result, seqid)
         except Exception:
-            logging.exception('thrift exception in handle_stream')
+            logger.exception('thrift exception in handle_stream')
             trans.close()
 
-        logging.info('client disconnected %s:%d', host, port)
+        logger.info('client disconnected %s:%d', host, port)
 
 
 class TTornadoClient(TClient):
