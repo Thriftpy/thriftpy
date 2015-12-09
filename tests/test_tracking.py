@@ -240,14 +240,17 @@ def test_tracker(server, dbm_db, tracker_ctx):
         "server": "test_server",
         "api": "ping",
         "status": True,
-        "annotation": {}
+        "annotation": {},
+        "meta": {},
     }
 
 
 def test_tracker_chain(server, server1, server2, dbm_db, tracker_ctx):
+    test_meta = {'test': 'test_meta'}
     with client() as c:
-        c.remove("jane")
-        c.hello("yes")
+        with SampleTracker.add_meta(**test_meta):
+            c.remove("jane")
+            c.hello("yes")
 
     time.sleep(0.2)
 
@@ -261,7 +264,9 @@ def test_tracker_chain(server, server1, server2, dbm_db, tracker_ctx):
     assert len(set([i["request_id"] for i in headers])) == 2
 
     seqs = [i["seq"] for i in headers]
+    metas = [i["meta"] for i in headers]
     assert seqs == ['1', '1.1', '1.1.1', '1.1.2', '2']
+    assert metas == [test_meta] * 5
 
 
 def test_exception(server, dbm_db, tracker_ctx):
