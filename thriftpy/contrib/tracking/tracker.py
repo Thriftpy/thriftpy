@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import
 
+import copy
 import contextlib
 import threading
 import uuid
@@ -26,11 +27,16 @@ class TrackerBase(object):
 
         ctx.counter += 1
 
-        if not hasattr(ctx, "header"):
-            header.seq = str(ctx.counter)
-        else:
+        if hasattr(ctx, "header"):
             header.seq = "{prev_seq}.{cur_counter}".format(
                 prev_seq=ctx.header.seq, cur_counter=ctx.counter)
+            header.meta = ctx.header.meta
+        else:
+            header.meta = {}
+            header.seq = str(ctx.counter)
+
+        if hasattr(ctx, "meta"):
+            header.meta.update(ctx.meta)
 
     def record(self, header, exception):
         pass
@@ -61,6 +67,30 @@ class TrackerBase(object):
             yield ctx.annotation
         finally:
             del ctx.annotation
+
+    @classmethod
+    @contextlib.contextmanager
+    def add_meta(cls, **kwds):
+        if hasattr(ctx, 'meta'):
+            old_dict = copy.copy(ctx.meta)
+            ctx.meta.update(kwds)
+            try:
+                yield ctx.meta
+            finally:
+                ctx.meta = old_dict
+        else:
+            ctx.meta = kwds
+            try:
+                yield ctx.meta
+            finally:
+                del ctx.meta
+
+    @property
+    def meta(self):
+        meta = ctx.header.meta if hasattr(ctx, "header") else {}
+        if hasattr(ctx, "meta"):
+            meta.update(ctx.meta)
+        return meta
 
     @property
     def annotation(self):

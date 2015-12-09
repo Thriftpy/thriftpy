@@ -4,6 +4,7 @@
 struct RequestHeader {
     1: string request_id
     2: string seq
+    3: map<string, string> meta
 }
 
 /**

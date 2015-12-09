@@ -16,7 +16,7 @@ from ...thrift import TClient, TApplicationException, TMessageType, \
     TProcessor, TType
 from ...parser import load
 
-track_method = "__thriftpy_tracing_method_name__v2"
+track_method = "__thriftpy_tracing_method_name__v3"
 track_thrift = load(os.path.join(os.path.dirname(__file__), "tracking.thrift"))
 
 
@@ -26,7 +26,7 @@ __all__ = ["TTrackedClient", "TTrackedProcessor", "TrackerBase",
 
 class RequestInfo(object):
     def __init__(self, request_id, api, seq, client, server, status, start,
-                 end, annotation):
+                 end, annotation, meta):
         """Used to store call info.
 
         :request_id: used to identity a request
@@ -48,6 +48,7 @@ class RequestInfo(object):
         self.start = start
         self.end = end
         self.annotation = annotation
+        self.meta = meta
 
 
 class TTrackedClient(TClient):
@@ -116,7 +117,8 @@ class TTrackedClient(TClient):
                 status=status,
                 start=self.send_start,
                 end=int(time.time() * 1000),
-                annotation=self.tracker.annotation
+                annotation=self.tracker.annotation,
+                meta=self._header.meta,
             )
             self.tracker.record(header_info, exception)
 
