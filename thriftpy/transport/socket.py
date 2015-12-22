@@ -5,91 +5,97 @@ from __future__ import absolute_import
 import errno
 import os
 import socket
+import struct
 import sys
 
-from . import TTransportBase, TTransportException
+from . import TTransportException
 
 
-class TSocketBase(TTransportBase):
-    def _resolveAddr(self):
-        if self._unix_socket is not None:
-            return [(socket.AF_UNIX, socket.SOCK_STREAM, None, None,
-                     self._unix_socket)]
-        else:
-            return socket.getaddrinfo(
-                self.host,
-                self.port,
-                socket.AF_UNSPEC,
-                socket.SOCK_STREAM,
-                0,
-                socket.AI_PASSIVE | socket.AI_ADDRCONFIG)
+class TSocket(object):
+    """Socket implementation for client side."""
 
-    def close(self):
-        if not self.handle:
-            return
-
-        try:
-            self.handle.shutdown(socket.SHUT_RDWR)
-            self.handle.close()
-        except (socket.error, OSError):
-            pass
-        self.handle = None
-
-
-class TSocket(TSocketBase):
-    """Socket implementation of TTransport base."""
-
-    def __init__(self, host='localhost', port=9090, unix_socket=None):
+    def __init__(self, host=None, port=None, unix_socket=None,
+                 sock=None, socket_family=socket.AF_INET,
+                 socket_timeout=3000, connect_timeout=None):
         """Initialize a TSocket
+
+        TSocket can be initialized in 3 ways:
+        * host + port. can configure to use AF_INET/AF_INET6
+        * unix_socket
+        * socket. should pass already opened socket here.
 
         @param host(str)    The host to connect to.
         @param port(int)    The (TCP) port to connect to.
-        @param unix_socket(str)  The filename of a unix socket to connect to.
-                                 (host and port will be ignored.)
+        @param unix_socket(str) The filename of a unix socket to connect to.
+        @param sock(socket)     Initialize with opened socket directly.
+            If this param used, the host, port and unix_socket params will
+            be ignored.
+        @param socket_family(str) socket.AF_INET or socket.AF_INET6. only
+            take effect when using host/port
+        @param socket_timeout   socket timeout in ms
+        @param connect_timeout  connect timeout in ms, only used in
+            connection, will be set to socket_timeout if not set.
         """
-        self.host = host
-        self.port = port
-        self.handle = None
-        self._unix_socket = unix_socket
-        self._timeout = None
+        if sock:
+            self.sock = sock
+        elif unix_socket:
+            self.unix_socket = unix_socket
+            self.host = None
+            self.port = None
+            self.sock = None
+        else:
+            self.unix_socket = None
+            self.host = host
+            self.port = port
+            self.sock = None
 
-    def set_handle(self, h):
-        self.handle = h
+        self.socket_family = socket_family
+        self.socket_timeout = socket_timeout / 1000 if socket_timeout else None
+        self.connect_timeout = connect_timeout / 1000 if connect_timeout \
+            else self.socket_timeout
+
+    def _init_sock(self):
+        if self.unix_socket:
+            _sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        else:
+            _sock = socket.socket(self.socket_family, socket.SOCK_STREAM)
+            _sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+
+        # socket options
+        linger = struct.pack('ii', 1, 0)
+        _sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, linger)
+        _sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+
+        self.sock = _sock
+
+    def set_socket(self, sock):
+        self.sock = sock
 
     def is_open(self):
-        return bool(self.handle)
-
-    def set_timeout(self, ms):
-        self._timeout = ms / 1000.0 if ms else None
-
-        if self.handle:
-            self.handle.settimeout(self._timeout)
+        return bool(self.sock)
 
     def open(self):
+        self._init_sock()
+
+        addr = self.unix_socket or (self.host, self.port)
+
         try:
-            res0 = self._resolveAddr()
-            for res in res0:
-                self.handle = socket.socket(res[0], res[1])
-                self.handle.settimeout(self._timeout)
-                try:
-                    self.handle.connect(res[4])
-                except (socket.error, OSError) as e:
-                    if res is not res0[-1]:
-                        continue
-                    else:
-                        raise e
-                break
-        except (socket.error, OSError) as e:
-            if self._unix_socket:
-                message = 'Could not connect to socket %s' % self._unix_socket
-            else:
-                message = 'Could not connect to %s:%d' % (self.host, self.port)
-            raise TTransportException(type=TTransportException.NOT_OPEN,
-                                      message=message)
+            if self.connect_timeout:
+                self.sock.settimeout(self.connect_timeout)
+
+            self.sock.connect(addr)
+
+            if self.socket_timeout:
+                self.sock.settimeout(self.socket_timeout)
+
+        except (socket.error, OSError):
+            raise TTransportException(
+                type=TTransportException.NOT_OPEN,
+                message="Could not connect to %s" % str(addr))
 
     def read(self, sz):
         try:
-            buff = self.handle.recv(sz)
+            buff = self.sock.recv(sz)
         except socket.error as e:
             if (e.args[0] == errno.ECONNRESET and
                     (sys.platform == 'darwin' or
@@ -103,60 +109,98 @@ class TSocket(TSocketBase):
                 buff = ''
             else:
                 raise
+
         if len(buff) == 0:
             raise TTransportException(type=TTransportException.END_OF_FILE,
                                       message='TSocket read 0 bytes')
         return buff
 
     def write(self, buff):
-        if not self.handle:
-            raise TTransportException(type=TTransportException.NOT_OPEN,
-                                      message='Transport not open')
-        self.handle.sendall(buff)
+        self.sock.sendall(buff)
 
     def flush(self):
         pass
 
+    def close(self):
+        if not self.sock:
+            return
 
-class TServerSocket(TSocketBase):
-    """Socket implementation of TServerTransport base."""
+        try:
+            self.sock.shutdown(socket.SHUT_RDWR)
+            self.sock.close()
+        except (socket.error, OSError):
+            pass
 
-    def __init__(self, host=None, port=9090, unix_socket=None,
-                 socket_family=socket.AF_UNSPEC):
-        self.host = host
-        self.port = port
-        self._unix_socket = unix_socket
-        self._socket_family = socket_family
-        self.handle = None
+
+class TServerSocket(object):
+    """Socket implementation for server side."""
+
+    def __init__(self, host=None, port=None, unix_socket=None,
+                 socket_family=socket.AF_INET, client_timeout=3000,
+                 backlog=128):
+        """Initialize a TServerSocket
+
+        TSocket can be initialized in 2 ways:
+        * host + port. can configure to use AF_INET/AF_INET6
+        * unix_socket
+
+        @param host(str)    The host to connect to
+        @param port(int)    The (TCP) port to connect to
+        @param unix_socket(str) The filename of a unix socket to connect to
+        @param socket_family(str) socket.AF_INET or socket.AF_INET6. only
+            take effect when using host/port
+        @param client_timeout   client socket timeout
+        @param backlog          backlog for server socket
+        """
+
+        if unix_socket:
+            self.unix_socket = unix_socket
+            self.host = None
+            self.port = None
+        else:
+            self.unix_socket = None
+            self.host = host
+            self.port = port
+
+        self.socket_family = socket_family
+        self.client_timeout = client_timeout / 1000 if client_timeout else None
+        self.backlog = backlog
+
+    def _init_sock(self):
+        if self.unix_socket:
+            # try remove the sock file it already exists
+            _sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            try:
+                _sock.connect(self.unix_socket)
+            except (socket.error, OSError) as err:
+                if err.args[0] == errno.ECONNREFUSED:
+                    os.unlink(self.unix_socket)
+        else:
+            _sock = socket.socket(self.socket_family, socket.SOCK_STREAM)
+
+        _sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        _sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        _sock.settimeout(None)
+        self.sock = _sock
 
     def listen(self):
-        res0 = self._resolveAddr()
-        socket_family = self._socket_family == socket.AF_UNSPEC and (
-            socket.AF_INET6 or self._socket_family)
-        for res in res0:
-            if res[0] is socket_family or res is res0[-1]:
-                break
+        self._init_sock()
 
-        # We need remove the old unix socket if the file exists and
-        # nobody is listening on it.
-        if self._unix_socket:
-            tmp = socket.socket(res[0], res[1])
-            try:
-                tmp.connect(res[4])
-            except (socket.error, OSError) as err:
-                eno, message = err.args
-                if eno == errno.ECONNREFUSED:
-                    os.unlink(res[4])
-
-        self.handle = socket.socket(res[0], res[1])
-        self.handle.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        if hasattr(self.handle, 'settimeout'):
-            self.handle.settimeout(None)
-        self.handle.bind(res[4])
-        self.handle.listen(128)
+        addr = self.unix_socket or (self.host, self.port)
+        self.sock.bind(addr)
+        self.sock.listen(self.backlog)
 
     def accept(self):
-        client, addr = self.handle.accept()
-        result = TSocket()
-        result.set_handle(client)
-        return result
+        client, _ = self.sock.accept()
+        client.settimeout(self.client_timeout)
+        return TSocket(sock=client)
+
+    def close(self):
+        if not self.sock:
+            return
+
+        try:
+            self.sock.shutdown(socket.SHUT_RDWR)
+            self.sock.close()
+        except (socket.error, OSError):
+            pass

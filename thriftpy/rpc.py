@@ -21,12 +21,9 @@ def make_client(service, host="localhost", port=9090, unix_socket=None,
     if unix_socket:
         socket = TSocket(unix_socket=unix_socket)
     elif host and port:
-        socket = TSocket(host, port)
+        socket = TSocket(host, port, socket_timeout=timeout)
     else:
         raise ValueError("Either host/port or unix_socket must be provided.")
-
-    if timeout:
-        socket.set_timeout(timeout)
 
     transport = trans_factory.get_transport(socket)
     protocol = proto_factory.get_protocol(transport)
@@ -56,19 +53,22 @@ def make_server(service, handler,
 def client_context(service, host="localhost", port=9090, unix_socket=None,
                    proto_factory=TBinaryProtocolFactory(),
                    trans_factory=TBufferedTransportFactory(),
-                   timeout=None):
+                   timeout=3000, socket_timeout=3000, connect_timeout=None):
+    if timeout:
+        socket_timeout = connect_timeout = timeout
+
     if unix_socket:
-        socket = TSocket(unix_socket=unix_socket)
+        socket = TSocket(unix_socket=unix_socket,
+                         connect_timeout=connect_timeout,
+                         socket_timeout=socket_timeout)
     elif host and port:
-        socket = TSocket(host, port)
+        socket = TSocket(host, port,
+                         connect_timeout=connect_timeout,
+                         socket_timeout=socket_timeout)
     else:
         raise ValueError("Either host/port or unix_socket must be provided.")
 
-    if timeout:
-        socket.set_timeout(timeout)
-
     try:
-
         transport = trans_factory.get_transport(socket)
         protocol = proto_factory.get_protocol(transport)
         transport.open()

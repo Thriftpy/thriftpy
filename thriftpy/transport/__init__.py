@@ -25,6 +25,9 @@ def readall(read_fn, sz):
 class TTransportBase(object):
     """Base class for Thrift transport layer."""
 
+    def _read(self):
+        raise NotImplementedError
+
     def read(self, sz):
         return readall(self._read, sz)
 
@@ -50,7 +53,7 @@ class TTransportException(TException):
 
 
 # Avoid recursive import
-from .socket import TSocketBase, TSocket, TServerSocket  # noqa
+from .socket import TSocket, TServerSocket  # noqa
 from .buffered import TBufferedTransport, TBufferedTransportFactory  # noqa
 from .framed import TFramedTransport, TFramedTransportFactory  # noqa
 from .memory import TMemoryBuffer  # noqa

@@ -1,5 +1,6 @@
 *.py[cod]
 .python-version
+.cache
 
 # C extensions
 *.h

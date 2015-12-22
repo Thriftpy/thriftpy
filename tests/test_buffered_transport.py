@@ -66,7 +66,7 @@ class BufferedTransportTestCase(TestCase):
     def setUp(self):
         self.server = self.mk_server()
         self.server.start()
-        time.sleep(0.3)
+        time.sleep(0.1)
 
     def tearDown(self):
         if self.server.is_alive():
