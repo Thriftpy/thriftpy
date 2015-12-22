@@ -32,7 +32,7 @@ class TSSLSocket(TSocket):
 
         The `host` must be the same with server if validate enabled.
         """
-        super().__init__(
+        super(TSSLSocket, self).__init__(
             host=host, port=port, socket_family=socket_family,
             connect_timeout=connect_timeout, socket_timeout=socket_timeout)
 
@@ -82,8 +82,9 @@ class TSSLServerSocket(TServerSocket):
             to persist SSLContext object. Caution it's easy to get wrong, only
             use if you know what you're doing.
         """
-        super().__init__(host=host, port=port, socket_family=socket_family,
-                         client_timeout=client_timeout, backlog=backlog)
+        super(TSSLServerSocket, self).__init__(
+            host=host, port=port, socket_family=socket_family,
+            client_timeout=client_timeout, backlog=backlog)
 
         if ssl_context:
             self.ssl_context = ssl_context

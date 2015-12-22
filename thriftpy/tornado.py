@@ -121,7 +121,7 @@ class TTornadoStreamTransport(TTransportBase):
                         'Read zero bytes from stream')
                 frame_length, = struct.unpack('!i', frame_header)
                 logger.debug('received frame header, frame length = %d',
-                              frame_length)
+                             frame_length)
                 frame = yield self._read_bytes(frame_length)
                 logger.debug('received frame payload: %r', frame)
                 raise gen.Return(frame)

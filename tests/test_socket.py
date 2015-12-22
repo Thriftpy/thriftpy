@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import, division
+
 import os
 import socket
 
@@ -93,8 +95,8 @@ def test_client_socket_close():
         conn.read(1024)
     assert "TSocket read 0 bytes" in e.value.message
 
-    # linger on with timeout 1
-    with pytest.raises(BrokenPipeError):
+    # linger on with timeout 1 will close the socket immediately
+    with pytest.raises(socket.error):
         conn.write(b"world")
 
     conn.close()
