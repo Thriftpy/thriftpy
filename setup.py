@@ -23,11 +23,11 @@ tornado_requires = [
 ]
 
 dev_requires = [
-    "cython>=0.20.2",
-    "flake8>=2.3.0",
-    "pytest>=2.6.0",
-    "sphinx-rtd-theme>=0.1.6",
-    "sphinx>=1.2.2",
+    "cython>=0.23",
+    "flake8>=2.8",
+    "pytest>=2.8",
+    "sphinx-rtd-theme>=0.1.9",
+    "sphinx>=1.3",
 ] + tornado_requires
 
 
@@ -93,6 +93,7 @@ setup(name="thriftpy",
           "Programming Language :: Python :: 2.7",
           "Programming Language :: Python :: 3.3",
           "Programming Language :: Python :: 3.4",
+          "Programming Language :: Python :: 3.5",
           "Programming Language :: Python :: Implementation :: CPython",
           "Programming Language :: Python :: Implementation :: PyPy",
       ])

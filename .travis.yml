@@ -1,5 +1,5 @@
 language: python
-python: 3.4
+python: 3.5
 cache:
   directories:
     - $HOME/.pip-cache
@@ -13,6 +13,7 @@ env:
   - TOXENV=py33-cy
   - TOXENV=py34-py
   - TOXENV=py34-cy
+  - TOXENV=py35-cy
   - TOXENV=pypy
 before_install:
   - pip install --download-cache $HOME/.pip-cache --use-wheel --install-option="--no-cython-compile" cython
