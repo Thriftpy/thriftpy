@@ -2,14 +2,18 @@
 
 from __future__ import absolute_import
 
-import socket
 import ssl
 import threading
 
 import pytest
 
+from thriftpy._compat import MODERN_SSL
 from thriftpy.transport import TTransportException
 from thriftpy.transport.sslsocket import TSSLSocket, TSSLServerSocket
+
+pytestmark = pytest.mark.skipif(
+    not MODERN_SSL,
+    reason="ssl only supported in in python2.7, python3.4 or above")
 
 
 def _echo_server(sock):
@@ -52,19 +56,6 @@ def test_inet_ssl_socket():
     _test_socket(server_socket, client_socket)
 
 
-def test_inet6_ssl_socket():
-    server_socket = TSSLServerSocket(host="localhost", port=12345,
-                                     socket_family=socket.AF_INET6,
-                                     certfile="ssl/server.pem")
-    client_socket = TSSLSocket(
-        host="localhost", port=12345, socket_timeout=3000,
-        socket_family=socket.AF_INET6,
-        cafile="ssl/CA.pem", certfile="ssl/client.crt",
-        keyfile="ssl/client.key")
-
-    _test_socket(server_socket, client_socket)
-
-
 def test_ssl_hostname_validate():
     server_socket = TSSLServerSocket(host="localhost", port=12345,
                                      certfile="ssl/server.pem")
@@ -83,17 +74,6 @@ def test_ssl_hostname_validate():
         validate=False,
         cafile="ssl/CA.pem", certfile="ssl/client.crt",
         keyfile="ssl/client.key")
-    _test_socket(server_socket, client_socket)
-
-
-def test_ssl_ciphers():
-    server_socket = TSSLServerSocket(host="localhost", port=12345,
-                                     certfile="ssl/server.pem")
-    client_socket = TSSLSocket(
-        host="localhost", port=12345, socket_timeout=3000,
-        cafile="ssl/CA.pem", certfile="ssl/client.crt",
-        keyfile="ssl/client.key")
-
     _test_socket(server_socket, client_socket)
 
 

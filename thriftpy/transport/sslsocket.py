@@ -7,6 +7,7 @@ import socket
 import ssl
 import struct
 
+from .._compat import MODERN_SSL
 from .socket import TSocket, TServerSocket
 
 
@@ -38,7 +39,7 @@ class TSSLSocket(TSocket):
 
         if ssl_context:
             self.ssl_context = ssl_context
-        else:
+        elif MODERN_SSL:
             # verify all cert exists
             for c_file in (cafile, certfile, keyfile):
                 if not os.access(c_file, os.R_OK):
@@ -54,6 +55,10 @@ class TSSLSocket(TSocket):
                                              keyfile=keyfile)
             if ciphers:
                 self.ssl_context.set_ciphers(ciphers)
+        else:
+            raise NotImplementedError(
+                "ssl.create_default_context not available, "
+                "either use ssl_context to initialize or upgrade python!")
 
     def _init_sock(self):
         _sock = socket.socket(self.socket_family, socket.SOCK_STREAM)
@@ -88,7 +93,7 @@ class TSSLServerSocket(TServerSocket):
 
         if ssl_context:
             self.ssl_context = ssl_context
-        else:
+        elif MODERN_SSL:
             if not os.access(certfile, os.R_OK):
                 raise IOError('No such certfile found: %s' % certfile)
 
@@ -97,6 +102,10 @@ class TSSLServerSocket(TServerSocket):
             self.ssl_context.load_cert_chain(certfile=certfile)
             if ciphers:
                 self.ssl_context.set_ciphers(ciphers)
+        else:
+            raise NotImplementedError(
+                "ssl.create_default_context not available, "
+                "either use ssl_context to initialize or upgrade python!")
 
     def accept(self):
         sock, _ = self.sock.accept()

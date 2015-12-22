@@ -1,24 +1,22 @@
+sudo: false
 language: python
-python: 3.5
-cache:
-  directories:
-    - $HOME/.pip-cache
-env:
-  - TOXENV=flake8
-  - TOXENV=py26-py
-  - TOXENV=py26-cy
-  - TOXENV=py27-py
-  - TOXENV=py27-cy
-  - TOXENV=py33-py
-  - TOXENV=py33-cy
-  - TOXENV=py34-py
-  - TOXENV=py34-cy
-  - TOXENV=py35-cy
-  - TOXENV=pypy
-before_install:
-  - pip install --download-cache $HOME/.pip-cache --use-wheel --install-option="--no-cython-compile" cython
-  - pip install --download-cache $HOME/.pip-cache tox
+
+python:
+  - 2.6
+  - 2.7
+  - 3.3
+  - 3.4
+  - 3.5
+  - pypy
+
+matrix:
+  # include test for flake8
+  include:
+    - python: 3.5
+      script: tox -e flake8
+
 install:
-  - make build_ext
+  - pip install cython tox
+
 script:
-  - tox -v
+  - tox -e py
