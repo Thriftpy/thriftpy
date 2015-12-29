@@ -54,6 +54,8 @@ class TTransportException(TException):
 
 # Avoid recursive import
 from .socket import TSocket, TServerSocket  # noqa
+from .sslsocket import TSSLSocket, TSSLServerSocket  # noqa
+from ._ssl import create_thriftpy_context  # noqa
 from .buffered import TBufferedTransport, TBufferedTransportFactory  # noqa
 from .framed import TFramedTransport, TFramedTransportFactory  # noqa
 from .memory import TMemoryBuffer  # noqa
@@ -78,10 +80,11 @@ else:
     TCyFramedTransportFactory = TFramedTransportFactory
 
 __all__ = [
-    'TSocketBase', 'TSocket', 'TServerSocket',
-    'TTransportBase', 'TTransportException',
-    'TMemoryBuffer', 'TFramedTransport', 'TFramedTransportFactory',
-    'TBufferedTransport', 'TBufferedTransportFactory', 'TCyMemoryBuffer',
-    'TCyBufferedTransport', 'TCyBufferedTransportFactory',
-    'TCyFramedTransport', 'TCyFramedTransportFactory'
-    ]
+    "TSocket", "TServerSocket",
+    "TSSLSocket", "TSSLServerSocket", "create_thriftpy_context",
+    "TTransportBase", "TTransportException",
+    "TMemoryBuffer", "TFramedTransport", "TFramedTransportFactory",
+    "TBufferedTransport", "TBufferedTransportFactory", "TCyMemoryBuffer",
+    "TCyBufferedTransport", "TCyBufferedTransportFactory",
+    "TCyFramedTransport", "TCyFramedTransportFactory"
+]

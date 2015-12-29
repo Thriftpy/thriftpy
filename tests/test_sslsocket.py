@@ -8,12 +8,8 @@ import threading
 import pytest
 
 from thriftpy._compat import MODERN_SSL
-from thriftpy.transport import TTransportException
+from thriftpy.transport import TTransportException, create_thriftpy_context
 from thriftpy.transport.sslsocket import TSSLSocket, TSSLServerSocket
-
-pytestmark = pytest.mark.skipif(
-    not MODERN_SSL,
-    reason="ssl only supported in in python2.7, python3.4 or above")
 
 
 def _echo_server(sock):
@@ -56,6 +52,8 @@ def test_inet_ssl_socket():
     _test_socket(server_socket, client_socket)
 
 
+@pytest.mark.skipif(not MODERN_SSL,
+                    reason="check hostname not supported")
 def test_ssl_hostname_validate():
     server_socket = TSSLServerSocket(host="localhost", port=12345,
                                      certfile="ssl/server.pem")
@@ -78,14 +76,15 @@ def test_ssl_hostname_validate():
 
 
 def test_persist_ssl_context():
-    server_ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    server_ssl_context = create_thriftpy_context(server_side=True)
     server_ssl_context.load_cert_chain(certfile="ssl/server.pem")
     server_socket = TSSLServerSocket(host="localhost", port=12345,
                                      ssl_context=server_ssl_context)
 
-    client_ssl_context = ssl.create_default_context(cafile="ssl/CA.pem")
-    client_ssl_context.load_cert_chain(
-        certfile="ssl/client.crt", keyfile="ssl/client.key")
+    client_ssl_context = create_thriftpy_context(server_side=False)
+    client_ssl_context.load_verify_locations(cafile="ssl/CA.pem")
+    client_ssl_context.load_cert_chain(certfile="ssl/client.crt",
+                                       keyfile="ssl/client.key")
     client_socket = TSSLSocket(host="localhost", port=12345,
                                ssl_context=client_ssl_context)
 

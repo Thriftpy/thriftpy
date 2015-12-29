@@ -7,9 +7,11 @@ import socket
 import ssl
 import struct
 
-import warnings
-
-from .._compat import MODERN_SSL
+from ._ssl import (
+    create_thriftpy_context,
+    RESTRICTED_SERVER_CIPHERS,
+    DEFAULT_CIPHERS
+)
 from .socket import TSocket, TServerSocket
 
 
@@ -18,9 +20,10 @@ class TSSLSocket(TSocket):
     """
 
     def __init__(self, host, port, socket_family=socket.AF_INET,
-                 socket_timeout=3000, connect_timeout=None, validate=True,
-                 cafile=None, certfile=None, keyfile=None, ciphers=None,
-                 ssl_context=None):
+                 socket_timeout=3000, connect_timeout=None,
+                 ssl_context=None, validate=True,
+                 cafile=None, certfile=None, keyfile=None,
+                 ciphers=DEFAULT_CIPHERS):
         """Initialize a TSSLSocket
 
         @param validate(bool)       Set to False to disable SSL certificate
@@ -41,26 +44,20 @@ class TSSLSocket(TSocket):
 
         if ssl_context:
             self.ssl_context = ssl_context
-        elif MODERN_SSL:
+        else:
             # verify all cert exists
             for c_file in (cafile, certfile, keyfile):
                 if not os.access(c_file, os.R_OK):
                     raise IOError('No such certfile found: %s' % c_file)
 
-            # default purpose: SERVER_AUTH
-            self.ssl_context = ssl.create_default_context(cafile=cafile)
+            self.ssl_context = create_thriftpy_context(server_side=False,
+                                                       ciphers=ciphers)
+            self.ssl_context.load_verify_locations(cafile)
+            self.ssl_context.load_cert_chain(certfile=certfile,
+                                             keyfile=keyfile)
             if not validate:
                 self.ssl_context.check_hostname = False
                 self.ssl_context.verify_mode = ssl.CERT_NONE
-
-            self.ssl_context.load_cert_chain(certfile=certfile,
-                                             keyfile=keyfile)
-            if ciphers:
-                self.ssl_context.set_ciphers(ciphers)
-        else:
-            raise NotImplementedError(
-                "ssl.create_default_context not available, "
-                "either use ssl_context to initialize or upgrade python!")
 
     def _init_sock(self):
         _sock = socket.socket(self.socket_family, socket.SOCK_STREAM)
@@ -80,7 +77,8 @@ class TSSLServerSocket(TServerSocket):
 
     def __init__(self, host, port, socket_family=socket.AF_INET,
                  client_timeout=3000, backlog=128,
-                 ssl_context=None, certfile='cert.pem', ciphers=None):
+                 ssl_context=None, certfile='cert.pem',
+                 ciphers=RESTRICTED_SERVER_CIPHERS):
         """Initialize a TSSLServerSocket
 
         @param certfile(str)        The server cert pem filename
@@ -95,19 +93,13 @@ class TSSLServerSocket(TServerSocket):
 
         if ssl_context:
             self.ssl_context = ssl_context
-        elif MODERN_SSL:
+        else:
             if not os.access(certfile, os.R_OK):
                 raise IOError('No such certfile found: %s' % certfile)
 
-            self.ssl_context = ssl.create_default_context(
-                ssl.Purpose.CLIENT_AUTH)
+            self.ssl_context = create_thriftpy_context(server_side=True,
+                                                       ciphers=ciphers)
             self.ssl_context.load_cert_chain(certfile=certfile)
-            if ciphers:
-                self.ssl_context.set_ciphers(ciphers)
-        else:
-            raise NotImplementedError(
-                "ssl.create_default_context not available, "
-                "either use ssl_context to initialize or upgrade python!")
 
     def accept(self):
         sock, _ = self.sock.accept()

@@ -12,7 +12,6 @@ from __future__ import absolute_import
 import platform
 import sys
 import types
-import warnings
 
 PY3 = sys.version_info[0] == 3
 PYPY = "__pypy__" in sys.modules
@@ -23,9 +22,6 @@ CYTHON = UNIX and not PYPY  # Cython always disabled in pypy and windows
 # only python2.7.9 and python 3.4 or above have true ssl context
 MODERN_SSL = (2, 7, 9) <= sys.version_info < (3, 0, 0) or \
     sys.version_info >= (3, 4)
-if not MODERN_SSL:
-    warnings.warn("SSL only supported in python 2.7.9 or 3.4 or above!",
-                  DeprecationWarning)
 
 if PY3:
     text_type = str
