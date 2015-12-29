@@ -7,6 +7,8 @@ import socket
 import ssl
 import struct
 
+import warnings
+
 from .._compat import MODERN_SSL
 from .socket import TSocket, TServerSocket
 

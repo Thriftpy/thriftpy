@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 import contextlib
+import warnings
 
 from thriftpy.protocol import TBinaryProtocolFactory
 from thriftpy.server import TThreadedServer
@@ -55,6 +56,8 @@ def client_context(service, host="localhost", port=9090, unix_socket=None,
                    trans_factory=TBufferedTransportFactory(),
                    timeout=3000, socket_timeout=3000, connect_timeout=None):
     if timeout:
+        warnings.warn("`timeout` deprecated, use `socket_timeout` and "
+                      "`connect_timeout` instead.")
         socket_timeout = connect_timeout = timeout
 
     if unix_socket:
