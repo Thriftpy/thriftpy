@@ -194,6 +194,11 @@ class TClient(object):
         if hasattr(result, "success"):
             raise TApplicationException(TApplicationException.MISSING_RESULT)
 
+    def close(self):
+        self._iprot.trans.close()
+        if self._iprot != self._oprot:
+            self._oprot.trans.close()
+
 
 class TProcessor(object):
     """Base class for procsessor, which works on two streams."""
