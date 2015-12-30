@@ -16,7 +16,7 @@ from ...thrift import TClient, TApplicationException, TMessageType, \
     TProcessor, TType
 from ...parser import load
 
-track_method = "__thriftpy_tracing_method_name__v3"
+track_method = "__thriftpy_tracing_method_name__v2"
 track_thrift = load(os.path.join(os.path.dirname(__file__), "tracking.thrift"))
 
 
