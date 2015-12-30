@@ -62,7 +62,7 @@ class TSocket(object):
             _sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
         # socket options
-        linger = struct.pack('ii', 1, 0)
+        linger = struct.pack('ii', 0, 0)
         _sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, linger)
         _sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
 
