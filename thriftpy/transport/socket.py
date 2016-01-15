@@ -68,7 +68,7 @@ class TSocket(object):
 
         self.sock = _sock
 
-    def set_socket(self, sock):
+    def set_handle(self, sock):
         self.sock = sock
 
     def is_open(self):
