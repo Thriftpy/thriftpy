@@ -71,6 +71,14 @@ class TSocket(object):
     def set_handle(self, sock):
         self.sock = sock
 
+    def set_timeout(self, ms):
+        """Backward compat api, will bind the timeout to both connect_timeout
+        and socket_timeout.
+        """
+        if ms and ms > 0:
+            self.socket_timeout = ms / 1000
+            self.connect_timeout = self.socket_timeout
+
     def is_open(self):
         return bool(self.sock)
 
