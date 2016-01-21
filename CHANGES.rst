@@ -4,6 +4,23 @@ Changelog
 0.3.x
 ~~~~~
 
+Version 0.3.3
+-------------
+
+Released on Jan 21, 2016.
+
+- add support for ssl transport.
+- add named loggers, via `#169`_.
+
+- refine socket and serversocket implementation with more configure options.
+
+- bugfix for parser failure on windows under python3.2 caused by samefile
+  method, via `#172`_.
+
+.. _`#169`: https://github.com/eleme/thriftpy/pull/169
+.. _`#172`: https://github.com/eleme/thriftpy/pull/172
+
+
 Version 0.3.2
 -------------
 
