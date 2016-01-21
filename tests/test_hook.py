@@ -46,23 +46,6 @@ def test_load():
     assert person == pickle.loads(pickle.dumps(person))
 
 
-def test_load_with_unicode_module_name():
-    ab_1 = thriftpy.load("addressbook.thrift")
-    ab_2 = thriftpy.load("addressbook.thrift",
-                         module_name=u"addressbook_thrift")
-
-    assert ab_1.__name__ == "addressbook"
-    assert ab_2.__name__ == "addressbook_thrift"
-
-    # load without module_name can't do pickle
-    with pytest.raises(pickle.PicklingError):
-        pickle.dumps(ab_1.Person(name='Bob'))
-
-    # load with module_name set and it can be pickled
-    person = ab_2.Person(name='Bob')
-    assert person == pickle.loads(pickle.dumps(person))
-
-
 def test_load_module():
     ab = thriftpy.load_module("addressbook_thrift")
     assert ab.__name__ == "addressbook_thrift"
