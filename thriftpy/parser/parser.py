@@ -495,7 +495,7 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
         basename = os.path.basename(path)
         module_name = os.path.splitext(basename)[0]
 
-    thrift = types.ModuleType(str(module_name))
+    thrift = types.ModuleType(module_name)
     setattr(thrift, '__thrift_file__', path)
     thrift_stack.append(thrift)
     lexer.lineno = 1
