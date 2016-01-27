@@ -101,6 +101,12 @@ class TrackerBase(object):
             return ctx.header.request_id
         return str(uuid.uuid4())
 
+    def init_handshake_info(self, handshake_obj):
+        pass
+
+    def handle_handshake_info(self, handshake_obj):
+        pass
+
 
 class ConsoleTracker(TrackerBase):
     def record(self, header, exception):

@@ -11,4 +11,6 @@ struct RequestHeader {
  * This is the struct that a successful upgrade will reply with.
  */
 struct UpgradeReply {}
-struct UpgradeArgs {}
+struct UpgradeArgs {
+    1: string app_id
+}
