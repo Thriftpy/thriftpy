@@ -69,6 +69,7 @@ class TTrackedClient(TClient):
         self._oprot.write_message_begin(track_method, TMessageType.CALL,
                                         self._seqid)
         args = track_thrift.UpgradeArgs()
+        self.tracker.init_handshake_info(args)
         args.write(self._oprot)
         self._oprot.write_message_end()
         self._oprot.trans.flush()
@@ -148,6 +149,7 @@ class TTrackedProcessor(TProcessor):
 
             args = track_thrift.UpgradeArgs()
             args.read(iprot)
+            self.tracker.handle_handshake_info(args)
             result = track_thrift.UpgradeReply()
             result.oneway = False
 
