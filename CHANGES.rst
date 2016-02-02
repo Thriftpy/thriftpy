@@ -4,6 +4,15 @@ Changelog
 0.3.x
 ~~~~~
 
+Version 0.3.4
+-------------
+
+Released on Feb 3, 2016.
+
+- fix backward compat issue introduced in last version, add back
+  `set_timeout` api in socket.
+
+
 Version 0.3.3
 -------------
 
