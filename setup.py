@@ -24,7 +24,7 @@ tornado_requires = [
 
 dev_requires = [
     "cython>=0.23",
-    "flake8>=2.8",
+    "flake8>=2.5",
     "pytest>=2.8",
     "sphinx-rtd-theme>=0.1.9",
     "sphinx>=1.3",

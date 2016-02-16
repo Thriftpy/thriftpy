@@ -60,7 +60,7 @@ class Dispatcher(object):
 
     def remove(self, name):
         person = addressbook.Person(name="mary")
-        with client(port=16098) as c:
+        with client(port=26098) as c:
             c.add(person)
 
         return True
@@ -70,10 +70,10 @@ class Dispatcher(object):
                 addressbook.PhoneNumber(number='saf')]
 
     def add(self, person):
-        with client(port=16099) as c:
+        with client(port=26099) as c:
             c.get_phonenumbers("jane", 1)
 
-        with client(port=16099) as c:
+        with client(port=26099) as c:
             c.ping()
         return True
 
@@ -109,7 +109,7 @@ class TSampleServer(TThreadedServer):
         otrans.close()
 
 
-def gen_server(port=16029, tracker=tracker, processor=TTrackedProcessor):
+def gen_server(port=26029, tracker=tracker, processor=TTrackedProcessor):
     args = [processor, addressbook.AddressBookService, Dispatcher()]
     if tracker:
         args.insert(1, tracker)
@@ -137,7 +137,7 @@ def server(request):
 
 @pytest.fixture
 def server1(request):
-    ps, ser = gen_server(port=16098)
+    ps, ser = gen_server(port=26098)
     time.sleep(0.15)
 
     def fin():
@@ -149,7 +149,7 @@ def server1(request):
 
 @pytest.fixture
 def server2(request):
-    ps, ser = gen_server(port=16099)
+    ps, ser = gen_server(port=26099)
     time.sleep(0.15)
 
     def fin():
@@ -161,7 +161,7 @@ def server2(request):
 
 @pytest.fixture
 def not_tracked_server(request):
-    ps, ser = gen_server(port=16030, tracker=None, processor=TProcessor)
+    ps, ser = gen_server(port=26030, tracker=None, processor=TProcessor)
     time.sleep(0.15)
 
     def fin():
@@ -172,7 +172,7 @@ def not_tracked_server(request):
 
 
 @contextlib.contextmanager
-def client(client_class=TTrackedClient, port=16029):
+def client(client_class=TTrackedClient, port=26029):
     socket = TSocket("localhost", port)
 
     try:
@@ -289,7 +289,7 @@ def test_not_tracked_client_tracked_server(server):
 
 
 def test_tracked_client_not_tracked_server(not_tracked_server):
-    with client(port=16030) as c:
+    with client(port=26030) as c:
         assert c._upgraded is False
         c.ping()
         c.hello("cat")
