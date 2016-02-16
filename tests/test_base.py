@@ -13,6 +13,12 @@ def test_obj_equalcheck():
     assert ab.Person(name="hello") == ab2.Person(name="hello")
 
 
+def test_exc_equalcheck():
+    ab = thriftpy.load("addressbook.thrift")
+
+    assert ab.PersonNotExistsError("exc") != ab.PersonNotExistsError("exc")
+
+
 def test_cls_equalcheck():
     ab = thriftpy.load("addressbook.thrift")
     ab2 = thriftpy.load("addressbook.thrift")
@@ -30,9 +36,13 @@ def test_isinstancecheck():
     assert isinstance(ab.PersonNotExistsError(), ab2.PersonNotExistsError)
 
 
-def test_unhashable():
+def test_hashable():
     ab = thriftpy.load("addressbook.thrift")
 
+    # exception is hashable
+    hash(ab.PersonNotExistsError("test error"))
+
+    # container struct is not hashable
     with pytest.raises(TypeError):
         hash(ab.Person(name="Tom"))
 

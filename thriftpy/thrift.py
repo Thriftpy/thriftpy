@@ -250,7 +250,7 @@ class TProcessor(object):
                 setattr(result, exc_name, e)
                 break
         else:
-            raise
+            raise e
 
     def process(self, iprot, oprot):
         api, seqid, result, call = self.process_in(iprot)
@@ -327,6 +327,12 @@ class TProcessorFactory(object):
 
 class TException(TPayload, Exception):
     """Base class for all thrift exceptions."""
+
+    def __hash__(self):
+        return id(self)
+
+    def __eq__(self, other):
+        return id(self) == id(other)
 
 
 class TDecodeException(TException):
