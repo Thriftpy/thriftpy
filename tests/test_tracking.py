@@ -3,12 +3,14 @@
 from __future__ import absolute_import
 
 import contextlib
-import os
 import multiprocessing
-import time
-import tempfile
+import os
 import pickle
+import random
+import socket
+import tempfile
 import thriftpy
+import time
 
 try:
     import dbm
@@ -31,6 +33,19 @@ from thriftpy.protocol import TBinaryProtocolFactory
 addressbook = thriftpy.load(os.path.join(os.path.dirname(__file__),
                                          "addressbook.thrift"))
 _, db_file = tempfile.mkstemp()
+
+
+def _get_port():
+    while True:
+        port = 20000 + random.randint(1, 9999)
+        for i in range(5):
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            result = sock.connect_ex(('127.0.0.1', port))
+            if result == 0:
+                continue
+        else:
+            return port
+PORT = _get_port()
 
 
 class SampleTracker(TrackerBase):
@@ -60,7 +75,7 @@ class Dispatcher(object):
 
     def remove(self, name):
         person = addressbook.Person(name="mary")
-        with client(port=26098) as c:
+        with client(port=PORT) as c:
             c.add(person)
 
         return True
@@ -70,10 +85,10 @@ class Dispatcher(object):
                 addressbook.PhoneNumber(number='saf')]
 
     def add(self, person):
-        with client(port=26099) as c:
+        with client(port=PORT + 1) as c:
             c.get_phonenumbers("jane", 1)
 
-        with client(port=26099) as c:
+        with client(port=PORT + 1) as c:
             c.ping()
         return True
 
@@ -109,7 +124,7 @@ class TSampleServer(TThreadedServer):
         otrans.close()
 
 
-def gen_server(port=26029, tracker=tracker, processor=TTrackedProcessor):
+def gen_server(port, tracker=tracker, processor=TTrackedProcessor):
     args = [processor, addressbook.AddressBookService, Dispatcher()]
     if tracker:
         args.insert(1, tracker)
@@ -123,9 +138,9 @@ def gen_server(port=26029, tracker=tracker, processor=TTrackedProcessor):
     return ps, server
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def server(request):
-    ps, ser = gen_server()
+    ps, ser = gen_server(PORT)
     time.sleep(0.15)
 
     def fin():
@@ -135,9 +150,9 @@ def server(request):
     return ser
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def server1(request):
-    ps, ser = gen_server(port=26098)
+    ps, ser = gen_server(PORT + 1)
     time.sleep(0.15)
 
     def fin():
@@ -147,9 +162,9 @@ def server1(request):
     return ser
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def server2(request):
-    ps, ser = gen_server(port=26099)
+    ps, ser = gen_server(PORT + 2)
     time.sleep(0.15)
 
     def fin():
@@ -159,9 +174,9 @@ def server2(request):
     return ser
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def not_tracked_server(request):
-    ps, ser = gen_server(port=26030, tracker=None, processor=TProcessor)
+    ps, ser = gen_server(PORT + 3, tracker=None, processor=TProcessor)
     time.sleep(0.15)
 
     def fin():
@@ -172,7 +187,7 @@ def not_tracked_server(request):
 
 
 @contextlib.contextmanager
-def client(client_class=TTrackedClient, port=26029):
+def client(client_class=TTrackedClient, port=PORT):
     socket = TSocket("localhost", port)
 
     try:
@@ -289,7 +304,7 @@ def test_not_tracked_client_tracked_server(server):
 
 
 def test_tracked_client_not_tracked_server(not_tracked_server):
-    with client(port=26030) as c:
+    with client(port=PORT + 3) as c:
         assert c._upgraded is False
         c.ping()
         c.hello("cat")
