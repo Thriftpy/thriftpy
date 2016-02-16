@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import pytest
+
 import thriftpy
 from thriftpy.thrift import parse_spec, TType
 
@@ -28,10 +30,11 @@ def test_isinstancecheck():
     assert isinstance(ab.PersonNotExistsError(), ab2.PersonNotExistsError)
 
 
-def test_hashable():
+def test_unhashable():
     ab = thriftpy.load("addressbook.thrift")
 
-    hash(ab.Person(name="Tom"))
+    with pytest.raises(TypeError):
+        hash(ab.Person(name="Tom"))
 
 
 def test_default_value():

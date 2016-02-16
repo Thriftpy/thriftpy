@@ -122,7 +122,7 @@ class TPayload(with_metaclass(TPayloadMeta, object)):
             self.__dict__ == other.__dict__
 
     def __hash__(self):
-        return super(TPayload, self).__hash__()
+        raise TypeError("unhashable type: 'thriftpy.thrift.TPayload'")
 
     def __ne__(self, other):
         return not self.__eq__(other)
