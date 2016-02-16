@@ -7,6 +7,17 @@ Changelog
 Version 0.3.4
 -------------
 
+Released on Feb 16, 2016.
+
+- fix another set_timeout backward compat issue introduced in last version.
+- make thrift container struct unhashable, via `#184`.
+
+.. _`#184`: https://github.com/eleme/thriftpy/pull/184
+
+
+Version 0.3.4
+-------------
+
 Released on Feb 3, 2016.
 
 - fix backward compat issue introduced in last version, add back
