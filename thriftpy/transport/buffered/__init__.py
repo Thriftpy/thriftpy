@@ -17,40 +17,40 @@ class TBufferedTransport(TTransportBase):
     DEFAULT_BUFFER = 4096
 
     def __init__(self, trans, buf_size=DEFAULT_BUFFER):
-        self.__trans = trans
-        self.__wbuf = BytesIO()
-        self.__rbuf = BytesIO(b"")
-        self.__buf_size = buf_size
+        self._trans = trans
+        self._wbuf = BytesIO()
+        self._rbuf = BytesIO(b"")
+        self._buf_size = buf_size
 
     def is_open(self):
-        return self.__trans.is_open()
+        return self._trans.is_open()
 
     def open(self):
-        return self.__trans.open()
+        return self._trans.open()
 
     def close(self):
-        return self.__trans.close()
+        return self._trans.close()
 
     def _read(self, sz):
-        ret = self.__rbuf.read(sz)
+        ret = self._rbuf.read(sz)
         if len(ret) != 0:
             return ret
 
-        self.__rbuf = BytesIO(self.__trans.read(max(sz, self.__buf_size)))
-        return self.__rbuf.read(sz)
+        self._rbuf = BytesIO(self._trans.read(max(sz, self._buf_size)))
+        return self._rbuf.read(sz)
 
     def write(self, buf):
-        self.__wbuf.write(buf)
+        self._wbuf.write(buf)
 
     def flush(self):
-        out = self.__wbuf.getvalue()
+        out = self._wbuf.getvalue()
         # reset wbuf before write/flush to preserve state on underlying failure
-        self.__wbuf = BytesIO()
-        self.__trans.write(out)
-        self.__trans.flush()
+        self._wbuf = BytesIO()
+        self._trans.write(out)
+        self._trans.flush()
 
     def getvalue(self):
-        return self.__trans.getvalue()
+        return self._trans.getvalue()
 
 
 class TBufferedTransportFactory(object):

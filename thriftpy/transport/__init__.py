@@ -25,7 +25,7 @@ def readall(read_fn, sz):
 class TTransportBase(object):
     """Base class for Thrift transport layer."""
 
-    def _read(self):
+    def _read(self, sz):
         raise NotImplementedError
 
     def read(self, sz):
