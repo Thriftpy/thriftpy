@@ -117,3 +117,27 @@ def test_server_socket_close():
 
     conn.close()
     server_socket.close()
+
+
+def test_client_socket_set_timeout():
+    server_socket = TServerSocket(host="localhost", port=12345,
+                                  client_timeout=100)
+    server_socket.listen()
+
+    client_socket = TSocket(host="localhost", port=12345, socket_timeout=100)
+    client_socket.open()
+
+    conn = server_socket.accept()
+
+    assert client_socket.sock.gettimeout() == 100 / 1000
+    assert conn.sock.gettimeout() == 100 / 1000
+    assert conn.sock.gettimeout() == 100 / 1000
+
+    client_socket.set_timeout(200)
+    conn.set_timeout(200)
+    assert client_socket.sock.gettimeout() == 200 / 1000
+    assert conn.sock.gettimeout() == 200 / 1000
+
+    conn.close()
+    client_socket.close()
+    server_socket.close()
