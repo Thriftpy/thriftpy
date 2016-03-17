@@ -78,6 +78,9 @@ class TSocket(object):
         self.socket_timeout = ms / 1000 if (ms and ms > 0) else None
         self.connect_timeout = self.socket_timeout
 
+        if self.sock is not None:
+            self.sock.settimeout(self.socket_timeout)
+
     def is_open(self):
         return bool(self.sock)
 
