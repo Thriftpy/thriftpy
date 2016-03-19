@@ -200,14 +200,22 @@ class TClient(object):
         self._oprot.trans.flush()
 
     def _recv(self, _api):
-        fname, mtype, rseqid = self._iprot.read_message_begin()
-        if mtype == TMessageType.EXCEPTION:
-            x = TApplicationException()
-            x.read(self._iprot)
-            self._iprot.read_message_end()
-            raise x
-        result = getattr(self._service, _api + "_result")()
-        result.read(self._iprot)
+        from .transport import TTransportException
+        try:
+            fname, mtype, rseqid = self._iprot.read_message_begin()
+            if mtype == TMessageType.EXCEPTION:
+                x = TApplicationException()
+                x.read(self._iprot)
+                self._iprot.read_message_end()
+                raise x
+            result = getattr(self._service, _api + "_result")()
+            result.read(self._iprot)
+        except TTransportException as e:
+            if e.type == TTransportException.END_OF_FILE:
+                result = getattr(self._service, _api + "_result")()
+            else:
+                raise
+
         self._iprot.read_message_end()
 
         if hasattr(result, "success") and result.success is not None:
