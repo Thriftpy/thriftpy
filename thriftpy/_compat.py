@@ -124,3 +124,22 @@ def init_func_generator(spec):
     return types.FunctionType(new_code,
                               {"__builtins__": __builtins__},
                               argdefs=defaults)
+
+
+def import_http_client():
+    if PY3:
+        import http.client as http_client
+    else:
+        import httplib as http_client
+    return http_client
+
+
+def import_urllib():
+    if PY3:
+        import urllib
+    else:
+        import urllib2 as urllib
+        import urlparse
+        urllib.parse = urlparse
+        urllib.parse.quote = urllib.quote
+    return urllib
