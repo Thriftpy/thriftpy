@@ -4,13 +4,31 @@ Changelog
 0.3.x
 ~~~~~
 
+Version 0.3.6
+-------------
+
+Released on Mar 24, 2016.
+
+- add compact protocol support, via `#159`_.
+- add option to force return bytes on response, via `#190`_.
+
+- bugfix for ssl socket can't be init without certfile and keyfile,
+  and add additional `capath` argument for SSLContext.  via `#186`_.
+- bugfix for set_timeout only works before socket open, via `#188`_.
+
+.. _`#159`: https://github.com/eleme/thriftpy/pull/159
+.. _`#186`: https://github.com/eleme/thriftpy/pull/186
+.. _`#188`: https://github.com/eleme/thriftpy/pull/188
+.. _`#190`: https://github.com/eleme/thriftpy/pull/190
+
+
 Version 0.3.5
 -------------
 
 Released on Feb 16, 2016.
 
 - fix another set_timeout backward compat issue introduced in last version.
-- make thrift container struct unhashable, via `#184`.
+- make thrift container struct unhashable, via `#184`_.
 
 .. _`#184`: https://github.com/eleme/thriftpy/pull/184
 
