@@ -122,12 +122,13 @@ class TCompactProtocol(object):
     TYPE_BITS = 0x07
     TYPE_SHIFT_AMOUNT = 5
 
-    def __init__(self, trans):
+    def __init__(self, trans, decode_response=True):
         self.trans = trans
         self._last_fid = 0
         self._bool_fid = None
         self._bool_value = None
         self._structs = []
+        self.decode_response = decode_response
 
     def _get_ttype(self, byte):
         return TTYPES[byte & 0x0f]
@@ -227,12 +228,14 @@ class TCompactProtocol(object):
 
     def read_string(self):
         len = self._read_size()
-
         byte_payload = self.trans.read(len)
-        try:
-            return byte_payload.decode('utf-8')
-        except UnicodeDecodeError:
-            return byte_payload
+
+        if self.decode_response:
+            try:
+                byte_payload = byte_payload.decode('utf-8')
+            except UnicodeDecodeError:
+                pass
+        return byte_payload
 
     def read_bool(self):
         if self._bool_value is not None:
@@ -556,5 +559,8 @@ class TCompactProtocol(object):
 
 
 class TCompactProtocolFactory(object):
+    def __init__(self, decode_response=True):
+        self.decode_response = decode_response
+
     def get_protocol(self, trans):
-        return TCompactProtocol(trans)
+        return TCompactProtocol(trans, decode_response=self.decode_response)

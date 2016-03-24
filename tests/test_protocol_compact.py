@@ -107,6 +107,14 @@ def test_unpack_string():
     assert u('你好世界') == proto.read_val(TType.STRING)
 
 
+def test_unpack_binary():
+    b, proto = gen_proto(b'\x0c\xe4\xbd\xa0\xe5\xa5'
+                         b'\xbd\xe4\xb8\x96\xe7\x95\x8c')
+    proto.decode_response = False
+
+    assert u('你好世界').encode("utf-8") == proto.read_val(TType.STRING)
+
+
 def test_pack_bool():
     b, proto = gen_proto()
     proto.write_bool(True)

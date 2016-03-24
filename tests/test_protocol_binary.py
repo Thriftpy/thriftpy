@@ -89,6 +89,13 @@ def test_unpack_string():
     assert u("你好世界") == proto.read_val(b, TType.STRING)
 
 
+def test_unpack_binary():
+    bs = BytesIO(b"\x00\x00\x00\x0c"
+                 b"\xe4\xbd\xa0\xe5\xa5\xbd\xe4\xb8\x96\xe7\x95\x8c")
+    assert u("你好世界").encode("utf-8") == proto.read_val(
+        bs, TType.STRING, decode_response=False)
+
+
 def test_write_message_begin():
     b = BytesIO()
     proto.TBinaryProtocol(b).write_message_begin("test", TType.STRING, 1)

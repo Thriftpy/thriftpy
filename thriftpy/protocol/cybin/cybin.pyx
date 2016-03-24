@@ -153,7 +153,7 @@ cdef inline write_dict(CyTransportBase buf, object val, spec):
         c_write_val(buf, v_type, v, v_spec)
 
 
-cdef inline read_struct(CyTransportBase buf, obj):
+cdef inline read_struct(CyTransportBase buf, obj, decode_response=True):
     cdef dict field_specs = obj.thrift_spec
     cdef int fid
     cdef TType field_type, ttype
@@ -182,7 +182,7 @@ cdef inline read_struct(CyTransportBase buf, obj):
         else:
             spec = field_spec[2]
 
-        setattr(obj, name, c_read_val(buf, ttype, spec))
+        setattr(obj, name, c_read_val(buf, ttype, spec, decode_response))
 
     return obj
 
@@ -217,7 +217,7 @@ cdef inline write_struct(CyTransportBase buf, obj):
     write_i08(buf, T_STOP)
 
 
-cdef inline c_read_string(CyTransportBase buf, int32_t size):
+cdef inline c_read_binary(CyTransportBase buf, int32_t size):
     cdef char string_val[STACK_STRING_LEN]
 
     if size > STACK_STRING_LEN:
@@ -229,13 +229,15 @@ cdef inline c_read_string(CyTransportBase buf, int32_t size):
         buf.c_read(size, string_val)
         py_data = string_val[:size]
 
-    try:
-        return py_data.decode("utf-8")
-    except UnicodeDecodeError:
-        return py_data
+    return py_data
 
 
-cdef c_read_val(CyTransportBase buf, TType ttype, spec=None):
+cdef inline c_read_string(CyTransportBase buf, int32_t size):
+    return c_read_binary(buf, size).decode("utf-8")
+
+
+cdef c_read_val(CyTransportBase buf, TType ttype, spec=None,
+                decode_response=True):
     cdef int size
     cdef int64_t n
     cdef TType v_type, k_type, orig_type, orig_key_type
@@ -261,7 +263,10 @@ cdef c_read_val(CyTransportBase buf, TType ttype, spec=None):
 
     elif ttype == T_STRING:
         size = read_i32(buf)
-        return c_read_string(buf, size)
+        if decode_response:
+            return c_read_string(buf, size)
+        else:
+            return c_read_binary(buf, size)
 
     elif ttype == T_SET or ttype == T_LIST:
         if isinstance(spec, int):
@@ -343,7 +348,6 @@ cdef c_write_val(CyTransportBase buf, TType ttype, val, spec=None):
         write_string(buf, val)
 
     elif ttype == T_SET or ttype == T_LIST:
-        assert not isinstance(val, basestring)
         write_list(buf, val, spec)
 
     elif ttype == T_MAP:
@@ -367,7 +371,7 @@ cpdef skip(CyTransportBase buf, TType ttype):
         read_i64(buf)
     elif ttype == T_STRING:
         size = read_i32(buf)
-        c_read_string(buf, size)
+        c_read_binary(buf, size)
     elif ttype == T_SET or ttype == T_LIST:
         v_type = <TType>read_i08(buf)
         size = read_i32(buf)
@@ -389,8 +393,8 @@ cpdef skip(CyTransportBase buf, TType ttype):
             skip(buf, f_type)
 
 
-def read_val(CyTransportBase buf, TType ttype):
-    return c_read_val(buf, ttype)
+def read_val(CyTransportBase buf, TType ttype, decode_response=True):
+    return c_read_val(buf, ttype, None, decode_response)
 
 
 def write_val(CyTransportBase buf, TType ttype, val, spec=None):
@@ -401,11 +405,14 @@ cdef class TCyBinaryProtocol(object):
     cdef public CyTransportBase trans
     cdef public bool strict_read
     cdef public bool strict_write
+    cdef public bool decode_response
 
-    def __init__(self, trans, strict_read=True, strict_write=True):
+    def __init__(self, trans, strict_read=True, strict_write=True,
+                 decode_response=True):
         self.trans = trans
         self.strict_read = strict_read
         self.strict_write = strict_write
+        self.decode_response = decode_response
 
     def skip(self, ttype):
         skip(self.trans, <TType>(ttype))
@@ -452,7 +459,7 @@ cdef class TCyBinaryProtocol(object):
 
     def read_struct(self, obj):
         try:
-            return read_struct(self.trans, obj)
+            return read_struct(self.trans, obj, self.decode_response)
         except Exception:
             self.trans.clean()
             raise
@@ -466,9 +473,12 @@ cdef class TCyBinaryProtocol(object):
 
 
 class TCyBinaryProtocolFactory(object):
-    def __init__(self, strict_read=True, strict_write=True):
+    def __init__(self, strict_read=True, strict_write=True,
+                 decode_response=True):
         self.strict_read = strict_read
         self.strict_write = strict_write
+        self.decode_response = decode_response
 
     def get_protocol(self, trans):
-        return TCyBinaryProtocol(trans, self.strict_read, self.strict_write)
+        return TCyBinaryProtocol(
+            trans, self.strict_read, self.strict_write, self.decode_response)

@@ -205,7 +205,7 @@ def read_map_begin(inbuf):
     return k_type, v_type, sz
 
 
-def read_val(inbuf, ttype, spec=None):
+def read_val(inbuf, ttype, spec=None, decode_response=True):
     if ttype == TType.BOOL:
         return bool(unpack_i8(inbuf.read(1)))
 
@@ -227,11 +227,15 @@ def read_val(inbuf, ttype, spec=None):
     elif ttype == TType.STRING:
         sz = unpack_i32(inbuf.read(4))
         byte_payload = inbuf.read(sz)
-        # Since we cannot tell if we're getting STRING or BINARY, try both
-        try:
-            return byte_payload.decode('utf-8')
-        except UnicodeDecodeError:
-            return byte_payload
+
+        # Since we cannot tell if we're getting STRING or BINARY
+        # if not asked not to decode, try both
+        if decode_response:
+            try:
+                return byte_payload.decode('utf-8')
+            except UnicodeDecodeError:
+                pass
+        return byte_payload
 
     elif ttype == TType.SET or ttype == TType.LIST:
         if isinstance(spec, tuple):
@@ -285,7 +289,7 @@ def read_val(inbuf, ttype, spec=None):
         return obj
 
 
-def read_struct(inbuf, obj):
+def read_struct(inbuf, obj, decode_response=True):
     while True:
         f_type, fid = read_field_begin(inbuf)
         if f_type == TType.STOP:
@@ -307,7 +311,8 @@ def read_struct(inbuf, obj):
             skip(inbuf, f_type)
             continue
 
-        setattr(obj, f_name, read_val(inbuf, f_type, f_container_spec))
+        setattr(obj, f_name,
+                read_val(inbuf, f_type, f_container_spec, decode_response))
 
 
 def skip(inbuf, ftype):
@@ -351,10 +356,13 @@ def skip(inbuf, ftype):
 class TBinaryProtocol(object):
     """Binary implementation of the Thrift protocol driver."""
 
-    def __init__(self, trans, strict_read=True, strict_write=True):
+    def __init__(self, trans,
+                 strict_read=True, strict_write=True,
+                 decode_response=True):
         self.trans = trans
         self.strict_read = strict_read
         self.strict_write = strict_write
+        self.decode_response = decode_response
 
     def skip(self, ttype):
         skip(self.trans, ttype)
@@ -375,16 +383,20 @@ class TBinaryProtocol(object):
         pass
 
     def read_struct(self, obj):
-        return read_struct(self.trans, obj)
+        return read_struct(self.trans, obj, self.decode_response)
 
     def write_struct(self, obj):
         write_val(self.trans, TType.STRUCT, obj)
 
 
 class TBinaryProtocolFactory(object):
-    def __init__(self, strict_read=True, strict_write=True):
+    def __init__(self,strict_read=True, strict_write=True,
+                 decode_response=True):
         self.strict_read = strict_read
         self.strict_write = strict_write
+        self.decode_response = decode_response
 
     def get_protocol(self, trans):
-        return TBinaryProtocol(trans, self.strict_read, self.strict_write)
+        return TBinaryProtocol(trans,
+                               self.strict_read, self.strict_write,
+                               self.decode_response)
