@@ -21,7 +21,9 @@ def args2kwargs(thrift_spec, *args):
 
 def parse_spec(ttype, spec=None):
     name_map = TType._VALUES_TO_NAMES
-    _type = lambda s: parse_spec(*s) if isinstance(s, tuple) else name_map[s]
+
+    def _type(s):
+        return parse_spec(*s) if isinstance(s, tuple) else name_map[s]
 
     if spec is None:
         return name_map[ttype]
