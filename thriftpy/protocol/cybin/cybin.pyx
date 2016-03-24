@@ -233,7 +233,11 @@ cdef inline c_read_binary(CyTransportBase buf, int32_t size):
 
 
 cdef inline c_read_string(CyTransportBase buf, int32_t size):
-    return c_read_binary(buf, size).decode("utf-8")
+    py_data = c_read_binary(buf, size)
+    try:
+        return py_data.decode("utf-8")
+    except:
+        return py_data
 
 
 cdef c_read_val(CyTransportBase buf, TType ttype, spec=None,

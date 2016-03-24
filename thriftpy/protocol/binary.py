@@ -390,7 +390,7 @@ class TBinaryProtocol(object):
 
 
 class TBinaryProtocolFactory(object):
-    def __init__(self,strict_read=True, strict_write=True,
+    def __init__(self, strict_read=True, strict_write=True,
                  decode_response=True):
         self.strict_read = strict_read
         self.strict_write = strict_write
