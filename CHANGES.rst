@@ -4,6 +4,15 @@ Changelog
 0.3.x
 ~~~~~
 
+Version 0.3.7
+-------------
+
+Released on Mar 24, 2016.
+
+- bugfix for a possible unicode decode error in cybin.
+- use a better unhashable implementation for payload.
+
+
 Version 0.3.6
 -------------
 
