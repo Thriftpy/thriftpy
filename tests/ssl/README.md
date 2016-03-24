@@ -7,10 +7,10 @@ Primary use are unit test suites and cross language tests.
 
 **The files in this directory must never be used on production systems.**
 
+
 ## SSL Keys and Certificates
 
-
-## create certificates
+### create certificates
 
 we use the following parameters for test key and certificate creation
 
@@ -53,6 +53,7 @@ export certificate in PEM format for OpenSSL usage
 
 
 ## Java key and certificate import
+
 Java Test Environment uses key and trust store password **thrift**
 
 list keystore entries
@@ -63,11 +64,9 @@ list truststore entries
 
     keytool -list -storepass thrift -keystore ../../lib/java/test/.truststore
 
-
 delete an entry
 
     keytool -delete -storepass thrift -keystore ../../lib/java/test/.truststore -alias ssltest 
-
 
 import certificate into truststore
 

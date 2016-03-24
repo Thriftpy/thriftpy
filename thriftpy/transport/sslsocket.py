@@ -22,15 +22,22 @@ class TSSLSocket(TSocket):
     def __init__(self, host, port, socket_family=socket.AF_INET,
                  socket_timeout=3000, connect_timeout=None,
                  ssl_context=None, validate=True,
-                 cafile=None, certfile=None, keyfile=None,
+                 cafile=None, capath=None, certfile=None, keyfile=None,
                  ciphers=DEFAULT_CIPHERS):
         """Initialize a TSSLSocket
 
         @param validate(bool)       Set to False to disable SSL certificate
             validation and hostname validation. Default enabled.
-        @param cafile(str)          Certificate Authority pem filename
-        @param certfile(str)        The client cert pem filename
-        @param keyfile(str)         The client private key filename
+        @param cafile(str)          Path to a file of concatenated CA
+            certificates in PEM format.
+        @param capath(str)           path to a directory containing several CA
+            certificates in PEM format, following an OpenSSL specific layout.
+        @param certfile(str)        The certfile string must be the path to a
+            single file in PEM format containing the certificate as well as
+            any number of CA certificates needed to establish the
+            certificate’s authenticity.
+        @param keyfile(str)         The keyfile string, if not present,
+            the private key will be taken from certfile as well.
         @param ciphers(list<str>)   The cipher suites to allow
         @param ssl_context(SSLContext)  Customize the SSLContext, can be used
             to persist SSLContext object. Caution it's easy to get wrong, only
@@ -45,16 +52,16 @@ class TSSLSocket(TSocket):
         if ssl_context:
             self.ssl_context = ssl_context
         else:
-            # verify all cert exists
-            for c_file in (cafile, certfile, keyfile):
-                if not os.access(c_file, os.R_OK):
-                    raise IOError('No such certfile found: %s' % c_file)
-
             self.ssl_context = create_thriftpy_context(server_side=False,
                                                        ciphers=ciphers)
-            self.ssl_context.load_verify_locations(cafile)
-            self.ssl_context.load_cert_chain(certfile=certfile,
-                                             keyfile=keyfile)
+
+            if cafile or capath:
+                self.ssl_context.load_verify_locations(cafile=cafile,
+                                                       capath=capath)
+
+            if certfile:
+                self.ssl_context.load_cert_chain(certfile, keyfile=keyfile)
+
             if not validate:
                 self.ssl_context.check_hostname = False
                 self.ssl_context.verify_mode = ssl.CERT_NONE

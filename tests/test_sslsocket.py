@@ -45,9 +45,16 @@ def test_inet_ssl_socket():
     server_socket = TSSLServerSocket(host="localhost", port=12345,
                                      certfile="ssl/server.pem")
     client_socket = TSSLSocket(
-        host="localhost", port=12345, socket_timeout=3000,
-        cafile="ssl/CA.pem", certfile="ssl/client.crt",
-        keyfile="ssl/client.key")
+        host="localhost", port=12345,
+        cafile="ssl/CA.pem",
+        certfile="ssl/client.crt", keyfile="ssl/client.key")
+    _test_socket(server_socket, client_socket)
+
+    # without certfile
+    server_socket = TSSLServerSocket(host="localhost", port=12345,
+                                     certfile="ssl/server.pem")
+    client_socket = TSSLSocket(host="localhost", port=12345,
+                               cafile="ssl/CA.pem")
 
     _test_socket(server_socket, client_socket)
 
