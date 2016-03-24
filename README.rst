@@ -104,13 +104,16 @@ python lib):
 
   * binary protocol (python and cython)
 
-  * buffered transport (python & cython)
+  * compact protocol (python and cython)
 
-  * tornado server and client (with tornado 4.0)
+  * json protocol
+
+  * buffered transport (python & cython)
 
   * framed transport
 
-  * json protocol
+  * tornado server and client (with tornado 4.0)
+
 
 - Can directly load thrift file as module, the sdk code will be generated on
   the fly.
