@@ -106,6 +106,8 @@ def gen_init(cls, thrift_spec=None, default_spec=None):
 
 class TPayload(with_metaclass(TPayloadMeta, object)):
 
+    __hash__ = None
+
     def read(self, iprot):
         iprot.read_struct(self)
 
@@ -122,9 +124,6 @@ class TPayload(with_metaclass(TPayloadMeta, object)):
     def __eq__(self, other):
         return isinstance(other, self.__class__) and \
             self.__dict__ == other.__dict__
-
-    def __hash__(self):
-        raise TypeError("unhashable type: 'thriftpy.thrift.TPayload'")
 
     def __ne__(self, other):
         return not self.__eq__(other)
