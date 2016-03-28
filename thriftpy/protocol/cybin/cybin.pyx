@@ -288,7 +288,8 @@ cdef c_read_val(CyTransportBase buf, TType ttype, spec=None,
                 skip(buf, orig_type)
             return []
 
-        return [c_read_val(buf, v_type, v_spec) for _ in range(size)]
+        return [c_read_val(buf, v_type, v_spec, decode_response)
+                for _ in range(size)]
 
     elif ttype == T_MAP:
         key = spec[0]
@@ -317,11 +318,11 @@ cdef c_read_val(CyTransportBase buf, TType ttype, spec=None,
                 skip(buf, orig_type)
             return {}
 
-        return {c_read_val(buf, k_type, k_spec): c_read_val(buf, v_type, v_spec)
+        return {c_read_val(buf, k_type, k_spec, decode_response): c_read_val(buf, v_type, v_spec, decode_response)
                 for _ in range(size)}
 
     elif ttype == T_STRUCT:
-        return read_struct(buf, spec())
+        return read_struct(buf, spec(), decode_response)
 
 
 cdef c_write_val(CyTransportBase buf, TType ttype, val, spec=None):

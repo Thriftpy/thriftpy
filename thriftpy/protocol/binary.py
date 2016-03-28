@@ -252,7 +252,7 @@ def read_val(inbuf, ttype, spec=None, decode_response=True):
             return []
 
         for i in range(sz):
-            result.append(read_val(inbuf, v_type, v_spec))
+            result.append(read_val(inbuf, v_type, v_spec, decode_response))
         return result
 
     elif ttype == TType.MAP:
@@ -277,15 +277,15 @@ def read_val(inbuf, ttype, spec=None, decode_response=True):
             return {}
 
         for i in range(sz):
-            k_val = read_val(inbuf, k_type, k_spec)
-            v_val = read_val(inbuf, v_type, v_spec)
+            k_val = read_val(inbuf, k_type, k_spec, decode_response)
+            v_val = read_val(inbuf, v_type, v_spec, decode_response)
             result[k_val] = v_val
 
         return result
 
     elif ttype == TType.STRUCT:
         obj = spec()
-        read_struct(inbuf, obj)
+        read_struct(inbuf, obj, decode_response)
         return obj
 
 
