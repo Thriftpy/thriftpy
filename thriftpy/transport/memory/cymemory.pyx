@@ -18,6 +18,7 @@ cdef class TCyMemoryBuffer(CyTransportBase):
     cdef TCyBuffer buf
 
     def __init__(self, value=b'', int buf_size=DEFAULT_BUFFER):
+        self.trans = None
         self.buf = TCyBuffer(buf_size)
 
         if value:

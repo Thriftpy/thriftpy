@@ -13,7 +13,6 @@ cdef class TCyBufferedTransport(CyTransportBase):
     """binary reader/writer"""
 
     cdef:
-        object trans
         TCyBuffer rbuf, wbuf
 
     def __init__(self, trans, int buf_size=DEFAULT_BUFFER):

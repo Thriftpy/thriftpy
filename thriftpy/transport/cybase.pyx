@@ -115,6 +115,12 @@ cdef class CyTransportBase(object):
     def clean(self):
         pass
 
+    @property
+    def sock(self):
+        if not self.trans:
+            return
+        return getattr(self.trans, 'sock', None)
+
     cdef get_string(self, int sz):
         cdef:
             char out[STACK_STRING_LEN]
