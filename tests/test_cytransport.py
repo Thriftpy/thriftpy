@@ -34,3 +34,21 @@ def test_buffered_read():
     t.flush()
 
     assert t.read(4) == b"ping"
+
+
+def test_transport_handle():
+    from thriftpy._compat import CYTHON
+    if not CYTHON:
+        return
+
+    from thriftpy.transport import TSocket
+    from thriftpy.transport.memory import TCyMemoryBuffer
+
+    s = TSocket()
+    s.set_handle('the sock')
+
+    assert TCyBufferedTransport(s).sock == 'the sock'
+    assert TCyFramedTransport(s).sock == 'the sock'
+    assert TCyMemoryBuffer().sock is None
+    assert TCyBufferedTransport(TCyFramedTransport(s)).sock == 'the sock'
+    assert TCyBufferedTransport(TCyMemoryBuffer()).sock is None

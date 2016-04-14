@@ -19,7 +19,6 @@ cdef extern from "../../protocol/cybin/endian_port.h":
 
 cdef class TCyFramedTransport(CyTransportBase):
     cdef:
-        object trans
         TCyBuffer rbuf, rframe_buf, wframe_buf
 
     def __init__(self, trans, int buf_size=DEFAULT_BUFFER):
