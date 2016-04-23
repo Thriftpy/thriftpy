@@ -43,7 +43,7 @@ class TTornadoStreamTransport(TTransportBase):
     DEFAULT_CONNECT_TIMEOUT = timedelta(seconds=1)
     DEFAULT_READ_TIMEOUT = timedelta(seconds=1)
 
-    def __init__(self, host, port, stream=None, io_loop=None,
+    def __init__(self, host, port, stream=None, io_loop=None, ssl_options=None,
                  read_timeout=DEFAULT_READ_TIMEOUT):
         self.host = host
         self.port = port
@@ -53,6 +53,7 @@ class TTornadoStreamTransport(TTransportBase):
         self.read_queue = []
         self.__wbuf = BytesIO()
         self._read_lock = toro.Lock()
+        self.ssl_options = ssl_options
 
         # servers provide a ready-to-go stream
         self.stream = stream
@@ -66,7 +67,10 @@ class TTornadoStreamTransport(TTransportBase):
     def open(self, timeout=DEFAULT_CONNECT_TIMEOUT):
         logger.debug('socket connecting')
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-        self.stream = iostream.IOStream(sock)
+        if self.ssl_options is None:
+            self.stream = iostream.IOStream(sock)
+        else:
+            self.stream = iostream.SSLIOStream(sock, ssl_options=self.ssl_options)
 
         try:
             yield self.with_timeout(timeout, self.stream.connect(
@@ -206,22 +210,22 @@ class TTornadoClient(TClient):
 
 def make_server(
         service, handler, proto_factory=TBinaryProtocolFactory(),
-        io_loop=None,
+        io_loop=None, ssl_options=None,
         transport_read_timeout=TTornadoStreamTransport.DEFAULT_READ_TIMEOUT):
     processor = TProcessor(service, handler)
     server = TTornadoServer(processor, iprot_factory=proto_factory,
                             transport_read_timeout=transport_read_timeout,
-                            io_loop=io_loop)
+                            io_loop=io_loop, ssl_options=ssl_options)
     return server
 
 
 @gen.coroutine
 def make_client(
         service, host, port, proto_factory=TBinaryProtocolFactory(),
-        io_loop=None,
+        io_loop=None, ssl_options=None,
         connect_timeout=TTornadoStreamTransport.DEFAULT_CONNECT_TIMEOUT,
         read_timeout=TTornadoStreamTransport.DEFAULT_READ_TIMEOUT):
-    transport = TTornadoStreamTransport(host, port, io_loop=io_loop,
+    transport = TTornadoStreamTransport(host, port, io_loop=io_loop, ssl_options=ssl_options,
                                         read_timeout=read_timeout)
     iprot = proto_factory.get_protocol(TMemoryBuffer())
     oprot = proto_factory.get_protocol(transport)
