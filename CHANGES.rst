@@ -4,6 +4,18 @@ Changelog
 0.3.x
 ~~~~~
 
+Version 0.3.8
+-------------
+
+Released on May 3, 2016.
+
+- add propagate decode_response to nested structs, via `#194`_.
+- add support for tornado ssl, via `196`_.
+
+.. _`#194`: https://github.com/eleme/thriftpy/pull/194
+.. _`#196`: https://github.com/eleme/thriftpy/pull/196
+
+
 Version 0.3.7
 -------------
 
