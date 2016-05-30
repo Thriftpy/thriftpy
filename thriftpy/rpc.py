@@ -73,7 +73,7 @@ def make_server(service, handler,
 def client_context(service, host="localhost", port=9090, unix_socket=None,
                    proto_factory=TBinaryProtocolFactory(),
                    trans_factory=TBufferedTransportFactory(),
-                   timeout=3000, socket_timeout=3000, connect_timeout=None,
+                   timeout=None, socket_timeout=3000, connect_timeout=3000,
                    cafile=None, ssl_context=None, certfile=None, keyfile=None):
     if timeout:
         warnings.warn("`timeout` deprecated, use `socket_timeout` and "
