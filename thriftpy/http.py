@@ -53,6 +53,9 @@ from thriftpy.protocol.binary import TBinaryProtocolFactory
 from thriftpy.transport.buffered import TBufferedTransport
 
 
+HTTP_URI = '{scheme}://{host}:{port}{path}'
+
+
 class TFileObjectTransport(TTransportBase):
     """Wraps a file-like object to make it work as a Thrift transport."""
 
@@ -256,7 +259,7 @@ def make_client(service, host, port, path='', scheme='http',
                 proto_factory=TBinaryProtocolFactory(),
                 trans_factory=TBufferedTransportFactory(),
                 timeout=4000):
-    uri = '{}://{}:{}{}'.format(scheme, host, port, path)
+    uri = HTTP_URI.format(scheme=scheme, host=host, port=port, path=path)
     http_socket = THttpClient(uri, timeout)
     transport = trans_factory.get_transport(http_socket)
     iprot = proto_factory.get_protocol(transport)
@@ -269,7 +272,7 @@ def client_context(service, host, port, path='', scheme='http',
                    proto_factory=TBinaryProtocolFactory(),
                    trans_factory=TBufferedTransportFactory(),
                    timeout=4000):
-    uri = '{}://{}:{}{}'.format(scheme, host, port, path)
+    uri = HTTP_URI.format(scheme=scheme, host=host, port=port, path=path)
     http_socket = THttpClient(uri, timeout)
     transport = trans_factory.get_transport(http_socket)
     try:
