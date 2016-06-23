@@ -10,8 +10,9 @@
 from __future__ import absolute_import
 
 import functools
+import types
 
-from ._compat import init_func_generator, with_metaclass
+from ._compat import with_metaclass
 
 
 def args2kwargs(thrift_spec, *args):
@@ -36,6 +37,36 @@ def parse_spec(ttype, spec=None):
 
     if ttype == TType.MAP:
         return "MAP<%s, %s>" % (_type(spec[0]), _type(spec[1]))
+
+
+def init_func_generator(spec):
+    """Generate `__init__` function based on TPayload.default_spec
+
+    For example::
+
+        spec = [('name', 'Alice'), ('number', None)]
+
+    will generate a types.FunctionType object representing::
+
+        def __init__(self, name='Alice', number=None):
+            self.name = name
+            self.number = number
+    """
+    if not spec:
+        def __init__(self):
+            pass
+        return __init__
+
+    varnames, defaults = zip(*spec)
+
+    args = ', '.join(map('{0[0]}={0[1]!r}'.format, spec))
+    init = "def __init__(self, {0}):\n".format(args)
+    init += "\n".join(map('    self.{0} = {0}'.format, varnames))
+
+    code = compile(init, '<init_func_generator>', 'exec')
+    func = next(c for c in code.co_consts if isinstance(c, types.CodeType))
+
+    return types.FunctionType(func, {}, argdefs=defaults)
 
 
 class TType(object):

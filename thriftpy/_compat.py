@@ -11,7 +11,6 @@ from __future__ import absolute_import
 
 import platform
 import sys
-import types
 
 PY3 = sys.version_info[0] == 3
 PYPY = "__pypy__" in sys.modules
@@ -58,69 +57,3 @@ def with_metaclass(meta, *bases):
                 return type.__new__(cls, name, (), d)
             return meta(name, bases, d)
     return metaclass('temporary_class', None, {})
-
-
-def init_func_generator(spec):
-    """Generate `__init__` function based on TPayload.default_spec
-
-    For example::
-
-        spec = [('name', 'Alice'), ('number', None)]
-
-    will generate::
-
-        def __init__(self, name='Alice', number=None):
-            kwargs = locals()
-            kwargs.pop('self')
-            self.__dict__.update(kwargs)
-
-    TODO: The `locals()` part may need refine.
-    """
-    if not spec:
-        def __init__(self):
-            pass
-        return __init__
-
-    varnames, defaults = zip(*spec)
-    varnames = ('self', ) + varnames
-
-    def init(self):
-        self.__dict__ = locals().copy()
-        del self.__dict__['self']
-
-    code = init.__code__
-    if PY3:
-        new_code = types.CodeType(len(varnames),
-                                  0,
-                                  len(varnames),
-                                  code.co_stacksize,
-                                  code.co_flags,
-                                  code.co_code,
-                                  code.co_consts,
-                                  code.co_names,
-                                  varnames,
-                                  code.co_filename,
-                                  "__init__",
-                                  code.co_firstlineno,
-                                  code.co_lnotab,
-                                  code.co_freevars,
-                                  code.co_cellvars)
-    else:
-        new_code = types.CodeType(len(varnames),
-                                  len(varnames),
-                                  code.co_stacksize,
-                                  code.co_flags,
-                                  code.co_code,
-                                  code.co_consts,
-                                  code.co_names,
-                                  varnames,
-                                  code.co_filename,
-                                  "__init__",
-                                  code.co_firstlineno,
-                                  code.co_lnotab,
-                                  code.co_freevars,
-                                  code.co_cellvars)
-
-    return types.FunctionType(new_code,
-                              {"__builtins__": __builtins__},
-                              argdefs=defaults)
