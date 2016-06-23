@@ -235,7 +235,7 @@ cdef inline c_read_binary(CyTransportBase buf, int32_t size):
 cdef inline c_read_string(CyTransportBase buf, int32_t size):
     py_data = c_read_binary(buf, size)
     try:
-        return py_data.decode("utf-8")
+        return (<char *>py_data)[:size].decode("utf-8")
     except:
         return py_data
 
