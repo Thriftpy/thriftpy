@@ -117,7 +117,7 @@ def test_string_api(server):
 
 def test_huge_res(server):
     with client() as c:
-        big_str = "world" * 100
+        big_str = "world" * 100000
         assert c.hello(big_str) == "hello " + big_str
 
 

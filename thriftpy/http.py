@@ -43,14 +43,21 @@ from thriftpy.thrift import TProcessor, TClient
 from thriftpy.server import TServer
 from thriftpy.transport import (
     TTransportBase,
-    TBufferedTransportFactory,
     TMemoryBuffer
 )
-# Avoid TypeError: Cannot convert TBufferedTransport
-# to thriftpy.transport.cybase.CyTransportBase.
+# Explicitly use Python version instead of Cython version for libraries below
+# to address some mystery issues for now.
+#
+# Avoid TypeError: Cannot convert TBufferedTransport to
+# thriftpy.transport.cybase.CyTransportBase.
 from thriftpy.protocol.binary import TBinaryProtocolFactory
 # Avoid raised error of too small buffer allocated by TCyBufferedTransport.
-from thriftpy.transport.buffered import TBufferedTransport
+# Also, using TCyBufferedTransportFactory will let THttpClient write a broken
+# string to server, which making server freezed in transport.readall() method.
+from thriftpy.transport.buffered import (
+    TBufferedTransport,
+    TBufferedTransportFactory,
+)
 
 
 HTTP_URI = '{scheme}://{host}:{port}{path}'
