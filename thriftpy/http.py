@@ -61,6 +61,7 @@ from thriftpy.transport.buffered import (
 
 
 HTTP_URI = '{scheme}://{host}:{port}{path}'
+DEFAULT_HTTP_CLIENT_TIMEOUT_MS = 30000  # 30 seconds
 
 
 class TFileObjectTransport(TTransportBase):
@@ -107,7 +108,6 @@ class THttpServer(TServer):
                  processor,
                  server_address,
                  iprot_factory,
-                 ssl_options=None,
                  server_class=http_server.HTTPServer):
         """Set up protocol factories and HTTP server.
         See http.server for server_address.
@@ -265,7 +265,7 @@ class THttpClient(object):
 def make_client(service, host, port, path='', scheme='http',
                 proto_factory=TBinaryProtocolFactory(),
                 trans_factory=TBufferedTransportFactory(),
-                timeout=4000):
+                timeout=DEFAULT_HTTP_CLIENT_TIMEOUT_MS):
     uri = HTTP_URI.format(scheme=scheme, host=host, port=port, path=path)
     http_socket = THttpClient(uri, timeout)
     transport = trans_factory.get_transport(http_socket)
@@ -278,7 +278,7 @@ def make_client(service, host, port, path='', scheme='http',
 def client_context(service, host, port, path='', scheme='http',
                    proto_factory=TBinaryProtocolFactory(),
                    trans_factory=TBufferedTransportFactory(),
-                   timeout=4000):
+                   timeout=DEFAULT_HTTP_CLIENT_TIMEOUT_MS):
     uri = HTTP_URI.format(scheme=scheme, host=host, port=port, path=path)
     http_socket = THttpClient(uri, timeout)
     transport = trans_factory.get_transport(http_socket)
@@ -291,11 +291,8 @@ def client_context(service, host, port, path='', scheme='http',
 
 
 def make_server(service, handler, host, port,
-                proto_factory=TBinaryProtocolFactory(),
-                ssl_options=None
-                ):
+                proto_factory=TBinaryProtocolFactory()):
     processor = TProcessor(service, handler)
     server = THttpServer(processor, (host, port),
-                         iprot_factory=proto_factory,
-                         ssl_options=ssl_options)
+                         iprot_factory=proto_factory)
     return server
