@@ -282,7 +282,7 @@ class TProcessor(object):
                 setattr(result, exc_name, e)
                 break
         else:
-            raise e
+            raise
 
     def process(self, iprot, oprot):
         api, seqid, result, call = self.process_in(iprot)
