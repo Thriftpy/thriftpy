@@ -47,12 +47,12 @@ def p_header_unit(p):
 def p_include(p):
     '''include : INCLUDE LITERAL'''
     thrift = thrift_stack[-1]
-
     if thrift.__thrift_file__ is None:
         raise ThriftParserError('Unexcepted include statement while loading'
                                 'from file like object.')
-
-    for include_dir in include_dirs_:
+    replace_include_dirs = [os.path.dirname(thrift.__thrift_file__)] \
+                            + include_dirs_
+    for include_dir in replace_include_dirs:
         path = os.path.join(include_dir, p[2])
         if os.path.exists(path):
             child = parse(path)
@@ -154,7 +154,6 @@ def p_const_map_item(p):
 def p_const_ref(p):
     '''const_ref : IDENTIFIER'''
     child = thrift_stack[-1]
-
     for name in p[1].split('.'):
         father = child
         child = getattr(child, name, None)
@@ -618,7 +617,7 @@ def _cast_bool(v):
 
 
 def _cast_byte(v):
-    assert isinstance(v, str)
+    assert isinstance(v, int)
     return v
 
 
