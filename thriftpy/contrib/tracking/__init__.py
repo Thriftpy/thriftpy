@@ -100,7 +100,8 @@ class TTrackedClient(TClient):
         super(TTrackedClient, self)._send(_api, **kwargs)
 
     def _recv(self, _api):
-        if self._upgraded and self.check_support(TrackerVersion.support_response_header):
+        if self._upgraded \
+                and self.check_support(TrackerVersion.support_response_header):
             self.response_header = track_thrift.ResponseHeader()
             self.response_header.read(self._iprot)
             self.tracker.handle_response(self.response_header)
