@@ -10,14 +10,23 @@ import uuid
 ctx = threading.local()
 
 
+class TrackerVersion:
+    default = 0  # support only request header
+    support_response_header = 1  # add response header
+
+
 class TrackerBase(object):
     def __init__(self, client=None, server=None):
         self.client = client
         self.server = server
+        self.version = TrackerVersion.support_response_header
 
     def handle(self, header):
         ctx.header = header
-        ctx.counter = 0
+        ctx.counter = TrackerVersion.default
+
+    def handle_response(self, response_header):
+        ctx.response_header = response_header
 
     def gen_header(self, header):
         header.request_id = self.get_request_id()
@@ -37,6 +46,15 @@ class TrackerBase(object):
 
         if hasattr(ctx, "meta"):
             header.meta.update(ctx.meta)
+
+    def gen_response_header(self, response_header):
+        if hasattr(ctx, "response_header"):
+            response_header.meta = ctx.response_header.meta
+        else:
+            response_header.meta = {}
+
+        if hasattr(ctx, "response_meta"):
+            response_header.meta.update(ctx.response_meta)
 
     def record(self, header, exception):
         pass
@@ -85,6 +103,16 @@ class TrackerBase(object):
             finally:
                 del ctx.meta
 
+    @classmethod
+    def add_response_meta(cls, **kwds):
+        if hasattr(ctx, 'response_meta'):
+            ctx.response_meta.update(kwds)
+
+        else:
+            ctx.response_meta = kwds
+
+        return ctx.response_meta
+
     @property
     def meta(self):
         meta = ctx.header.meta if hasattr(ctx, "header") else {}
@@ -102,7 +130,7 @@ class TrackerBase(object):
         return str(uuid.uuid4())
 
     def init_handshake_info(self, handshake_obj):
-        pass
+        handshake_obj.version = self.version
 
     def handle_handshake_info(self, handshake_obj):
         pass

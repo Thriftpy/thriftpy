@@ -6,12 +6,13 @@ from thriftpy import load
 from thriftpy.thrift import TPayload, TException, TType
 
 import thriftpy
-thriftpy.install_import_hook()  # noqa
 
-import addressbook as ab
-import addressbook_thrift as ab_tt
-import storm
-import storm_thrift as storm_tt
+thriftpy.install_import_hook()
+
+import addressbook as ab  # noqa
+import addressbook_thrift as ab_tt  # noqa
+import storm  # noqa
+import storm_thrift as storm_tt  # noqa
 
 
 def test_load_const():
