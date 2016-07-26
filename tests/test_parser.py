@@ -254,9 +254,3 @@ def test_recursive_union():
         6: (TType.MAP, 'object', (TType.STRING, (TType.STRUCT,
                                                  thrift.Dynamic)), False)
     }
-
-
-def test_issue_215():
-    thrift = load('parser-cases/issue_215.thrift')
-    assert thrift.abool is True
-    assert thrift.falseValue == 123

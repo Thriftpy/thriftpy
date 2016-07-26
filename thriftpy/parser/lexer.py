@@ -191,7 +191,7 @@ def t_ignore_COMMENT(t):
 
 
 def t_BOOLCONSTANT(t):
-    r'\btrue\b|\bfalse\b'
+    r'true|false'
     t.value = t.value == 'true'
     return t
 
