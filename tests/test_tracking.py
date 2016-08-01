@@ -370,7 +370,7 @@ def test_annotation(server, dbm_db, tracker_ctx):
     data.sort(key=lambda x: x["seq"])
 
     assert data[0]["annotation"] == {"ann": "value"} and \
-           data[1]["annotation"] == {"sig": "c.hello()", "user_id": "125"}
+        data[1]["annotation"] == {"sig": "c.hello()", "user_id": "125"}
 
 
 def test_counter(server, dbm_db, tracker_ctx):
@@ -532,5 +532,3 @@ def test_tracked_client_v3_tracked_server_v2(
             "annotation": {},
             "meta": {},
         }
-
-
