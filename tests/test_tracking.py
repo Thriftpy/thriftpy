@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
-
 import contextlib
 import multiprocessing
 import os
@@ -9,8 +7,9 @@ import pickle
 import random
 import socket
 import tempfile
-import thriftpy
 import time
+
+import thriftpy
 
 try:
     import dbm
@@ -28,7 +27,10 @@ from thriftpy.server import TThreadedServer
 from thriftpy.transport import TServerSocket, TBufferedTransportFactory, \
     TTransportException, TSocket
 from thriftpy.protocol import TBinaryProtocolFactory
-
+from compatible.version_2.tracking \
+    import TTrackedProcessor as old_TTrackedProcessor, \
+    TTrackedClient as old_TTrackedClient, \
+    TrackerBase as old_TrackerBase
 
 addressbook = thriftpy.load(os.path.join(os.path.dirname(__file__),
                                          "addressbook.thrift"))
@@ -45,18 +47,29 @@ def _get_port():
                 continue
         else:
             return port
+
+
 PORT = _get_port()
 
 
 class SampleTracker(TrackerBase):
     def record(self, header, exception):
         db = dbm.open(db_file, 'w')
-
         key = "%s:%s" % (header.request_id, header.seq)
         db[key.encode("ascii")] = pickle.dumps(header.__dict__)
         db.close()
 
+
+class OldTracker(old_TrackerBase):
+    def record(self, header, exception):
+        db = dbm.open(db_file, 'w')
+        key = "%s:%s" % (header.request_id, header.seq)
+        db[key.encode("ascii")] = pickle.dumps(header.__dict__)
+        db.close()
+
+
 tracker = SampleTracker("test_client", "test_server")
+old_tracker = OldTracker("test_client", "test_server")
 
 
 class Dispatcher(object):
@@ -107,6 +120,8 @@ class TSampleServer(TThreadedServer):
         self.closed = False
 
     def handle(self, client):
+        test_response = {'ping': 'pong'}
+        TrackerBase.add_response_meta(**test_response)
         processor = self.processor_factory.get_processor()
         itrans = self.itrans_factory.get_transport(client)
         otrans = self.otrans_factory.get_transport(client)
@@ -146,6 +161,7 @@ def server(request):
     def fin():
         if ps.is_alive():
             ps.terminate()
+
     request.addfinalizer(fin)
     return ser
 
@@ -158,6 +174,7 @@ def server1(request):
     def fin():
         if ps.is_alive():
             ps.terminate()
+
     request.addfinalizer(fin)
     return ser
 
@@ -170,6 +187,7 @@ def server2(request):
     def fin():
         if ps.is_alive():
             ps.terminate()
+
     request.addfinalizer(fin)
     return ser
 
@@ -182,6 +200,21 @@ def not_tracked_server(request):
     def fin():
         if ps.is_alive():
             ps.terminate()
+
+    request.addfinalizer(fin)
+    return ser
+
+
+@pytest.fixture(scope="module")
+def old_tracked_server(request):
+    ps, ser = gen_server(PORT + 4, tracker=old_tracker,
+                         processor=old_TTrackedProcessor)
+    time.sleep(0.15)
+
+    def fin():
+        if ps.is_alive():
+            ps.terminate()
+
     request.addfinalizer(fin)
     return ser
 
@@ -212,6 +245,7 @@ def dbm_db(request):
             os.remove(db_file)
         except OSError:
             pass
+
     request.addfinalizer(fin)
 
 
@@ -234,6 +268,7 @@ def test_negotiation(server):
 def test_tracker(server, dbm_db, tracker_ctx):
     with client() as c:
         c.ping()
+        assert c.response_header.meta == {'ping': 'pong'}
 
     time.sleep(0.2)
 
@@ -247,7 +282,6 @@ def test_tracker(server, dbm_db, tracker_ctx):
     assert "start" in data and "end" in data
     data.pop("start")
     data.pop("end")
-
     assert data == {
         "request_id": request_id.decode("ascii").split(':')[0],
         "seq": '1',
@@ -265,7 +299,7 @@ def test_tracker_chain(server, server1, server2, dbm_db, tracker_ctx):
     with client() as c:
         with SampleTracker.add_meta(**test_meta):
             c.remove("jane")
-            c.hello("yes")
+        c.hello("yes")
 
     time.sleep(0.2)
 
@@ -279,9 +313,7 @@ def test_tracker_chain(server, server1, server2, dbm_db, tracker_ctx):
     assert len(set([i["request_id"] for i in headers])) == 2
 
     seqs = [i["seq"] for i in headers]
-    metas = [i["meta"] for i in headers]
     assert seqs == ['1', '1.1', '1.1.1', '1.1.2', '2']
-    assert metas == [test_meta] * 5
 
 
 def test_exception(server, dbm_db, tracker_ctx):
@@ -295,22 +327,6 @@ def test_exception(server, dbm_db, tracker_ctx):
 
     header = pickle.loads(db[headers[0]])
     assert header["status"] is False
-
-
-def test_not_tracked_client_tracked_server(server):
-    with client(TClient) as c:
-        c.ping()
-        c.hello("world")
-
-
-def test_tracked_client_not_tracked_server(not_tracked_server):
-    with client(port=PORT + 3) as c:
-        assert c._upgraded is False
-        c.ping()
-        c.hello("cat")
-        a = c.get_phonenumbers("hello", 54)
-        assert len(a) == 2
-        assert a[0].number == 'sdaf' and a[1].number == 'saf'
 
 
 def test_request_id_func():
@@ -372,3 +388,136 @@ def test_counter(server, dbm_db, tracker_ctx):
     assert ping["api"] == "ping" and ping["seq"] == '1'
     assert hello["api"] == "hello" and hello["seq"] == '2'
     assert sleep["api"] == "sleep" and sleep["seq"] == '2'
+
+
+'''
+The following 7 test cases tests the backward compatibility,
+there are three kinds of client/server : not_tracked
+old_tracked(only support request header not support response header),
+new_tracked(support request and response header)
+'''
+
+
+def test_not_tracked_client_new_tracked_server(server):
+    with client(TClient) as c:
+        c.ping()
+        c.hello("world")
+
+
+def test_not_tracked_clent_old_tracked_server(old_tracked_server):
+    with client(TClient, port=PORT + 4) as c:
+        c.ping()
+        c.hello("world")
+
+
+def test_old_tracked_clent_not_tracked_server(not_tracked_server):
+    with client(old_TTrackedClient, PORT + 3) as c:
+        assert c._upgraded is False
+        c.ping()
+        c.hello("cat")
+        a = c.get_phonenumbers("hello", 54)
+        assert len(a) == 2
+        assert a[0].number == 'sdaf' and a[1].number == 'saf'
+
+
+def test_old_tracked_clent_old_tracked_server(
+        old_tracked_server, dbm_db, tracker_ctx):
+    with client(old_TTrackedClient, PORT + 4) as c:
+        assert c._upgraded is True
+
+        c.ping()
+        time.sleep(0.2)
+
+        db = dbm.open(db_file, 'r')
+        headers = list(db.keys())
+        assert len(headers) == 1
+
+        request_id = headers[0]
+        data = pickle.loads(db[request_id])
+
+        assert "start" in data and "end" in data
+        data.pop("start")
+        data.pop("end")
+        assert data == {
+            "request_id": request_id.decode("ascii").split(':')[0],
+            "seq": '1',
+            "client": "test_client",
+            "server": "test_server",
+            "api": "ping",
+            "status": True,
+            "annotation": {},
+            "meta": {},
+        }
+
+
+def test_old_tracked_clent_new_tracked_server(server, dbm_db, tracker_ctx):
+    with client(old_TTrackedClient) as c:
+        assert c._upgraded is True
+
+        c.ping()
+        time.sleep(0.2)
+
+        db = dbm.open(db_file, 'r')
+        headers = list(db.keys())
+        assert len(headers) == 1
+
+        request_id = headers[0]
+        data = pickle.loads(db[request_id])
+
+        assert "start" in data and "end" in data
+        data.pop("start")
+        data.pop("end")
+        assert data == {
+            "request_id": request_id.decode("ascii").split(':')[0],
+            "seq": '1',
+            "client": "test_client",
+            "server": "test_server",
+            "api": "ping",
+            "status": True,
+            "annotation": {},
+            "meta": {},
+        }
+
+        assert not hasattr(c, 'response_header')
+
+
+def test_new_tracked_client_not_tracked_server(not_tracked_server):
+    with client(port=PORT + 3) as c:
+        assert c._upgraded is False
+        c.ping()
+        c.hello("cat")
+        a = c.get_phonenumbers("hello", 54)
+        assert len(a) == 2
+        assert a[0].number == 'sdaf' and a[1].number == 'saf'
+
+
+def test_new_tracked_client_old_tracked_server(
+        old_tracked_server, dbm_db, tracker_ctx):
+    with client(port=PORT + 4) as c:
+        assert c._upgraded is True
+
+        c.ping()
+        time.sleep(0.2)
+
+        db = dbm.open(db_file, 'r')
+        headers = list(db.keys())
+        assert len(headers) == 1
+
+        request_id = headers[0]
+        data = pickle.loads(db[request_id])
+
+        assert "start" in data and "end" in data
+        data.pop("start")
+        data.pop("end")
+        assert data == {
+            "request_id": request_id.decode("ascii").split(':')[0],
+            "seq": '1',
+            "client": "test_client",
+            "server": "test_server",
+            "api": "ping",
+            "status": True,
+            "annotation": {},
+            "meta": {},
+        }
+
+        assert c.response_header is None

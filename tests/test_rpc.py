@@ -10,10 +10,10 @@ import time
 import pytest
 
 import thriftpy
-thriftpy.install_import_hook()  # noqa
 
-from thriftpy.rpc import make_server, client_context
+thriftpy.install_import_hook()
 
+from thriftpy.rpc import make_server, client_context  # noqa
 
 addressbook = thriftpy.load(os.path.join(os.path.dirname(__file__),
                                          "addressbook.thrift"))
@@ -82,6 +82,7 @@ def server(request):
             os.remove(unix_sock)
         except IOError:
             pass
+
     request.addfinalizer(fin)
 
 
