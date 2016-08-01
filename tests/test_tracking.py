@@ -370,7 +370,7 @@ def test_annotation(server, dbm_db, tracker_ctx):
     data.sort(key=lambda x: x["seq"])
 
     assert data[0]["annotation"] == {"ann": "value"} and \
-           data[1]["annotation"] == {"sig": "c.hello()", "user_id": "125"}
+        data[1]["annotation"] == {"sig": "c.hello()", "user_id": "125"}
 
 
 def test_counter(server, dbm_db, tracker_ctx):
@@ -412,13 +412,13 @@ def test_native_client_tracked_server_v3(server):
         c.hello("world")
 
 
-def test_native_clent_tracked_server_v2(tracked_server_v2):
+def test_native_client_tracked_server_v2(tracked_server_v2):
     with client(TClient, port=PORT + 4) as c:
         c.ping()
         c.hello("world")
 
 
-def test_tracked_clent_v2_native_server(native_server):
+def test_tracked_client_v2_native_server(native_server):
     with client(TTrackedClientV2, PORT + 3) as c:
         assert c._upgraded is False
         c.ping()
@@ -428,7 +428,7 @@ def test_tracked_clent_v2_native_server(native_server):
         assert a[0].number == 'sdaf' and a[1].number == 'saf'
 
 
-def test_tracked_clent_v2_tracked_server_v2(
+def test_tracked_client_v2_tracked_server_v2(
         tracked_server_v2, dbm_db, tracker_ctx):
     with client(TTrackedClientV2, PORT + 4) as c:
         assert c._upgraded is True
@@ -458,7 +458,7 @@ def test_tracked_clent_v2_tracked_server_v2(
         }
 
 
-def test_tracked_clent_v2_tracked_server_v3(server, dbm_db, tracker_ctx):
+def test_tracked_client_v2_tracked_server_v3(server, dbm_db, tracker_ctx):
     with client(TTrackedClientV2) as c:
         assert c._upgraded is True
 
@@ -532,5 +532,3 @@ def test_tracked_client_v3_tracked_server_v2(
             "annotation": {},
             "meta": {},
         }
-
-
