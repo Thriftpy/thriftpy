@@ -14,6 +14,15 @@ class TrackerVersion:
     default = 0  # support only request header
     support_response_header = 1  # add response header
 
+    @classmethod
+    def check_version(cls, tracked, version):
+        return hasattr(tracked, 'client_version') \
+               and tracked.client_version is not None \
+               and tracked.client_version >= version \
+               and hasattr(tracked, 'server_version') \
+               and tracked.server_version is not None \
+               and tracked.server_version >= version
+
 
 class TrackerBase(object):
     def __init__(self, client=None, server=None):
@@ -23,7 +32,7 @@ class TrackerBase(object):
 
     def handle(self, header):
         ctx.header = header
-        ctx.counter = TrackerVersion.default
+        ctx.counter = 0
 
     def handle_response(self, response_header):
         ctx.response_header = response_header

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
 
 import contextlib
 import multiprocessing
@@ -27,10 +28,11 @@ from thriftpy.server import TThreadedServer
 from thriftpy.transport import TServerSocket, TBufferedTransportFactory, \
     TTransportException, TSocket
 from thriftpy.protocol import TBinaryProtocolFactory
-from compatible.version_2.tracking \
-    import TTrackedProcessor as old_TTrackedProcessor, \
-    TTrackedClient as old_TTrackedClient, \
-    TrackerBase as old_TrackerBase
+from compatible.version_2.tracking import (
+    TTrackedProcessor as TTrackedProcessorV2,
+    TTrackedClient as TTrackedClientV2,
+    TrackerBase as TrackerBaseV2,
+)
 
 addressbook = thriftpy.load(os.path.join(os.path.dirname(__file__),
                                          "addressbook.thrift"))
@@ -60,7 +62,7 @@ class SampleTracker(TrackerBase):
         db.close()
 
 
-class OldTracker(old_TrackerBase):
+class Tracker_V2(TrackerBaseV2):
     def record(self, header, exception):
         db = dbm.open(db_file, 'w')
         key = "%s:%s" % (header.request_id, header.seq)
@@ -69,7 +71,7 @@ class OldTracker(old_TrackerBase):
 
 
 tracker = SampleTracker("test_client", "test_server")
-old_tracker = OldTracker("test_client", "test_server")
+tracker_v2 = Tracker_V2("test_client", "test_server")
 
 
 class Dispatcher(object):
@@ -193,7 +195,7 @@ def server2(request):
 
 
 @pytest.fixture(scope="module")
-def not_tracked_server(request):
+def native_server(request):
     ps, ser = gen_server(PORT + 3, tracker=None, processor=TProcessor)
     time.sleep(0.15)
 
@@ -206,9 +208,9 @@ def not_tracked_server(request):
 
 
 @pytest.fixture(scope="module")
-def old_tracked_server(request):
-    ps, ser = gen_server(PORT + 4, tracker=old_tracker,
-                         processor=old_TTrackedProcessor)
+def tracked_server_v2(request):
+    ps, ser = gen_server(PORT + 4, tracker=tracker_v2,
+                         processor=TTrackedProcessorV2)
     time.sleep(0.15)
 
     def fin():
@@ -256,6 +258,8 @@ def tracker_ctx(request):
             del ctx.header
         if hasattr(ctx, "counter"):
             del ctx.counter
+        if hasattr(ctx, "response_header"):
+            del ctx.response_header
 
     request.addfinalizer(fin)
 
@@ -268,7 +272,9 @@ def test_negotiation(server):
 def test_tracker(server, dbm_db, tracker_ctx):
     with client() as c:
         c.ping()
-        assert c.response_header.meta == {'ping': 'pong'}
+        assert ctx.response_header.meta == {'ping': 'pong'}
+        response_header = c.get_response_header()
+        assert response_header.meta == {'ping': 'pong'}
 
     time.sleep(0.2)
 
@@ -299,7 +305,7 @@ def test_tracker_chain(server, server1, server2, dbm_db, tracker_ctx):
     with client() as c:
         with SampleTracker.add_meta(**test_meta):
             c.remove("jane")
-        c.hello("yes")
+            c.hello("yes")
 
     time.sleep(0.2)
 
@@ -313,7 +319,9 @@ def test_tracker_chain(server, server1, server2, dbm_db, tracker_ctx):
     assert len(set([i["request_id"] for i in headers])) == 2
 
     seqs = [i["seq"] for i in headers]
+    metas = [i["meta"] for i in headers]
     assert seqs == ['1', '1.1', '1.1.1', '1.1.2', '2']
+    assert metas == [test_meta] * 5
 
 
 def test_exception(server, dbm_db, tracker_ctx):
@@ -362,7 +370,7 @@ def test_annotation(server, dbm_db, tracker_ctx):
     data.sort(key=lambda x: x["seq"])
 
     assert data[0]["annotation"] == {"ann": "value"} and \
-        data[1]["annotation"] == {"sig": "c.hello()", "user_id": "125"}
+           data[1]["annotation"] == {"sig": "c.hello()", "user_id": "125"}
 
 
 def test_counter(server, dbm_db, tracker_ctx):
@@ -391,27 +399,27 @@ def test_counter(server, dbm_db, tracker_ctx):
 
 
 '''
-The following 7 test cases tests the backward compatibility,
-there are three kinds of client/server : not_tracked
-old_tracked(only support request header not support response header),
-new_tracked(support request and response header)
+The following are Compatibility Test
+Native tracker do not track.
+Tracker V2 have request header but don't have response header.
+Tracker V3 have both request and response header.
 '''
 
 
-def test_not_tracked_client_new_tracked_server(server):
+def test_native_client_tracked_server_v3(server):
     with client(TClient) as c:
         c.ping()
         c.hello("world")
 
 
-def test_not_tracked_clent_old_tracked_server(old_tracked_server):
+def test_native_clent_tracked_server_v2(tracked_server_v2):
     with client(TClient, port=PORT + 4) as c:
         c.ping()
         c.hello("world")
 
 
-def test_old_tracked_clent_not_tracked_server(not_tracked_server):
-    with client(old_TTrackedClient, PORT + 3) as c:
+def test_tracked_clent_v2_native_server(native_server):
+    with client(TTrackedClientV2, PORT + 3) as c:
         assert c._upgraded is False
         c.ping()
         c.hello("cat")
@@ -420,9 +428,9 @@ def test_old_tracked_clent_not_tracked_server(not_tracked_server):
         assert a[0].number == 'sdaf' and a[1].number == 'saf'
 
 
-def test_old_tracked_clent_old_tracked_server(
-        old_tracked_server, dbm_db, tracker_ctx):
-    with client(old_TTrackedClient, PORT + 4) as c:
+def test_tracked_clent_v2_tracked_server_v2(
+        tracked_server_v2, dbm_db, tracker_ctx):
+    with client(TTrackedClientV2, PORT + 4) as c:
         assert c._upgraded is True
 
         c.ping()
@@ -450,8 +458,8 @@ def test_old_tracked_clent_old_tracked_server(
         }
 
 
-def test_old_tracked_clent_new_tracked_server(server, dbm_db, tracker_ctx):
-    with client(old_TTrackedClient) as c:
+def test_tracked_clent_v2_tracked_server_v3(server, dbm_db, tracker_ctx):
+    with client(TTrackedClientV2) as c:
         assert c._upgraded is True
 
         c.ping()
@@ -478,25 +486,30 @@ def test_old_tracked_clent_new_tracked_server(server, dbm_db, tracker_ctx):
             "meta": {},
         }
 
-        assert not hasattr(c, 'response_header')
+        assert not hasattr(ctx, 'response_header')
 
 
-def test_new_tracked_client_not_tracked_server(not_tracked_server):
+def test_tracked_client_v3_native_server(native_server):
     with client(port=PORT + 3) as c:
         assert c._upgraded is False
         c.ping()
+        assert not hasattr(ctx, "response_header")
+
         c.hello("cat")
         a = c.get_phonenumbers("hello", 54)
         assert len(a) == 2
         assert a[0].number == 'sdaf' and a[1].number == 'saf'
 
 
-def test_new_tracked_client_old_tracked_server(
-        old_tracked_server, dbm_db, tracker_ctx):
+def test_tracked_client_v3_tracked_server_v2(
+        tracked_server_v2, dbm_db, tracker_ctx):
     with client(port=PORT + 4) as c:
         assert c._upgraded is True
 
         c.ping()
+        assert not hasattr(ctx, "response_header")
+        assert c.get_response_header() is None
+
         time.sleep(0.2)
 
         db = dbm.open(db_file, 'r')
@@ -520,4 +533,4 @@ def test_new_tracked_client_old_tracked_server(
             "meta": {},
         }
 
-        assert c.response_header is None
+

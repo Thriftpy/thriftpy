@@ -15,7 +15,7 @@ import time
 from ...thrift import TClient, TApplicationException, TMessageType, \
     TProcessor, TType
 from ...parser import load
-from .tracker import TrackerVersion
+from .tracker import TrackerVersion, ctx
 
 track_method = "__thriftpy_tracing_method_name__v2"
 
@@ -53,13 +53,13 @@ class RequestInfo(object):
 
 
 class TTrackedClient(TClient):
+    client_version = TrackerVersion.support_response_header
+
     def __init__(self, tracker_handler, *args, **kwargs):
         super(TTrackedClient, self).__init__(*args, **kwargs)
 
         self.tracker = tracker_handler
         self._upgraded = False
-        self.client_version = TrackerVersion.support_response_header
-        self.response_header = None
 
         try:
             self._negotiation()
@@ -101,10 +101,10 @@ class TTrackedClient(TClient):
 
     def _recv(self, _api):
         if self._upgraded \
-                and self.check_support(TrackerVersion.support_response_header):
-            self.response_header = track_thrift.ResponseHeader()
-            self.response_header.read(self._iprot)
-            self.tracker.handle_response(self.response_header)
+                and TrackerVersion.check_version(self, TrackerVersion.support_response_header):
+            response_header = track_thrift.ResponseHeader()
+            response_header.read(self._iprot)
+            self.tracker.handle_response(response_header)
 
         return super(TTrackedClient, self)._recv(_api)
 
@@ -136,20 +136,18 @@ class TTrackedClient(TClient):
             )
             self.tracker.record(header_info, exception)
 
-    def check_support(self, version):
-        return hasattr(self, 'server_version') \
-               and self.server_version is not None \
-               and self.server_version >= version \
-               and self.client_version >= version
+    def get_response_header(self):
+        return ctx.response_header if hasattr(ctx, 'response_header') else None
 
 
 class TTrackedProcessor(TProcessor):
+    server_version = TrackerVersion.support_response_header
+
     def __init__(self, tracker_handler, *args, **kwargs):
         super(TTrackedProcessor, self).__init__(*args, **kwargs)
         self.tracker = tracker_handler
         self._upgraded = False
         self.add_response_header = False
-        self.server_version = TrackerVersion.support_response_header
 
     def process(self, iprot, oprot):
         if not self._upgraded:
@@ -224,15 +222,10 @@ class TTrackedProcessor(TProcessor):
                 self.tracker.gen_response_header(response_header)
                 response_header.write(oprot)
 
-            if self.check_support(TrackerVersion.support_response_header):
+            if not self.add_response_header and TrackerVersion.check_version(
+                    self, TrackerVersion.support_response_header):
                 self.add_response_header = True
             self.send_result(oprot, api, result, seqid)
-
-    def check_support(self, version):
-        return hasattr(self, 'client_version') \
-               and self.client_version is not None \
-               and self.client_version >= version \
-               and self.server_version >= version
 
 
 from .tracker import TrackerBase, ConsoleTracker  # noqa
