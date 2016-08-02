@@ -1,19 +1,32 @@
 # -*- coding: utf-8 -*-
 
 """
-Run server:
+# Run server:
+>>> import thriftpy
+>>> from thriftpy.http import make_server
 >>> pingpong = thriftpy.load("pingpong.thrift")
 >>>
 >>> class Dispatcher(object):
 >>>     def ping(self):
 >>>         return "pong"
 
->>> server = make_server(pingpong.PingPong, Dispatcher(),
+>>> server = make_server(pingpong.PingService, Dispatcher(),
                          host='127.0.0.1', port=6000)
 >>> server.serve()
 
-Run client:
->>> client = make_client(pingpong.PingPong, host='127.0.0.1', port=6000)
+# Run client:
+>>> import thriftpy
+>>> from thriftpy.http import make_client
+>>> pingpong = thriftpy.load("pingpong.thrift")
+>>> client = make_client(pingpong.PingService, host='127.0.0.1', port=6000)
+>>> client.ping()
+
+# Run HTTPS client with unverified SSL context for TESTING ONLY purpose:
+>>> import ssl
+>>> ssl_context_factory = ssl._create_unverified_context
+>>> client = make_client(pingpong.PingService, host='example.com', port=443,
+...                      scheme="https",
+...                      ssl_context_factory=ssl_context_factory)
 >>> client.ping()
 """
 
@@ -151,7 +164,7 @@ class THttpClient(object):
     """Http implementation of TTransport base.
     """
 
-    def __init__(self, uri, timeout=None):
+    def __init__(self, uri, timeout=None, ssl_context_factory=None):
         """Initialize a HTTP Socket.
 
         @param uri(str)    The http_scheme:://host:port/path to connect to.
@@ -174,11 +187,16 @@ class THttpClient(object):
         self.__timeout = None
         if timeout:
             self.setTimeout(timeout)
+        self._ssl_context_factory = ssl_context_factory
 
     def open(self):
-        http_connection = http_client.HTTPConnection \
-            if self.scheme == "http" else http_client.HTTPSConnection
-        self.__http = http_connection(self.host, self.port)
+        if self.scheme == "https":
+            ssl_context = self._ssl_context_factory() \
+                if self._ssl_context_factory else None
+            self.__http = http_client.HTTPSConnection(self.host, self.port,
+                                                      context=ssl_context)
+        else:
+            self.__http = http_client.HTTPConnection(self.host, self.port)
 
     def close(self):
         self.__http.close()
@@ -265,9 +283,10 @@ class THttpClient(object):
 def make_client(service, host, port, path='', scheme='http',
                 proto_factory=TBinaryProtocolFactory(),
                 trans_factory=TBufferedTransportFactory(),
+                ssl_context_factory=None,
                 timeout=DEFAULT_HTTP_CLIENT_TIMEOUT_MS):
     uri = HTTP_URI.format(scheme=scheme, host=host, port=port, path=path)
-    http_socket = THttpClient(uri, timeout)
+    http_socket = THttpClient(uri, timeout, ssl_context_factory)
     transport = trans_factory.get_transport(http_socket)
     iprot = proto_factory.get_protocol(transport)
     transport.open()
@@ -278,9 +297,10 @@ def make_client(service, host, port, path='', scheme='http',
 def client_context(service, host, port, path='', scheme='http',
                    proto_factory=TBinaryProtocolFactory(),
                    trans_factory=TBufferedTransportFactory(),
+                   ssl_context_factory=None,
                    timeout=DEFAULT_HTTP_CLIENT_TIMEOUT_MS):
     uri = HTTP_URI.format(scheme=scheme, host=host, port=port, path=path)
-    http_socket = THttpClient(uri, timeout)
+    http_socket = THttpClient(uri, timeout, ssl_context_factory)
     transport = trans_factory.get_transport(http_socket)
     try:
         iprot = proto_factory.get_protocol(transport)
