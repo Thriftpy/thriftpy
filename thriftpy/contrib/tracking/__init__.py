@@ -153,13 +153,16 @@ class TTrackedProcessor(TProcessor):
     def process(self, iprot, oprot):
         if not self._upgraded:
             res = self._try_upgrade(iprot)
+            self._do_process(iprot, oprot, *res)
+            self.add_response_header = TrackerVersion.check_version(
+                self, TrackerVersion.support_response_header)
+
         else:
             request_header = track_thrift.RequestHeader()
             request_header.read(iprot)
             self.tracker.handle(request_header)
             res = super(TTrackedProcessor, self).process_in(iprot)
-
-        self._do_process(iprot, oprot, *res)
+            self._do_process(iprot, oprot, *res)
 
     def _try_upgrade(self, iprot):
         api, msg_type, seqid = iprot.read_message_begin()
@@ -223,9 +226,6 @@ class TTrackedProcessor(TProcessor):
                 self.tracker.gen_response_header(response_header)
                 response_header.write(oprot)
 
-            if not self.add_response_header and TrackerVersion.check_version(
-                    self, TrackerVersion.support_response_header):
-                self.add_response_header = True
             self.send_result(oprot, api, result, seqid)
 
 
