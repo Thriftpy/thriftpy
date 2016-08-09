@@ -10,32 +10,38 @@ import uuid
 ctx = threading.local()
 
 
-class TrackerVersion:
-    default = 0  # support only request header
-    support_response_header = 1  # add response header
+class VersionMixin(object):
+    """Mixin class to handle version compatibilities"""
+    DEFAULT_VERSION = 0  # support only request header
+    VERSION_SUPPORT_REQUEST_HEADER = 1  # add request header
+    VERSION_SUPPORT_RESPONSE_HEADER = 2  # add response header
 
-    @classmethod
-    def check_version(cls, tracked, version):
-        return hasattr(tracked, 'client_version') \
-               and tracked.client_version is not None \
-               and tracked.client_version >= version \
-               and hasattr(tracked, 'server_version') \
-               and tracked.server_version is not None \
-               and tracked.server_version >= version
+    CURRENT = VERSION_SUPPORT_RESPONSE_HEADER
+
+    def init_version_mixin(self):
+        self.current_version = self.DEFAULT_VERSION
+        self.is_upgraded = False
+
+    def check_version(self, feature_version):
+        return self.current_version >= feature_version
+
+    def upgrade_version(self, target_version):
+        self.is_upgraded = True
+        if VersionMixin.CURRENT >= target_version > self.current_version:
+            self.current_version = target_version
 
 
 class TrackerBase(object):
     def __init__(self, client=None, server=None):
         self.client = client
         self.server = server
-        self.version = TrackerVersion.support_response_header
 
     def handle(self, header):
         ctx.header = header
         ctx.counter = 0
 
-    def handle_response(self, response_header):
-        ctx.response_header = response_header
+    def handle_response_header(self, response_header):
+        pass
 
     def gen_header(self, header):
         header.request_id = self.get_request_id()
@@ -57,13 +63,9 @@ class TrackerBase(object):
             header.meta.update(ctx.meta)
 
     def gen_response_header(self, response_header):
-        if hasattr(ctx, "response_header"):
-            response_header.meta = ctx.response_header.meta
-        else:
-            response_header.meta = {}
-
         if hasattr(ctx, "response_meta"):
-            response_header.meta.update(ctx.response_meta)
+            response_header.meta = ctx.response_meta
+            del ctx.response_meta
 
     def record(self, header, exception):
         pass
@@ -139,7 +141,7 @@ class TrackerBase(object):
         return str(uuid.uuid4())
 
     def init_handshake_info(self, handshake_obj):
-        handshake_obj.version = self.version
+        pass
 
     def handle_handshake_info(self, handshake_obj):
         pass

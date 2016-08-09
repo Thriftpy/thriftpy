@@ -1,4 +1,20 @@
 # -*- coding: utf-8 -*-
+# flake8: disable E501
+
+'''
+Tests for contrib/tracking...
+
+Compatibility Tests Table
+
+============= ==================================== ======================================== ========================================
+client/server native                               v2                                       v3
+============= ==================================== ======================================== ========================================
+native        N/A                                  test_native_client_tracked_server_v2     test_native_client_tracked_server_v3
+v2            test_tracked_client_v2_native_server test_tracked_client_v2_tracked_server_v2 test_tracked_client_v2_tracked_server_v3
+v3            test_tracked_client_v3_native_server test_tracked_client_v3_tracked_server_v2 regular tests
+============= ==================================== ======================================== ========================================
+'''  # noqa
+
 from __future__ import absolute_import
 
 import contextlib
@@ -61,6 +77,12 @@ class SampleTracker(TrackerBase):
         db[key.encode("ascii")] = pickle.dumps(header.__dict__)
         db.close()
 
+    def handle_response_header(self, response_header):
+        self.response_header = response_header
+
+    def get_response_header(self):
+        return getattr(self, 'response_header', None)
+
 
 class Tracker_V2(TrackerBaseV2):
     def record(self, header, exception):
@@ -80,9 +102,14 @@ class Dispatcher(object):
         self.ab.people = {}
 
     def ping(self):
+        test_response = {'ping': 'pong'}
+        TrackerBase.add_response_meta(**test_response)
         return True
 
     def hello(self, name):
+        # Add specially constructed response header for assertion.
+        test_response = {name: name}
+        TrackerBase.add_response_meta(**test_response)
         return "hello %s" % name
 
     def sleep(self, ms):
@@ -122,8 +149,6 @@ class TSampleServer(TThreadedServer):
         self.closed = False
 
     def handle(self, client):
-        test_response = {'ping': 'pong'}
-        TrackerBase.add_response_meta(**test_response)
         processor = self.processor_factory.get_processor()
         itrans = self.itrans_factory.get_transport(client)
         otrans = self.otrans_factory.get_transport(client)
@@ -231,7 +256,7 @@ def client(client_class=TTrackedClient, port=PORT):
         trans.open()
         args = [addressbook.AddressBookService, proto]
         if client_class.__name__ == TTrackedClient.__name__:
-            args.insert(0, tracker)
+            args.insert(0, SampleTracker("test_client", "test_server"))
         yield client_class(*args)
     finally:
         trans.close()
@@ -266,15 +291,21 @@ def tracker_ctx(request):
 
 def test_negotiation(server):
     with client() as c:
-        assert c._upgraded is True
+        assert c.is_upgraded is True
+
+
+def test_response_tracker(server, dbm_db, tracker_ctx):
+    with client() as c:
+        c.hello('you')
+        assert c.tracker.response_header.meta == {'you': 'you'}
+        c.hello('me')
+        assert c.tracker.response_header.meta == {'me': 'me'}
 
 
 def test_tracker(server, dbm_db, tracker_ctx):
     with client() as c:
-        c.ping()
-        assert ctx.response_header.meta == {'ping': 'pong'}
-        response_header = c.get_response_header()
-        assert response_header.meta == {'ping': 'pong'}
+        c.hello('you')
+        assert c.tracker.response_header.meta == {'you': 'you'}
 
     time.sleep(0.2)
 
@@ -293,7 +324,7 @@ def test_tracker(server, dbm_db, tracker_ctx):
         "seq": '1',
         "client": "test_client",
         "server": "test_server",
-        "api": "ping",
+        "api": "hello",
         "status": True,
         "annotation": {},
         "meta": {},
@@ -359,7 +390,7 @@ def test_annotation(server, dbm_db, tracker_ctx):
 
         with SampleTracker.annotate() as ann:
             ann.update({"sig": "c.hello()", "user_id": "125"})
-            c.hello()
+            c.hello('you')
 
     time.sleep(0.2)
 
@@ -396,14 +427,6 @@ def test_counter(server, dbm_db, tracker_ctx):
     assert ping["api"] == "ping" and ping["seq"] == '1'
     assert hello["api"] == "hello" and hello["seq"] == '2'
     assert sleep["api"] == "sleep" and sleep["seq"] == '2'
-
-
-'''
-The following are Compatibility Test
-Native tracker do not track.
-Tracker V2 have request header but don't have response header.
-Tracker V3 have both request and response header.
-'''
 
 
 def test_native_client_tracked_server_v3(server):
@@ -491,7 +514,7 @@ def test_tracked_client_v2_tracked_server_v3(server, dbm_db, tracker_ctx):
 
 def test_tracked_client_v3_native_server(native_server):
     with client(port=PORT + 3) as c:
-        assert c._upgraded is False
+        assert c.is_upgraded is False
         c.ping()
         assert not hasattr(ctx, "response_header")
 
@@ -504,11 +527,11 @@ def test_tracked_client_v3_native_server(native_server):
 def test_tracked_client_v3_tracked_server_v2(
         tracked_server_v2, dbm_db, tracker_ctx):
     with client(port=PORT + 4) as c:
-        assert c._upgraded is True
+        assert c.is_upgraded is True
 
         c.ping()
         assert not hasattr(ctx, "response_header")
-        assert c.get_response_header() is None
+        assert c.tracker.get_response_header() is None
 
         time.sleep(0.2)
 
