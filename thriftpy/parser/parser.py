@@ -14,6 +14,7 @@ import types
 from ply import lex, yacc
 from .lexer import *  # noqa
 from .exc import ThriftParserError, ThriftGrammerError
+from thriftpy._compat import urlopen, urlparse
 from ..thrift import gen_init, TType, TPayload, TException
 
 
@@ -484,8 +485,16 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
     if not path.endswith('.thrift'):
         raise ThriftParserError('Path should end with .thrift')
 
-    with open(path) as fh:
-        data = fh.read()
+    url_scheme = urlparse(path).scheme
+    if url_scheme == '':
+        with open(path) as fh:
+            data = fh.read()
+    elif url_scheme in ('http', 'https'):
+        data = urlopen(path).read()
+    else:
+        raise ThriftParserError('ThriftPy does not support generating module '
+                                'with path in protocol \'{}\''.format(
+                                    url_scheme))
 
     if module_name is not None and not module_name.endswith('_thrift'):
         raise ThriftParserError('ThriftPy can only generate module with '
