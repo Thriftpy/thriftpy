@@ -10,6 +10,7 @@
 from __future__ import absolute_import
 
 import functools
+import linecache
 import types
 
 from ._compat import with_metaclass
@@ -39,7 +40,7 @@ def parse_spec(ttype, spec=None):
         return "MAP<%s, %s>" % (_type(spec[0]), _type(spec[1]))
 
 
-def init_func_generator(spec):
+def init_func_generator(cls, spec):
     """Generate `__init__` function based on TPayload.default_spec
 
     For example::
@@ -63,8 +64,13 @@ def init_func_generator(spec):
     init = "def __init__(self, {0}):\n".format(args)
     init += "\n".join(map('    self.{0} = {0}'.format, varnames))
 
-    code = compile(init, '<init_func_generator>', 'exec')
+    name = '<generated {0}.__init__>'.format(cls.__name__)
+    code = compile(init, name, 'exec')
     func = next(c for c in code.co_consts if isinstance(c, types.CodeType))
+
+    # Add a fake linecache entry so debuggers and the traceback module can
+    # better understand our generated code.
+    linecache.cache[name] = (len(init), None, init.splitlines(True), name)
 
     return types.FunctionType(func, {}, argdefs=defaults)
 
@@ -122,7 +128,8 @@ class TPayloadMeta(type):
 
     def __new__(cls, name, bases, attrs):
         if "default_spec" in attrs:
-            attrs["__init__"] = init_func_generator(attrs.pop("default_spec"))
+            spec = attrs.pop("default_spec")
+            attrs["__init__"] = init_func_generator(cls, spec)
         return super(TPayloadMeta, cls).__new__(cls, name, bases, attrs)
 
 
@@ -131,7 +138,7 @@ def gen_init(cls, thrift_spec=None, default_spec=None):
         cls.thrift_spec = thrift_spec
 
     if default_spec is not None:
-        cls.__init__ = init_func_generator(default_spec)
+        cls.__init__ = init_func_generator(cls, default_spec)
     return cls
 
 
