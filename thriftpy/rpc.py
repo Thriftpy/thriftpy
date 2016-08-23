@@ -11,18 +11,33 @@ from thriftpy.thrift import TProcessor, TClient
 from thriftpy.transport import (
     TBufferedTransportFactory,
     TServerSocket,
+    TSSLServerSocket,
     TSocket,
+    TSSLSocket,
 )
 
 
 def make_client(service, host="localhost", port=9090, unix_socket=None,
                 proto_factory=TBinaryProtocolFactory(),
                 trans_factory=TBufferedTransportFactory(),
-                timeout=None):
+                timeout=None,
+                cafile=None, ssl_context=None, certfile=None, keyfile=None):
     if unix_socket:
-        socket = TSocket(unix_socket=unix_socket)
+        if cafile or ssl_context:
+            socket = TSSLSocket(unix_socket=unix_socket,
+                                cafile=cafile,
+                                certfile=certfile, keyfile=keyfile,
+                                ssl_context=ssl_context)
+        else:
+            socket = TSocket(unix_socket=unix_socket)
     elif host and port:
-        socket = TSocket(host, port, socket_timeout=timeout)
+        if cafile or ssl_context:
+            socket = TSSLSocket(host, port, socket_timeout=timeout,
+                                cafile=cafile,
+                                certfile=certfile, keyfile=keyfile,
+                                ssl_context=ssl_context)
+        else:
+            socket = TSocket(host, port, socket_timeout=timeout)
     else:
         raise ValueError("Either host/port or unix_socket must be provided.")
 
@@ -35,12 +50,22 @@ def make_client(service, host="localhost", port=9090, unix_socket=None,
 def make_server(service, handler,
                 host="localhost", port=9090, unix_socket=None,
                 proto_factory=TBinaryProtocolFactory(),
-                trans_factory=TBufferedTransportFactory()):
+                trans_factory=TBufferedTransportFactory(),
+                certfile=None):
     processor = TProcessor(service, handler)
+
     if unix_socket:
-        server_socket = TServerSocket(unix_socket=unix_socket)
+        if certfile:
+            server_socket = TSSLServerSocket(unix_socket=unix_socket,
+                                             certfile=certfile)
+        else:
+            server_socket = TServerSocket(unix_socket=unix_socket)
     elif host and port:
-        server_socket = TServerSocket(host=host, port=port)
+        if certfile:
+            server_socket = TSSLServerSocket(host=host, port=port,
+                                             certfile=certfile)
+        else:
+            server_socket = TServerSocket(host=host, port=port)
     else:
         raise ValueError("Either host/port or unix_socket must be provided.")
 
@@ -54,16 +79,25 @@ def make_server(service, handler,
 def client_context(service, host="localhost", port=9090, unix_socket=None,
                    proto_factory=TBinaryProtocolFactory(),
                    trans_factory=TBufferedTransportFactory(),
-                   timeout=3000, socket_timeout=3000, connect_timeout=None):
+                   timeout=3000, socket_timeout=3000, connect_timeout=None,
+                   cafile=None, ssl_context=None, certfile=None, keyfile=None):
     if timeout:
         warnings.warn("`timeout` deprecated, use `socket_timeout` and "
                       "`connect_timeout` instead.")
         socket_timeout = connect_timeout = timeout
 
     if unix_socket:
-        socket = TSocket(unix_socket=unix_socket,
-                         connect_timeout=connect_timeout,
-                         socket_timeout=socket_timeout)
+        if cafile or ssl_context:
+            socket = TSSLSocket(unix_socket=unix_socket,
+                                connect_timeout=connect_timeout,
+                                socket_timeout=socket_timeout,
+                                cafile=cafile,
+                                certfile=certfile, keyfile=keyfile,
+                                ssl_context=ssl_context)
+        else:
+            socket = TSocket(unix_socket=unix_socket,
+                             connect_timeout=connect_timeout,
+                             socket_timeout=socket_timeout)
     elif host and port:
         socket = TSocket(host, port,
                          connect_timeout=connect_timeout,
