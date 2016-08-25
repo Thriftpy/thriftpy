@@ -6,12 +6,14 @@ import os
 import multiprocessing
 import socket
 import time
+import ssl
 
 import pytest
 
 import thriftpy
 thriftpy.install_import_hook()  # noqa
 
+from thriftpy._compat import PY3
 from thriftpy.rpc import make_server, client_context
 
 
@@ -218,6 +220,8 @@ def test_client_timeout():
 
 
 def test_ssl_client_timeout():
-    with pytest.raises(socket.timeout):
+    # SSL socket timeout raises socket.timeout since Python 3.2.
+    # http://bugs.python.org/issue10272
+    with pytest.raises(socket.timeout if PY3 else ssl.SSLError):
         with ssl_client(timeout=500) as c:
             c.sleep(1000)
