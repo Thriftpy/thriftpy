@@ -204,7 +204,8 @@ class TServerSocket(object):
 
     def accept(self):
         client, _ = self.sock.accept()
-        client.settimeout(self.client_timeout)
+        if self.client_timeout:
+            client.settimeout(self.client_timeout)
         return TSocket(sock=client)
 
     def close(self):

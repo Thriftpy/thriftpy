@@ -47,7 +47,7 @@ def make_server(service, handler,
                 host="localhost", port=9090, unix_socket=None,
                 proto_factory=TBinaryProtocolFactory(),
                 trans_factory=TBufferedTransportFactory(),
-                certfile=None):
+                client_timeout=3000, certfile=None):
     processor = TProcessor(service, handler)
 
     if unix_socket:
@@ -56,10 +56,12 @@ def make_server(service, handler,
             warnings.warn("SSL only works with host:port, not unix_socket.")
     elif host and port:
         if certfile:
-            server_socket = TSSLServerSocket(host=host, port=port,
-                                             certfile=certfile)
+            server_socket = TSSLServerSocket(
+                host=host, port=port, client_timeout=client_timeout,
+                certfile=certfile)
         else:
-            server_socket = TServerSocket(host=host, port=port)
+            server_socket = TServerSocket(
+                host=host, port=port, client_timeout=client_timeout)
     else:
         raise ValueError("Either host/port or unix_socket must be provided.")
 
