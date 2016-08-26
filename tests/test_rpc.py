@@ -15,6 +15,7 @@ thriftpy.install_import_hook()  # noqa
 
 from thriftpy._compat import PY3
 from thriftpy.rpc import make_server, client_context
+from thriftpy.transport import TTransportException
 
 
 addressbook = thriftpy.load(os.path.join(os.path.dirname(__file__),
@@ -217,6 +218,22 @@ def test_client_timeout():
     with pytest.raises(socket.timeout):
         with client(timeout=500) as c:
             c.sleep(1000)
+
+
+def test_client_socket_timeout():
+    with pytest.raises(socket.timeout):
+        with client_context(addressbook.AddressBookService,
+                            unix_socket=unix_sock,
+                            socket_timeout=500) as c:
+            c.sleep(1000)
+
+
+def test_client_connect_timeout():
+    with pytest.raises(TTransportException):
+        with client_context(addressbook.AddressBookService,
+                            unix_socket='/tmp/test.sock',
+                            connect_timeout=1000) as c:
+            c.hello('test')
 
 
 def test_ssl_client_timeout():
