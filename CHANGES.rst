@@ -4,6 +4,43 @@ Changelog
 0.3.x
 ~~~~~
 
+Version 0.3.9
+-------------
+
+Released on August 26, 2016.
+
+- add support for timeout and ssl in `make_server` / `make_client` helper
+  funcs, via `#204`_, `#205`_ and `#229`_.
+- add support for `thrift_file` path in http protocol, via `#225`_. 
+
+- preserve traceback when re-raise undeclared exception, via `#206`_.
+- performance improvement by dynamically compile spec'd `__init__`
+  functions, via `#210`_ and `#227`_.
+- performance improvement by refine cython encoding/decoding,
+  via `#211`_ and `#212_`.
+
+- bugfix for type error in `cast_byte` parser and improve include dirs
+  function, via `#214`_
+- bugfix for parse error when field begin with true/false keyword,
+  via `#215`_ and `#218`_.
+- bugfix for `is_open` not return false when socket closed after open,
+  via `#230`_.
+
+.. _`#204`: https://github.com/eleme/thriftpy/pull/204
+.. _`#205`: https://github.com/eleme/thriftpy/pull/205
+.. _`#206`: https://github.com/eleme/thriftpy/pull/206
+.. _`#210`: https://github.com/eleme/thriftpy/pull/210
+.. _`#211`: https://github.com/eleme/thriftpy/pull/211
+.. _`#212`: https://github.com/eleme/thriftpy/pull/212
+.. _`#214`: https://github.com/eleme/thriftpy/pull/214
+.. _`#215`: https://github.com/eleme/thriftpy/pull/215
+.. _`#218`: https://github.com/eleme/thriftpy/pull/218
+.. _`#225`: https://github.com/eleme/thriftpy/pull/225
+.. _`#227`: https://github.com/eleme/thriftpy/pull/227
+.. _`#229`: https://github.com/eleme/thriftpy/pull/229
+.. _`#230`: https://github.com/eleme/thriftpy/pull/230
+
+
 Version 0.3.8
 -------------
 
