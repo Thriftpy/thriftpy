@@ -138,6 +138,7 @@ class TSocket(object):
         try:
             self.sock.shutdown(socket.SHUT_RDWR)
             self.sock.close()
+            self.sock = None
         except (socket.error, OSError):
             pass
 
@@ -203,7 +204,8 @@ class TServerSocket(object):
 
     def accept(self):
         client, _ = self.sock.accept()
-        client.settimeout(self.client_timeout)
+        if self.client_timeout:
+            client.settimeout(self.client_timeout)
         return TSocket(sock=client)
 
     def close(self):

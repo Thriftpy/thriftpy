@@ -25,12 +25,16 @@ MODERN_SSL = (2, 7, 9) <= sys.version_info < (3, 0, 0) or \
 if PY3:
     text_type = str
     string_types = (str,)
+    from urllib.request import urlopen
+    from urllib.parse import urlparse
 
     def u(s):
         return s
 else:
     text_type = unicode  # noqa
     string_types = (str, unicode)  # noqa
+    from urllib2 import urlopen
+    from urlparse import urlparse
 
     def u(s):
         if not isinstance(s, text_type):

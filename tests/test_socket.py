@@ -90,6 +90,7 @@ def test_client_socket_close():
 
     conn = server_socket.accept()
     client_socket.close()
+    assert not client_socket.is_open()
 
     with pytest.raises(TTransportException) as e:
         conn.read(1024)

@@ -76,7 +76,7 @@ And a client:
     from thriftpy.rpc import make_client
 
     client = make_client(pingpong_thrift.PingPong, '127.0.0.1', 6000)
-    client.ping()
+    print(client.ping())
 
 See, it's that easy!
 

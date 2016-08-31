@@ -14,6 +14,7 @@ import types
 from ply import lex, yacc
 from .lexer import *  # noqa
 from .exc import ThriftParserError, ThriftGrammerError
+from thriftpy._compat import urlopen, urlparse
 from ..thrift import gen_init, TType, TPayload, TException
 
 
@@ -46,12 +47,12 @@ def p_header_unit(p):
 def p_include(p):
     '''include : INCLUDE LITERAL'''
     thrift = thrift_stack[-1]
-
     if thrift.__thrift_file__ is None:
         raise ThriftParserError('Unexcepted include statement while loading'
                                 'from file like object.')
-
-    for include_dir in include_dirs_:
+    replace_include_dirs = [os.path.dirname(thrift.__thrift_file__)] \
+                            + include_dirs_
+    for include_dir in replace_include_dirs:
         path = os.path.join(include_dir, p[2])
         if os.path.exists(path):
             child = parse(path)
@@ -153,7 +154,6 @@ def p_const_map_item(p):
 def p_const_ref(p):
     '''const_ref : IDENTIFIER'''
     child = thrift_stack[-1]
-
     for name in p[1].split('.'):
         father = child
         child = getattr(child, name, None)
@@ -484,8 +484,16 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
     if not path.endswith('.thrift'):
         raise ThriftParserError('Path should end with .thrift')
 
-    with open(path) as fh:
-        data = fh.read()
+    url_scheme = urlparse(path).scheme
+    if url_scheme == '':
+        with open(path) as fh:
+            data = fh.read()
+    elif url_scheme in ('http', 'https'):
+        data = urlopen(path).read()
+    else:
+        raise ThriftParserError('ThriftPy does not support generating module '
+                                'with path in protocol \'{}\''.format(
+                                    url_scheme))
 
     if module_name is not None and not module_name.endswith('_thrift'):
         raise ThriftParserError('ThriftPy can only generate module with '
@@ -609,7 +617,7 @@ def _cast_bool(v):
 
 
 def _cast_byte(v):
-    assert isinstance(v, str)
+    assert isinstance(v, int)
     return v
 
 
