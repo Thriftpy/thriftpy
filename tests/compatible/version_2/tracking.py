@@ -1,27 +1,26 @@
 # -*- coding: utf-8 -*-
 
 """
-Tracking support similar to twitter finagle-thrift.
+This is for test:
 
-Note: When using tracking, every client should have a corresponding
-server processor.
+this version support request header not support response header
 """
-
 from __future__ import absolute_import
 
 import os.path
 import time
+import copy
+import contextlib
+import threading
+import uuid
 
-from ...thrift import TClient, TApplicationException, TMessageType, \
+from thriftpy.thrift import TClient, TApplicationException, TMessageType, \
     TProcessor, TType
-from ...parser import load
-from .tracker import VersionMixin
+from thriftpy.parser import load
 
 track_method = "__thriftpy_tracing_method_name__v2"
 track_thrift = load(os.path.join(os.path.dirname(__file__), "tracking.thrift"))
-
-__all__ = ["TTrackedClient", "TTrackedProcessor", "TrackerBase",
-           "ConsoleTracker"]
+ctx = threading.local()
 
 
 class RequestInfo(object):
@@ -51,15 +50,16 @@ class RequestInfo(object):
         self.meta = meta
 
 
-class TTrackedClient(TClient, VersionMixin):
+class TTrackedClient(TClient):
     def __init__(self, tracker_handler, *args, **kwargs):
         super(TTrackedClient, self).__init__(*args, **kwargs)
 
-        self.init_version_mixin()
         self.tracker = tracker_handler
+        self._upgraded = False
 
         try:
             self._negotiation()
+            self._upgraded = True
         except TApplicationException as e:
             if e.type != TApplicationException.UNKNOWN_METHOD:
                 raise
@@ -68,14 +68,12 @@ class TTrackedClient(TClient, VersionMixin):
         self._oprot.write_message_begin(track_method, TMessageType.CALL,
                                         self._seqid)
         args = track_thrift.UpgradeArgs()
-        args.version = VersionMixin.CURRENT
         self.tracker.init_handshake_info(args)
         args.write(self._oprot)
         self._oprot.write_message_end()
         self._oprot.trans.flush()
 
         api, msg_type, seqid = self._iprot.read_message_begin()
-
         if msg_type == TMessageType.EXCEPTION:
             x = TApplicationException()
             x.read(self._iprot)
@@ -85,12 +83,9 @@ class TTrackedClient(TClient, VersionMixin):
             result = track_thrift.UpgradeReply()
             result.read(self._iprot)
             self._iprot.read_message_end()
-            self.upgrade_version(VersionMixin.VERSION_SUPPORT_REQUEST_HEADER)
-            if result.version:
-                self.upgrade_version(result.version)
 
     def _send(self, _api, **kwargs):
-        if self.check_version(VersionMixin.VERSION_SUPPORT_REQUEST_HEADER):
+        if self._upgraded:
             self._header = track_thrift.RequestHeader()
             self.tracker.gen_header(self._header)
             self._header.write(self._oprot)
@@ -98,20 +93,13 @@ class TTrackedClient(TClient, VersionMixin):
         self.send_start = int(time.time() * 1000)
         super(TTrackedClient, self)._send(_api, **kwargs)
 
-    def _recv(self, _api):
-        if self.check_version(VersionMixin.VERSION_SUPPORT_RESPONSE_HEADER):
-            response_header = track_thrift.ResponseHeader()
-            response_header.read(self._iprot)
-            self.tracker.handle_response_header(response_header)
-
-        return super(TTrackedClient, self)._recv(_api)
-
     def _req(self, _api, *args, **kwargs):
-        if not self.check_version(VersionMixin.VERSION_SUPPORT_REQUEST_HEADER):
+        if not self._upgraded:
             return super(TTrackedClient, self)._req(_api, *args, **kwargs)
 
         exception = None
         status = False
+
         try:
             res = super(TTrackedClient, self)._req(_api, *args, **kwargs)
             status = True
@@ -135,15 +123,15 @@ class TTrackedClient(TClient, VersionMixin):
             self.tracker.record(header_info, exception)
 
 
-class TTrackedProcessor(TProcessor, VersionMixin):
+class TTrackedProcessor(TProcessor):
     def __init__(self, tracker_handler, *args, **kwargs):
         super(TTrackedProcessor, self).__init__(*args, **kwargs)
-        self.init_version_mixin()
+
         self.tracker = tracker_handler
-        self.during_handshake = False
+        self._upgraded = False
 
     def process(self, iprot, oprot):
-        if self.is_upgraded is False:
+        if not self._upgraded:
             res = self._try_upgrade(iprot)
         else:
             request_header = track_thrift.RequestHeader()
@@ -156,19 +144,12 @@ class TTrackedProcessor(TProcessor, VersionMixin):
     def _try_upgrade(self, iprot):
         api, msg_type, seqid = iprot.read_message_begin()
         if msg_type == TMessageType.CALL and api == track_method:
-            self.during_handshake = True
+            self._upgraded = True
 
             args = track_thrift.UpgradeArgs()
             args.read(iprot)
             self.tracker.handle_handshake_info(args)
-            self.upgrade_version(VersionMixin.VERSION_SUPPORT_REQUEST_HEADER)
             result = track_thrift.UpgradeReply()
-
-            # If client hasn't told us its version, we also don't tell it ours.
-            if args.version:
-                self.upgrade_version(args.version)
-                result.version = self.CURRENT
-
             result.oneway = False
 
             def call():
@@ -214,16 +195,107 @@ class TTrackedProcessor(TProcessor, VersionMixin):
             self.handle_exception(e, result)
 
         if not result.oneway:
-            if self.check_version(
-                    VersionMixin.VERSION_SUPPORT_RESPONSE_HEADER):
-                if self.during_handshake:
-                    self.during_handshake = False
-                else:
-                    response_header = track_thrift.ResponseHeader()
-                    self.tracker.gen_response_header(response_header)
-                    response_header.write(oprot)
-
             self.send_result(oprot, api, result, seqid)
 
 
-from .tracker import TrackerBase, ConsoleTracker  # noqa
+class TrackerBase(object):
+    def __init__(self, client=None, server=None):
+        self.client = client
+        self.server = server
+
+    def handle(self, header):
+        ctx.header = header
+        ctx.counter = 0
+
+    def gen_header(self, header):
+        header.request_id = self.get_request_id()
+
+        if not hasattr(ctx, "counter"):
+            ctx.counter = 0
+
+        ctx.counter += 1
+
+        if hasattr(ctx, "header"):
+            header.seq = "{prev_seq}.{cur_counter}".format(
+                prev_seq=ctx.header.seq, cur_counter=ctx.counter)
+            header.meta = ctx.header.meta
+        else:
+            header.meta = {}
+            header.seq = str(ctx.counter)
+
+        if hasattr(ctx, "meta"):
+            header.meta.update(ctx.meta)
+
+    def record(self, header, exception):
+        pass
+
+    @classmethod
+    @contextlib.contextmanager
+    def counter(cls, init=0):
+        """Context for manually setting counter of seq number.
+
+        :init: init value
+        """
+        if not hasattr(ctx, "counter"):
+            ctx.counter = 0
+
+        old = ctx.counter
+        ctx.counter = init
+
+        try:
+            yield
+        finally:
+            ctx.counter = old
+
+    @classmethod
+    @contextlib.contextmanager
+    def annotate(cls, **kwargs):
+        ctx.annotation = kwargs
+        try:
+            yield ctx.annotation
+        finally:
+            del ctx.annotation
+
+    @classmethod
+    @contextlib.contextmanager
+    def add_meta(cls, **kwds):
+        if hasattr(ctx, 'meta'):
+            old_dict = copy.copy(ctx.meta)
+            ctx.meta.update(kwds)
+            try:
+                yield ctx.meta
+            finally:
+                ctx.meta = old_dict
+        else:
+            ctx.meta = kwds
+            try:
+                yield ctx.meta
+            finally:
+                del ctx.meta
+
+    @property
+    def meta(self):
+        meta = ctx.header.meta if hasattr(ctx, "header") else {}
+        if hasattr(ctx, "meta"):
+            meta.update(ctx.meta)
+        return meta
+
+    @property
+    def annotation(self):
+        return ctx.annotation if hasattr(ctx, "annotation") else {}
+
+    def get_request_id(self):
+        if hasattr(ctx, "header"):
+            return ctx.header.request_id
+        return str(uuid.uuid4())
+
+    def init_handshake_info(self, handshake_obj):
+        pass
+
+    def handle_handshake_info(self, handshake_obj):
+        pass
+
+
+class ConsoleTracker(TrackerBase):
+    def record(self, header, exception):
+        print(header)

@@ -70,7 +70,8 @@ class TTornadoStreamTransport(TTransportBase):
         if self.ssl_options is None:
             self.stream = iostream.IOStream(sock)
         else:
-            self.stream = iostream.SSLIOStream(sock, ssl_options=self.ssl_options)
+            self.stream = iostream.SSLIOStream(
+                sock, ssl_options=self.ssl_options)
 
         try:
             yield self.with_timeout(timeout, self.stream.connect(
@@ -225,8 +226,9 @@ def make_client(
         io_loop=None, ssl_options=None,
         connect_timeout=TTornadoStreamTransport.DEFAULT_CONNECT_TIMEOUT,
         read_timeout=TTornadoStreamTransport.DEFAULT_READ_TIMEOUT):
-    transport = TTornadoStreamTransport(host, port, io_loop=io_loop, ssl_options=ssl_options,
-                                        read_timeout=read_timeout)
+    transport = TTornadoStreamTransport(
+        host, port, io_loop=io_loop,
+        ssl_options=ssl_options, read_timeout=read_timeout)
     iprot = proto_factory.get_protocol(TMemoryBuffer())
     oprot = proto_factory.get_protocol(transport)
     yield transport.open(connect_timeout)

@@ -7,18 +7,10 @@ struct RequestHeader {
     3: map<string, string> meta
 }
 
-struct ResponseHeader {
-    1: map<string, string> meta
-}
-
 /**
  * This is the struct that a successful upgrade will reply with.
  */
-struct UpgradeReply {
-    1:i32 version
-}
-
+struct UpgradeReply {}
 struct UpgradeArgs {
     1: string app_id
-    2: i32 version
 }
