@@ -19,7 +19,7 @@ install_requires = [
 
 tornado_requires = [
     "tornado>=4.0,<5.0",
-    "toro==0.6"
+    "toro>=0.6"
 ]
 
 dev_requires = [
