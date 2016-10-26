@@ -190,8 +190,11 @@ class TServerSocket(object):
             _sock = socket.socket(self.socket_family, socket.SOCK_STREAM)
 
         _sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        if hasattr(socket, "SO_REUSEPORT"):
-            _sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        try:
+            if hasattr(socket, "SO_REUSEPORT"):
+                _sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        except (socket.error, OSError) as err:
+            pass
         _sock.settimeout(None)
         self.sock = _sock
 
