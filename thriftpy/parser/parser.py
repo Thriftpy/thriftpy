@@ -637,8 +637,8 @@ def _cast_i64(v):
 
 
 def _cast_double(v):
-    assert isinstance(v, float)
-    return v
+    assert isinstance(v, (float, int))
+    return float(v)
 
 
 def _cast_string(v):

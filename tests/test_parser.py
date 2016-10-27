@@ -260,3 +260,11 @@ def test_issue_215():
     thrift = load('parser-cases/issue_215.thrift')
     assert thrift.abool is True
     assert thrift.falseValue == 123
+
+
+def test_double_default_value():
+    thrift = load('parser-cases/double_default.thrift')
+    assert thrift.Book.thrift_spec == {
+        1: (TType.STRING, 'name', False),
+        2: (TType.DOUBLE, 'price', False)
+    }
