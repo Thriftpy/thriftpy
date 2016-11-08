@@ -261,5 +261,6 @@ def test_issue_215():
     assert thrift.abool is True
     assert thrift.falseValue == 123
 
+
 def test_issue_252():
     load('parser-cases/issue_252.thrift')
