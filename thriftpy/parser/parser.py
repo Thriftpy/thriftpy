@@ -318,6 +318,8 @@ def p_field_seq(p):
 
 def p_field(p):
     '''field : field_id field_req field_type IDENTIFIER
+             | field_id field_req field_type IDENTIFIER '=' const_value '(' field_tags ')'
+             | field_id field_req field_type IDENTIFIER '(' field_tags ')'
              | field_id field_req field_type IDENTIFIER '=' const_value'''
 
     if len(p) == 7:
@@ -331,6 +333,10 @@ def p_field(p):
         val = None
 
     p[0] = [p[1], p[2], p[3], p[4], val]
+
+
+def p_field_tags(p):
+    '''field_tags : IDENTIFIER '=' LITERAL'''
 
 
 def p_field_id(p):
