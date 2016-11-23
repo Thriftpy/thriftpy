@@ -260,3 +260,8 @@ def test_issue_215():
     thrift = load('parser-cases/issue_215.thrift')
     assert thrift.abool is True
     assert thrift.falseValue == 123
+
+
+def test_annotations():
+    load('parser-cases/annotations.thrift')
+    load('parser-cases/issue_252.thrift')
