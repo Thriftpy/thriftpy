@@ -262,6 +262,15 @@ def test_issue_215():
     assert thrift.falseValue == 123
 
 
+def test_issue_242():
+    thrift = load('parser-cases/double_type_int.thrift')
+    book = thrift.Book()
+    assert book.price == 1
+    assert isinstance(book.price, float)
+    assert isinstance(thrift.value1, float) and thrift.value1 == 3
+    assert isinstance(thrift.value2, float) and thrift.value2 == 3.1
+
+
 def test_annotations():
     load('parser-cases/annotations.thrift')
     load('parser-cases/issue_252.thrift')
