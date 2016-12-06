@@ -536,7 +536,10 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
         raise ThriftParserError('Path should end with .thrift')
 
     url_scheme = urlparse(path).scheme
-    if url_scheme == '':
+    if url_scheme == 'file':
+        with open(urlparse(path).netloc) as fh:
+            data = fh.read()
+    elif url_scheme == '':
         with open(path) as fh:
             data = fh.read()
     elif url_scheme in ('http', 'https'):
