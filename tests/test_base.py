@@ -75,3 +75,8 @@ def test_parse_spec():
 def test_init_func():
     thriftpy.load("addressbook.thrift")
     assert linecache.getline('<generated PhoneNumber.__init__>', 1) != ''
+
+
+def test_init_func_many_fields():
+    thriftpy.load("many_fields.thrift")
+    assert linecache.getline('<generated ManyFields.__init__>', 1) != ''

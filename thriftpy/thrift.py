@@ -12,9 +12,12 @@ from __future__ import absolute_import
 import functools
 import linecache
 import types
+import itertools
 
 from ._compat import with_metaclass
 
+class CompilerSyntaxError(Exception):
+    pass
 
 def args2kwargs(thrift_spec, *args):
     arg_names = [item[1][1] for item in sorted(thrift_spec.items())]
@@ -60,12 +63,21 @@ def init_func_generator(cls, spec):
 
     varnames, defaults = zip(*spec)
 
-    args = ', '.join(map('{0[0]}={0[1]!r}'.format, spec))
+    # Python functions can take at most 255 arguments, so pass only the first
+    # 254 default args to the constructor, otherwise the compiler will crash.
+    MAX_ARGS = 254
+    args = ', '.join(map('{0[0]}={0[1]!r}'.format, spec[0:MAX_ARGS]))
     init = "def __init__(self, {0}):\n".format(args)
-    init += "\n".join(map('    self.{0} = {0}'.format, varnames))
+    init += "\n".join(itertools.chain(map('    self.{0} = {0}'.format, varnames[0:MAX_ARGS]),
+                                      map('    self.{0} = None'.format, varnames[MAX_ARGS:])))
 
     name = '<generated {0}.__init__>'.format(cls.__name__)
-    code = compile(init, name, 'exec')
+    try:
+        code = compile(init, name, 'exec')
+    except SyntaxError:
+        # SyntaxError is used by ply to indicate a parser error, so we need to
+        # rethrow this exception as something else.
+        raise CompilerSyntaxError("Unable to compile generated __init__() for {}".format(cls.__name__))
     func = next(c for c in code.co_consts if isinstance(c, types.CodeType))
 
     # Add a fake linecache entry so debuggers and the traceback module can
