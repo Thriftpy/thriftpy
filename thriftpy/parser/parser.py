@@ -537,7 +537,7 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
 
     url_scheme = urlparse(path).scheme
     if url_scheme == 'file':
-        with open(urlparse(path).netloc) as fh:
+        with open(urlparse(path).netloc + urlparse(path).path) as fh:
             data = fh.read()
     elif url_scheme == '':
         with open(path) as fh:
