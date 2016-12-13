@@ -248,6 +248,16 @@ class TProcessor(object):
 
     def process_in(self, iprot):
         api, type, seqid = iprot.read_message_begin()
+
+        # for Java/Cocoa and other language's client
+        # api from client should be ServiceName:MethodName
+
+        if ':' in api:
+            try:
+                _, api = api.split(':')
+            except ValueError:
+                return api, seqid, TApplicationException(TApplicationException.UNKNOWN_METHOD), None
+
         if api not in self._service.thrift_services:
             iprot.skip(TType.STRUCT)
             iprot.read_message_end()
