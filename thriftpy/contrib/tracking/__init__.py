@@ -93,6 +93,11 @@ class TTrackedClient(TClient, VersionMixin):
         if self.check_version(VersionMixin.VERSION_SUPPORT_REQUEST_HEADER):
             self._header = track_thrift.RequestHeader()
             self.tracker.gen_header(self._header)
+            self._header.meta.update({
+                 'caller_sig':
+                     ':'.join((self.tracker.client.replace('.', '_'), _api))
+            })
+
             self._header.write(self._oprot)
 
         self.send_start = int(time.time() * 1000)
