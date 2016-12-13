@@ -20,20 +20,31 @@ from thriftpy.transport import (
 def make_client(service, host="localhost", port=9090, unix_socket=None,
                 proto_factory=TBinaryProtocolFactory(),
                 trans_factory=TBufferedTransportFactory(),
-                timeout=None,
+                timeout=None, socket_timeout=3000, connect_timeout=3000,
                 cafile=None, ssl_context=None, certfile=None, keyfile=None):
+    if timeout:
+        warnings.warn("`timeout` deprecated, use `socket_timeout` and "
+                      "`connect_timeout` instead.")
+        socket_timeout = connect_timeout = timeout
+
     if unix_socket:
-        socket = TSocket(unix_socket=unix_socket)
+        socket = TSocket(unix_socket=unix_socket,
+                         connect_timeout=connect_timeout,
+                         socket_timeout=socket_timeout)
         if certfile:
             warnings.warn("SSL only works with host:port, not unix_socket.")
     elif host and port:
         if cafile or ssl_context:
-            socket = TSSLSocket(host, port, socket_timeout=timeout,
+            socket = TSSLSocket(host, port,
+                                connect_timeout=connect_timeout,
+                                socket_timeout=socket_timeout,
                                 cafile=cafile,
                                 certfile=certfile, keyfile=keyfile,
                                 ssl_context=ssl_context)
         else:
-            socket = TSocket(host, port, socket_timeout=timeout)
+            socket = TSocket(host, port,
+                             socket_timeout=socket_timeout,
+                             connect_timeout=connect_timeout)
     else:
         raise ValueError("Either host/port or unix_socket must be provided.")
 
@@ -77,37 +88,17 @@ def client_context(service, host="localhost", port=9090, unix_socket=None,
                    trans_factory=TBufferedTransportFactory(),
                    timeout=None, socket_timeout=3000, connect_timeout=3000,
                    cafile=None, ssl_context=None, certfile=None, keyfile=None):
-    if timeout:
-        warnings.warn("`timeout` deprecated, use `socket_timeout` and "
-                      "`connect_timeout` instead.")
-        socket_timeout = connect_timeout = timeout
-
-    if unix_socket:
-        socket = TSocket(unix_socket=unix_socket,
-                         connect_timeout=connect_timeout,
-                         socket_timeout=socket_timeout)
-        if certfile:
-            warnings.warn("SSL only works with host:port, not unix_socket.")
-    elif host and port:
-        if cafile or ssl_context:
-            socket = TSSLSocket(host, port,
-                                connect_timeout=connect_timeout,
-                                socket_timeout=socket_timeout,
-                                cafile=cafile,
-                                certfile=certfile, keyfile=keyfile,
-                                ssl_context=ssl_context)
-        else:
-            socket = TSocket(host, port,
-                             connect_timeout=connect_timeout,
-                             socket_timeout=socket_timeout)
-    else:
-        raise ValueError("Either host/port or unix_socket must be provided.")
-
     try:
-        transport = trans_factory.get_transport(socket)
-        protocol = proto_factory.get_protocol(transport)
-        transport.open()
-        yield TClient(service, protocol)
+        client = make_client(service, host=host, port=port,
+                             unix_socket=unix_socket,
+                             proto_factory=proto_factory,
+                             trans_factory=trans_factory,
+                             timeout=timeout,
+                             socket_timeout=socket_timeout,
+                             connect_timeout=connect_timeout,
+                             cafile=cafile, ssl_context=ssl_context,
+                             certfile=certfile, keyfile=keyfile)
+        yield client
 
     finally:
-        transport.close()
+        client.close()
