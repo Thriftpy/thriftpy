@@ -16,14 +16,19 @@ class TMemoryBuffer(TTransportBase):
 
         If value is set, the transport can be read first.
         """
-        self._buffer = BytesIO(value) if value is not None else BytesIO()
-        self._pos = 0
+        self.value = value
+        self.open()
 
     def is_open(self):
         return not self._buffer.closed
 
     def open(self):
-        pass
+        if self.value is not None:
+            buf = BytesIO(self.value)
+        else:
+            buf = BytesIO()
+        self._buffer = buf
+        self._pos = 0
 
     def close(self):
         self._buffer.close()

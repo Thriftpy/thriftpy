@@ -5,144 +5,144 @@ from __future__ import absolute_import
 import json
 import struct
 
-from thriftpy.thrift import TType
+from thriftpy.thrift import TType, TDecodeException
 
 from .exc import TProtocolException
-
-INTEGER = (TType.BYTE, TType.I16, TType.I32, TType.I64)
-FLOAT = (TType.DOUBLE,)
 
 VERSION = 1
 
 
-def json_value(ttype, val, spec=None):
-    if ttype in INTEGER or ttype in FLOAT or ttype == TType.STRING:
-        return val
+class JsonConverter(object):
+    """thrift to json, json to thrift converter.
 
-    if ttype == TType.BOOL:
-        return True if val else False
+        struct <=> {"field_name": field_value}
+        map    <=> {"key": key, "value": value}
+        list   <=> [val, val]
+        bool   <=> true/false
+        int, double, string
+    """
+    INTEGER = (TType.BYTE, TType.I16, TType.I32, TType.I64)
+    FLOAT = (TType.DOUBLE,)
 
-    if ttype == TType.STRUCT:
-        return struct_to_json(val)
+    @staticmethod
+    def parse_spec(spec, field=False):
+        if field:
+            if not isinstance(spec, (list, tuple)):
+                ttype, type_spec = spec, None
+            else:
+                ttype, type_spec = spec
+            return ttype, type_spec
 
-    if ttype in (TType.SET, TType.LIST):
-        return list_to_json(val, spec)
+        ttype, name = spec[:2]
+        type_spec = None if len(spec) <= 3 else spec[2]
+        return ttype, name, type_spec
 
-    if ttype == TType.MAP:
-        return map_to_json(val, spec)
+    @classmethod
+    def json_value(cls, ttype, val, spec=None):
+        if ttype in cls.INTEGER or ttype in cls.FLOAT or ttype == TType.STRING:
+            return val
 
+        if ttype == TType.BOOL:
+            return True if val else False
 
-def obj_value(ttype, val, spec=None):
-    if ttype in INTEGER:
-        return int(val)
+        if ttype == TType.STRUCT:
+            return cls.json_struct(val)
 
-    if ttype in FLOAT:
-        return float(val)
+        if ttype in (TType.SET, TType.LIST):
+            return cls.json_list(val, spec)
 
-    if ttype in (TType.STRING, TType.BOOL):
-        return val
+        if ttype == TType.MAP:
+            return cls.json_map(val, spec)
 
-    if ttype == TType.STRUCT:
-        return struct_to_obj(val, spec())
+    @classmethod
+    def json_map(cls, val, spec):
+        res = []
 
-    if ttype in (TType.SET, TType.LIST):
-        return list_to_obj(val, spec)
+        key_type, key_spec = cls.parse_spec(spec[0], True)
+        value_type, value_spec = cls.parse_spec(spec[1], True)
 
-    if ttype == TType.MAP:
-        return map_to_obj(val, spec)
+        for k, v in val.items():
+            res.append({"key": cls.json_value(key_type, k, key_spec),
+                        "value": cls.json_value(value_type, v, value_spec)})
 
+        return res
 
-def map_to_obj(val, spec):
-    res = {}
-    if isinstance(spec[0], int):
-        key_type, key_spec = spec[0], None
-    else:
-        key_type, key_spec = spec[0]
+    @classmethod
+    def json_list(cls, val, spec):
+        elem_type, type_spec = cls.parse_spec(spec, True)
+        return [cls.json_value(elem_type, i, type_spec) for i in val]
 
-    if isinstance(spec[1], int):
-        value_type, value_spec = spec[1], None
-    else:
-        value_type, value_spec = spec[1]
+    @classmethod
+    def json_struct(cls, val):
+        outobj = {}
+        for fid, field_spec in val.thrift_spec.items():
+            ttype, field_name, field_type_spec = cls.parse_spec(field_spec)
 
-    for v in val:
-        res[obj_value(key_type, v["key"], key_spec)] = obj_value(
-            value_type, v["value"], value_spec)
+            v = getattr(val, field_name)
+            if v is None:
+                continue
 
-    return res
+            outobj[field_name] = cls.json_value(ttype, v, field_type_spec)
 
+        return outobj
 
-def map_to_json(val, spec):
-    res = []
-    if isinstance(spec[0], int):
-        key_type = spec[0]
-        key_spec = None
-    else:
-        key_type, key_spec = spec[0]
+    @classmethod
+    def thrift_value(cls, ttype, val, spec=None):
+        if ttype in cls.INTEGER:
+            return int(val)
 
-    if isinstance(spec[1], int):
-        value_type = spec[1]
-        value_spec = None
-    else:
-        value_type, value_spec = spec[1]
+        if ttype in cls.FLOAT:
+            return float(val)
 
-    for k, v in val.items():
-        res.append({"key": json_value(key_type, k, key_spec),
-                    "value": json_value(value_type, v, value_spec)})
+        if ttype in (TType.STRING, TType.BOOL):
+            return val
 
-    return res
+        if ttype == TType.STRUCT:
+            return cls.thrift_struct(val, spec())
 
+        if ttype in (TType.SET, TType.LIST):
+            return cls.thrift_list(val, spec)
 
-def list_to_obj(val, spec):
-    if isinstance(spec, tuple):
-        elem_type, type_spec = spec
-    else:
-        elem_type, type_spec = spec, None
+        if ttype == TType.MAP:
+            return cls.thrift_map(val, spec)
 
-    return [obj_value(elem_type, i, type_spec) for i in val]
+    @classmethod
+    def thrift_map(cls, val, spec):
+        res = {}
 
+        key_type, key_spec = cls.parse_spec(spec[0], True)
+        value_type, value_spec = cls.parse_spec(spec[1], True)
 
-def list_to_json(val, spec):
-    if isinstance(spec, tuple):
-        elem_type, type_spec = spec
-    else:
-        elem_type, type_spec = spec, None
+        for v in val:
+            key = cls.thrift_value(key_type, v["key"], key_spec)
+            res[key] = cls.thrift_value(value_type, v["value"], value_spec)
 
-    return [json_value(elem_type, i, type_spec) for i in val]
+        return res
 
+    @classmethod
+    def thrift_list(cls, val, spec):
+        elem_type, type_spec = cls.parse_spec(spec, True)
+        return [cls.thrift_value(elem_type, i, type_spec) for i in val]
 
-def struct_to_json(val):
-    outobj = {}
-    for fid, field_spec in val.thrift_spec.items():
-        field_type, field_name = field_spec[:2]
+    @classmethod
+    def thrift_struct(cls, val, obj):
+        if not val:
+            return obj
 
-        if len(field_spec) <= 3:
-            field_type_spec = None
-        else:
-            field_type_spec = field_spec[2]
+        for fid, field_spec in obj.thrift_spec.items():
+            ttype, field_name, field_type_spec = cls.parse_spec(field_spec)
 
-        v = getattr(val, field_name)
-        if v is None:
-            continue
+            raw_val = val.get(field_name)
+            if raw_val is None:
+                continue
 
-        outobj[field_name] = json_value(field_type, v, field_type_spec)
-
-    return outobj
-
-
-def struct_to_obj(val, obj):
-    for fid, field_spec in obj.thrift_spec.items():
-        field_type, field_name = field_spec[:2]
-
-        if len(field_spec) <= 3:
-            field_type_spec = None
-        else:
-            field_type_spec = field_spec[2]
-
-        if field_name in val:
-            setattr(obj, field_name,
-                    obj_value(field_type, val[field_name], field_type_spec))
-
-    return obj
+            try:
+                v = cls.thrift_value(ttype, raw_val, field_type_spec)
+            except (TypeError, ValueError, AttributeError):
+                raise TDecodeException(obj.__class__.__name__, fid, field_name,
+                                       raw_val, ttype, field_type_spec)
+            setattr(obj, field_name, v)
+        return obj
 
 
 class TJSONProtocol(object):
@@ -195,14 +195,14 @@ class TJSONProtocol(object):
             size = self._read_len()
             self._data = json.loads(self.trans.read(size).decode("utf-8"))
 
-        res = struct_to_obj(self._data["payload"], obj)
+        res = JsonConverter.thrift_struct(self._data["payload"], obj)
         self._data = None
         return res
 
     def write_struct(self, obj):
         data = json.dumps({
             "metadata": self._meta,
-            "payload": struct_to_json(obj)
+            "payload": JsonConverter.json_struct(obj)
         })
 
         self._write_len(len(data))

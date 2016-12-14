@@ -19,7 +19,7 @@ class TItem(TPayload):
 def test_map_to_obj():
     val = [{"key": "ratio", "value": "0.618"}]
     spec = [TType.STRING, TType.DOUBLE]
-    obj = proto.map_to_obj(val, spec)
+    obj = proto.JsonConverter.thrift_map(val, spec)
 
     assert {"ratio": 0.618} == obj
 
@@ -27,7 +27,7 @@ def test_map_to_obj():
 def test_map_to_json():
     obj = {"ratio": 0.618}
     spec = [TType.STRING, TType.DOUBLE]
-    json = proto.map_to_json(obj, spec)
+    json = proto.JsonConverter.json_map(obj, spec)
 
     assert [{"key": "ratio", "value": 0.618}] == json
 
@@ -35,7 +35,7 @@ def test_map_to_json():
 def test_list_to_obj():
     val = [4, 8, 4, 12, 67]
     spec = TType.I32
-    obj = proto.list_to_obj(val, spec)
+    obj = proto.JsonConverter.thrift_list(val, spec)
 
     assert [4, 8, 4, 12, 67] == obj
 
@@ -43,14 +43,14 @@ def test_list_to_obj():
 def test_list_to_json():
     val = [4, 8, 4, 12, 67]
     spec = TType.I32
-    json = proto.list_to_json(val, spec)
+    json = proto.JsonConverter.json_list(val, spec)
 
     assert [4, 8, 4, 12, 67] == json
 
 
 def test_struct_to_json():
     obj = TItem(id=13, phones=["5234", "12346456"])
-    json = proto.struct_to_json(obj)
+    json = proto.JsonConverter.json_struct(obj)
 
     assert {"id": 13, "phones": ["5234", "12346456"]} == json
 
@@ -59,7 +59,7 @@ def test_struct_to_obj():
     json = {"id": 13, "phones": ["5234", "12346456"]}
     obj = TItem()
 
-    obj = proto.struct_to_obj(json, obj)
+    obj = proto.JsonConverter.thrift_struct(json, obj)
 
     assert obj.id == 13 and obj.phones == ["5234", "12346456"]
 

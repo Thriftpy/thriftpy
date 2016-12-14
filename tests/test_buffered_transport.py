@@ -91,9 +91,16 @@ class BufferedTransportTestCase(TestCase):
 
 
 if CYTHON:
+    from thriftpy.transport import TSocket
     from thriftpy.transport.buffered import TCyBufferedTransportFactory
     from thriftpy.protocol.cybin import TCyBinaryProtocolFactory
 
     class TCyBufferedTransportTestCase(BufferedTransportTestCase):
         TRANSPORT_FACTORY = TCyBufferedTransportFactory()
         PROTOCOL_FACTORY = TCyBinaryProtocolFactory()
+
+        def test_handle(self):
+            s = TSocket()
+            s.handle = "socket handle"
+            t = TCyBufferedTransportFactory().get_transport(s)
+            assert t.handle == s.handle
