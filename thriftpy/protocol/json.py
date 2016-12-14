@@ -2,8 +2,11 @@
 
 from __future__ import absolute_import
 
-import json
 import struct
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 from thriftpy.thrift import TType
 
