@@ -1,4 +1,4 @@
-#!/usr/local/bin/thrift --gen java:beans,nocamel,hashcode
+// #!/usr/local/bin/thrift --gen java:beans,nocamel,hashcode
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -46,7 +46,7 @@ struct NullStruct {
 struct GlobalStreamId {
   1: required string componentId;
   2: required string streamId;
-  #Going to need to add an enum for the stream type (NORMAL or FAILURE)
+  // #Going to need to add an enum for the stream type (NORMAL or FAILURE)
 }
 
 union Grouping {

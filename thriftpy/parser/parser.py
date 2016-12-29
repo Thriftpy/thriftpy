@@ -11,478 +11,91 @@ import collections
 import os
 import sys
 import types
-from ply import lex, yacc
-from .lexer import *  # noqa
+import re
+import parsley
 from .exc import ThriftParserError, ThriftGrammerError
 from thriftpy._compat import urlopen, urlparse
 from ..thrift import gen_init, TType, TPayload, TException
 
 
-def p_error(p):
-    if p is None:
-        raise ThriftGrammerError('Grammer error at EOF')
-    raise ThriftGrammerError('Grammer error %r at line %d' %
-                             (p.value, p.lineno))
-
-
-def p_start(p):
-    '''start : header definition'''
-
-
-def p_header(p):
-    '''header : header_unit_ header
-              |'''
-
-
-def p_header_unit_(p):
-    '''header_unit_ : header_unit ';'
-                    | header_unit'''
-
-
-def p_header_unit(p):
-    '''header_unit : include
-                   | namespace'''
-
-
-def p_include(p):
-    '''include : INCLUDE LITERAL'''
-    thrift = thrift_stack[-1]
-    if thrift.__thrift_file__ is None:
-        raise ThriftParserError('Unexcepted include statement while loading'
-                                'from file like object.')
-    replace_include_dirs = [os.path.dirname(thrift.__thrift_file__)] \
-        + include_dirs_
-    for include_dir in replace_include_dirs:
-        path = os.path.join(include_dir, p[2])
-        if os.path.exists(path):
-            child = parse(path)
-            setattr(thrift, child.__name__, child)
-            _add_thrift_meta('includes', child)
-            return
-    raise ThriftParserError(('Couldn\'t include thrift %s in any '
-                             'directories provided') % p[2])
-
-
-def p_namespace(p):
-    '''namespace : NAMESPACE namespace_scope IDENTIFIER'''
-    # namespace is useless in thriftpy
-    # if p[2] == 'py' or p[2] == '*':
-    #     setattr(thrift_stack[-1], '__name__', p[3])
-
-
-def p_namespace_scope(p):
-    '''namespace_scope : '*'
-                       | IDENTIFIER'''
-    p[0] = p[1]
-
-
-def p_sep(p):
-    '''sep : ','
-           | ';'
+class ModuleLoader(object):
     '''
-
-
-def p_definition(p):
-    '''definition : definition definition_unit_
-                  |'''
-
-
-def p_definition_unit_(p):
-    '''definition_unit_ : definition_unit ';'
-                        | definition_unit'''
-
-
-def p_definition_unit(p):
-    '''definition_unit : const
-                       | ttype
+    Primary API for loading thrift files as modules.
     '''
-
-
-def p_const(p):
-    '''const : CONST field_type IDENTIFIER '=' const_value
-             | CONST field_type IDENTIFIER '=' const_value sep'''
-
-    try:
-        val = _cast(p[2])(p[5])
-    except AssertionError:
-        raise ThriftParserError('Type error for constant %s at line %d' %
-                                (p[3], p.lineno(3)))
-    setattr(thrift_stack[-1], p[3], val)
-    _add_thrift_meta('consts', val)
-
-
-def p_const_value(p):
-    '''const_value : INTCONSTANT
-                   | DUBCONSTANT
-                   | LITERAL
-                   | BOOLCONSTANT
-                   | const_list
-                   | const_map
-                   | const_ref'''
-    p[0] = p[1]
-
-
-def p_const_list(p):
-    '''const_list : '[' const_list_seq ']' '''
-    p[0] = p[2]
-
-
-def p_const_list_seq(p):
-    '''const_list_seq : const_value sep const_list_seq
-                      | const_value const_list_seq
-                      |'''
-    _parse_seq(p)
-
-
-def p_const_map(p):
-    '''const_map : '{' const_map_seq '}' '''
-    p[0] = dict(p[2])
-
-
-def p_const_map_seq(p):
-    '''const_map_seq : const_map_item sep const_map_seq
-                     | const_map_item const_map_seq
-                     |'''
-    _parse_seq(p)
-
-
-def p_const_map_item(p):
-    '''const_map_item : const_value ':' const_value '''
-    p[0] = [p[1], p[3]]
-
-
-def p_const_ref(p):
-    '''const_ref : IDENTIFIER'''
-    child = thrift_stack[-1]
-    for name in p[1].split('.'):
-        father = child
-        child = getattr(child, name, None)
-        if child is None:
-            raise ThriftParserError('Cann\'t find name %r at line %d'
-                                    % (p[1], p.lineno(1)))
-
-    if _get_ttype(child) is None or _get_ttype(father) == TType.I32:
-        # child is a constant or enum value
-        p[0] = child
-    else:
-        raise ThriftParserError('No enum value or constant found '
-                                'named %r' % p[1])
-
-
-def p_ttype(p):
-    '''ttype : typedef
-             | enum
-             | struct
-             | union
-             | exception
-             | service'''
-
-
-def p_typedef(p):
-    '''typedef : TYPEDEF field_type IDENTIFIER type_annotations'''
-    setattr(thrift_stack[-1], p[3], p[2])
-
-
-def p_enum(p):  # noqa
-    '''enum : ENUM IDENTIFIER '{' enum_seq '}' type_annotations'''
-    val = _make_enum(p[2], p[4])
-    setattr(thrift_stack[-1], p[2], val)
-    _add_thrift_meta('enums', val)
-
-
-def p_enum_seq(p):
-    '''enum_seq : enum_item sep enum_seq
-                | enum_item enum_seq
-                |'''
-    _parse_seq(p)
-
-
-def p_enum_item(p):
-    '''enum_item : IDENTIFIER '=' INTCONSTANT type_annotations
-                 | IDENTIFIER type_annotations
-                 |'''
-    if len(p) == 5:
-        p[0] = [p[1], p[3]]
-    elif len(p) == 3:
-        p[0] = [p[1], None]
-
-
-def p_struct(p):
-    '''struct : seen_struct '{' field_seq '}' type_annotations'''
-    val = _fill_in_struct(p[1], p[3])
-    _add_thrift_meta('structs', val)
-
-
-def p_seen_struct(p):
-    '''seen_struct : STRUCT IDENTIFIER '''
-    val = _make_empty_struct(p[2])
-    setattr(thrift_stack[-1], p[2], val)
-    p[0] = val
-
-
-def p_union(p):
-    '''union : seen_union '{' field_seq '}' '''
-    val = _fill_in_struct(p[1], p[3])
-    _add_thrift_meta('unions', val)
-
-
-def p_seen_union(p):
-    '''seen_union : UNION IDENTIFIER '''
-    val = _make_empty_struct(p[2])
-    setattr(thrift_stack[-1], p[2], val)
-    p[0] = val
-
-
-def p_exception(p):
-    '''exception : EXCEPTION IDENTIFIER '{' field_seq '}' type_annotations '''
-    val = _make_struct(p[2], p[4], base_cls=TException)
-    setattr(thrift_stack[-1], p[2], val)
-    _add_thrift_meta('exceptions', val)
-
-
-def p_simple_service(p):
-    '''simple_service : SERVICE IDENTIFIER '{' function_seq '}'
-                | SERVICE IDENTIFIER EXTENDS IDENTIFIER '{' function_seq '}'
-    '''
-    thrift = thrift_stack[-1]
-
-    if len(p) == 8:
-        extends = thrift
-        for name in p[4].split('.'):
-            extends = getattr(extends, name, None)
-            if extends is None:
-                raise ThriftParserError('Can\'t find service %r for '
-                                        'service %r to extend' %
-                                        (p[4], p[2]))
-
-        if not hasattr(extends, 'thrift_services'):
-            raise ThriftParserError('Can\'t extends %r, not a service'
-                                    % p[4])
-
-    else:
-        extends = None
-
-    val = _make_service(p[2], p[len(p) - 2], extends)
-    setattr(thrift, p[2], val)
-    _add_thrift_meta('services', val)
-
-
-def p_service(p):
-    '''service : simple_service type_annotations'''
-    p[0] = p[1]
-
-
-def p_simple_function(p):
-    '''simple_function : ONEWAY function_type IDENTIFIER '(' field_seq ')'
-    | ONEWAY function_type IDENTIFIER '(' field_seq ')' throws
-    | function_type IDENTIFIER '(' field_seq ')' throws
-    | function_type IDENTIFIER '(' field_seq ')' '''
-
-    if p[1] == 'oneway':
-        oneway = True
-        base = 1
-    else:
-        oneway = False
-        base = 0
-
-    if p[len(p) - 1] == ')':
-        throws = []
-    else:
-        throws = p[len(p) - 1]
-
-    p[0] = [oneway, p[base + 1], p[base + 2], p[base + 4], throws]
-
-
-def p_function(p):
-    '''function : simple_function type_annotations'''
-    p[0] = p[1]
-
-
-def p_function_seq(p):
-    '''function_seq : function sep function_seq
-                    | function function_seq
-                    |'''
-    _parse_seq(p)
-
-
-def p_throws(p):
-    '''throws : THROWS '(' field_seq ')' '''
-    p[0] = p[3]
-
-
-def p_function_type(p):
-    '''function_type : field_type
-                     | VOID'''
-    if p[1] == 'void':
-        p[0] = TType.VOID
-    else:
-        p[0] = p[1]
-
-
-def p_field_seq(p):
-    '''field_seq : field sep field_seq
-                 | field field_seq
-                 |'''
-    _parse_seq(p)
-
-
-def p_simple_field(p):
-    '''simple_field : field_id field_req field_type IDENTIFIER
-             | field_id field_req field_type IDENTIFIER '=' const_value
-             '''
-
-    if len(p) == 7:
+    def __init__(self, include_dirs=('.',)):
+        self.modules = {}
+        self.samefile = getattr(os.path,'samefile', lambda f1, f2: os.stat(f1) == os.stat(f2))
+        self.include_dirs = include_dirs
+
+    def load(self, path, module_name):
+        return self._load(
+            path, True, path, module_name=module_name)
+
+    def load_data(self, data, module_name, load_includes=False, path=None):
+        return self._load_data(
+            data, module_name, load_includes=load_includes, abs_path=os.path.abspath(path))
+
+    def _load(self, path, load_includes, parent_path, sofar=(), module_name=None):
+        if not path.endswith('.thrift'):
+            raise ParseError()  # ...
+        if os.path.isabs(path):
+            abs_path = path
+        else:
+            parent_dir = os.path.dirname(parent_path) or '.'  # prevent empty path from turning into '/'
+            for base in [parent_dir] + list(self.include_dirs):
+                abs_path = base + '/' + path
+                if os.path.exists(abs_path):
+                    abs_path = os.path.abspath(abs_path)
+                    break
+            else:
+                raise ParseError('could not find import {0} (from {1})'.format(path, parent_path))
+        if abs_path in sofar:
+            cycle = sofar[sofar.index(abs_path):] + (abs_path,)
+            path_to_cycle = sofar[:sofar.index(abs_path)]
+            msg = 'circular import:\n{0}'.format(' ->\n'.join(cycle))
+            if path_to_cycle:
+                msg += "\nvia:\n{0}".format(' ->\n'.join(path_to_cycle))
+            raise CircularInclude(msg)
+        with open(abs_path, 'rb') as f:
+            data = f.read()
+        if module_name is None:
+            module_name = os.path.splitext(os.path.basename(abs_path))[0]  # remove '.thrift' from end
+        return self._load_data(
+            data, module_name, load_includes, abs_path, sofar + (abs_path,))
+
+    def _cant_load(self, path, *a, **kw):
+        raise ThriftParserError('unexpected include statement while loading from data')
+
+    def _load_data(self, data, module_name, load_includes, abs_path, sofar=()):
+        cache_key = (module_name, abs_path)
+        if cache_key in self.modules:
+            return self.modules[cache_key]
+        module = types.ModuleType(module_name)
+        module.__thrift_file__ = abs_path
+        module.__thrift_meta__ = collections.defaultdict(list)
         try:
-            val = _cast(p[3])(p[6])
-        except AssertionError:
+            if not load_includes:
+                document = PARSER(data).Document(module, self._cant_load)
+            else:
+                # path = path of file to be loaded
+                # abs_path = path of parent file to enable relative imports
+                document = PARSER(data).Document(
+                    module, lambda path: self._load(path, load_includes, abs_path, sofar))
+        except parsley.ParseError as pe:
             raise ThriftParserError(
-                'Type error for field %s '
-                'at line %d' % (p[4], p.lineno(4)))
-    else:
-        val = None
-
-    p[0] = [p[1], p[2], p[3], p[4], val]
+                str(pe) + '\n in module {0} from {1}'.format(module_name, abs_path))
+        self.modules[cache_key] = module
+        return self.modules[cache_key]
 
 
-def p_field(p):
-    '''field : simple_field type_annotations'''
-    p[0] = p[1]
+class CircularInclude(ThriftParserError, ImportError): pass
 
 
-def p_field_id(p):
-    '''field_id : INTCONSTANT ':' '''
-    p[0] = p[1]
-
-
-def p_field_req(p):
-    '''field_req : REQUIRED
-                 | OPTIONAL
-                 |'''
-    if len(p) == 2:
-        p[0] = p[1] == 'required'
-    elif len(p) == 1:
-        p[0] = False  # default: required=False
-
-
-def p_field_type(p):
-    '''field_type : ref_type
-                  | definition_type'''
-    p[0] = p[1]
-
-
-def p_ref_type(p):
-    '''ref_type : IDENTIFIER'''
-    ref_type = thrift_stack[-1]
-
-    for name in p[1].split('.'):
-        ref_type = getattr(ref_type, name, None)
-        if ref_type is None:
-            raise ThriftParserError('No type found: %r, at line %d' %
-                                    (p[1], p.lineno(1)))
-
-    if hasattr(ref_type, '_ttype'):
-        p[0] = getattr(ref_type, '_ttype'), ref_type
-    else:
-        p[0] = ref_type
-
-
-def p_simple_base_type(p):  # noqa
-    '''simple_base_type : BOOL
-                        | BYTE
-                        | I16
-                        | I32
-                        | I64
-                        | DOUBLE
-                        | STRING
-                        | BINARY'''
-    if p[1] == 'bool':
-        p[0] = TType.BOOL
-    if p[1] == 'byte':
-        p[0] = TType.BYTE
-    if p[1] == 'i16':
-        p[0] = TType.I16
-    if p[1] == 'i32':
-        p[0] = TType.I32
-    if p[1] == 'i64':
-        p[0] = TType.I64
-    if p[1] == 'double':
-        p[0] = TType.DOUBLE
-    if p[1] == 'string':
-        p[0] = TType.STRING
-    if p[1] == 'binary':
-        p[0] = TType.BINARY
-
-
-def p_base_type(p):
-    '''base_type : simple_base_type type_annotations'''
-    p[0] = p[1]
-
-
-def p_simple_container_type(p):
-    '''simple_container_type : map_type
-                             | list_type
-                             | set_type'''
-    p[0] = p[1]
-
-
-def p_container_type(p):
-    '''container_type : simple_container_type type_annotations'''
-    p[0] = p[1]
-
-
-def p_map_type(p):
-    '''map_type : MAP '<' field_type ',' field_type '>' '''
-    p[0] = TType.MAP, (p[3], p[5])
-
-
-def p_list_type(p):
-    '''list_type : LIST '<' field_type '>' '''
-    p[0] = TType.LIST, p[3]
-
-
-def p_set_type(p):
-    '''set_type : SET '<' field_type '>' '''
-    p[0] = TType.SET, p[3]
-
-
-def p_definition_type(p):
-    '''definition_type : base_type
-                       | container_type'''
-    p[0] = p[1]
-
-
-def p_type_annotations(p):
-    '''type_annotations : '(' type_annotation_seq ')'
-                        |'''
-    if len(p) == 4:
-        p[0] = p[2]
-    else:
-        p[0] = None
-
-
-def p_type_annotation_seq(p):
-    '''type_annotation_seq : type_annotation sep type_annotation_seq
-                           | type_annotation type_annotation_seq
-                           |'''
-    _parse_seq(p)
-
-
-def p_type_annotation(p):
-    '''type_annotation : IDENTIFIER '=' LITERAL
-                       | IDENTIFIER '''
-    if len(p) == 4:
-        p[0] = p[1], p[3]
-    else:
-        p[0] = p[1], None  # Without Value
-
-
-thrift_stack = []
-include_dirs_ = ['.']
-thrift_cache = {}
+MODULE_LOADER = ModuleLoader()
 
 
 def parse(path, module_name=None, include_dirs=None, include_dir=None,
-          lexer=None, parser=None, enable_cache=True):
+          enable_cache=True):
     """Parse a single thrift file to module object, e.g.::
 
         >>> from thriftpy.parser.parser import parse
@@ -498,55 +111,37 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
                         parameter will be deprecated in the future, it exists
                         for compatiable reason. If it's provided (not `None`),
                         it will be appended to `include_dirs`.
-    :param lexer: ply lexer to use, if not provided, `parse` will new one.
-    :param parser: ply parser to use, if not provided, `parse` will new one.
     :param enable_cache: if this is set to be `True`, parsed module will be
                          cached, this is enabled by default. If `module_name`
                          is provided, use it as cache key, else use the `path`.
     """
-    if os.name == 'nt' and sys.version_info < (3, 2):
-        os.path.samefile = lambda f1, f2: os.stat(f1) == os.stat(f2)
-
-    # dead include checking on current stack
-    for thrift in thrift_stack:
-        if thrift.__thrift_file__ is not None and \
-                os.path.samefile(path, thrift.__thrift_file__):
-            raise ThriftParserError('Dead including on %s' % path)
-
-    global thrift_cache
+    if enable_cache and module_name in MODULE_LOADER.modules:
+        return MODULE_LOADER.modules[module_name]
 
     cache_key = module_name or os.path.normpath(path)
 
-    if enable_cache and cache_key in thrift_cache:
-        return thrift_cache[cache_key]
-
-    if lexer is None:
-        lexer = lex.lex()
-    if parser is None:
-        parser = yacc.yacc(debug=False, write_tables=0)
-
-    global include_dirs_
-
     if include_dirs is not None:
-        include_dirs_ = include_dirs
+        MODULE_LOADER.include_dirs = include_dirs
     if include_dir is not None:
-        include_dirs_.append(include_dir)
+        MODULE_LOADER.include_dirs.append(include_dir)
 
     if not path.endswith('.thrift'):
         raise ThriftParserError('Path should end with .thrift')
 
     url_scheme = urlparse(path).scheme
     if url_scheme == 'file':
-        with open(urlparse(path).netloc + urlparse(path).path) as fh:
+        path = urlparse(path).netloc + urlparse(path).path
+        with open(path) as fh:
             data = fh.read()
     elif url_scheme == '':
         with open(path) as fh:
             data = fh.read()
     elif url_scheme in ('http', 'https'):
         data = urlopen(path).read()
+        return MODULE_LOADER.load_data(data, module_name, False)
     else:
         raise ThriftParserError('ThriftPy does not support generating module '
-                                'with path in protocol \'{}\''.format(
+                                'with path in protocol \'{0}\''.format(
                                     url_scheme))
 
     if module_name is not None and not module_name.endswith('_thrift'):
@@ -557,19 +152,13 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
         basename = os.path.basename(path)
         module_name = os.path.splitext(basename)[0]
 
-    thrift = types.ModuleType(module_name)
-    setattr(thrift, '__thrift_file__', path)
-    thrift_stack.append(thrift)
-    lexer.lineno = 1
-    parser.parse(data)
-    thrift_stack.pop()
-
-    if enable_cache:
-        thrift_cache[cache_key] = thrift
-    return thrift
+    module = MODULE_LOADER.load_data(data, module_name, True, path)
+    if not enable_cache:
+        del MODULE_LOADER.modules[module_name]
+    return module
 
 
-def parse_fp(source, module_name, lexer=None, parser=None, enable_cache=True):
+def parse_fp(source, module_name, enable_cache=True):
     """Parse a file-like object to thrift module object, e.g.::
 
         >>> from thriftpy.parser.parser import parse_fp
@@ -580,8 +169,6 @@ def parse_fp(source, module_name, lexer=None, parser=None, enable_cache=True):
     :param source: file-like object, expected to have a method named `read`.
     :param module_name: the name for parsed module, shoule be endswith
                         '_thrift'.
-    :param lexer: ply lexer to use, if not provided, `parse` will new one.
-    :param parser: ply parser to use, if not provided, `parse` will new one.
     :param enable_cache: if this is set to be `True`, parsed module will be
                          cached by `module_name`, this is enabled by default.
     """
@@ -589,196 +176,42 @@ def parse_fp(source, module_name, lexer=None, parser=None, enable_cache=True):
         raise ThriftParserError('ThriftPy can only generate module with '
                                 '\'_thrift\' suffix')
 
-    if enable_cache and module_name in thrift_cache:
-        return thrift_cache[module_name]
+    if enable_cache and module_name in MODULE_LOADER.modules:
+        return MODULE_LOADER.modules[module_name]
 
     if not hasattr(source, 'read'):
         raise ThriftParserError('Except `source` to be a file-like object with'
                                 'a method named \'read\'')
 
-    if lexer is None:
-        lexer = lex.lex()
-    if parser is None:
-        parser = yacc.yacc(debug=False, write_tables=0)
-
-    data = source.read()
-
-    thrift = types.ModuleType(module_name)
-    setattr(thrift, '__thrift_file__', None)
-    thrift_stack.append(thrift)
-    lexer.lineno = 1
-    parser.parse(data)
-    thrift_stack.pop()
-
     if enable_cache:
-        thrift_cache[module_name] = thrift
-    return thrift
+        module = MODULE_LOADER.load_data(source.read(), module_name, False, '<string>/' + module_name)
+    else:  # throw-away isolated ModuleLoader instance
+        return ModuleLoader().load_data(source.read(), module_name, False, '<string>/' + module_name)
+
+    module.__thrift_file__ = None
+
+    return module
 
 
-def _add_thrift_meta(key, val):
-    thrift = thrift_stack[-1]
+def _cast_struct(t, v):   # struct/exception/union
+    tspec = getattr(t[1], '_tspec')
 
-    if not hasattr(thrift, '__thrift_meta__'):
-        meta = collections.defaultdict(list)
-        setattr(thrift, '__thrift_meta__',  meta)
-    else:
-        meta = getattr(thrift, '__thrift_meta__')
+    for key in tspec:  # requirement check
+        if tspec[key][0] and key not in v:
+            raise ThriftParserError('Field %r was required to create '
+                                    'constant for type %r' %
+                                    (key, t[1].__name__))
 
-    meta[key].append(val)
-
-
-def _parse_seq(p):
-    if len(p) == 4:
-        p[0] = [p[1]] + p[3]
-    elif len(p) == 3:
-        p[0] = [p[1]] + p[2]
-    elif len(p) == 1:
-        p[0] = []
+    for key in v:  # extra values check
+        if key not in tspec:
+            raise ThriftParserError('No field named %r was '
+                                    'found in struct of type %r' %
+                                    (key, t[1].__name__))
+    return t[1](**v)
 
 
-def _cast(t):  # noqa
-    if t == TType.BOOL:
-        return _cast_bool
-    if t == TType.BYTE:
-        return _cast_byte
-    if t == TType.I16:
-        return _cast_i16
-    if t == TType.I32:
-        return _cast_i32
-    if t == TType.I64:
-        return _cast_i64
-    if t == TType.DOUBLE:
-        return _cast_double
-    if t == TType.STRING:
-        return _cast_string
-    if t == TType.BINARY:
-        return _cast_binary
-    if t[0] == TType.LIST:
-        return _cast_list(t)
-    if t[0] == TType.SET:
-        return _cast_set(t)
-    if t[0] == TType.MAP:
-        return _cast_map(t)
-    if t[0] == TType.I32:
-        return _cast_enum(t)
-    if t[0] == TType.STRUCT:
-        return _cast_struct(t)
-
-
-def _cast_bool(v):
-    assert isinstance(v, (bool, int))
-    return bool(v)
-
-
-def _cast_byte(v):
-    assert isinstance(v, int)
-    return v
-
-
-def _cast_i16(v):
-    assert isinstance(v, int)
-    return v
-
-
-def _cast_i32(v):
-    assert isinstance(v, int)
-    return v
-
-
-def _cast_i64(v):
-    assert isinstance(v, int)
-    return v
-
-
-def _cast_double(v):
-    assert isinstance(v, (float, int))
-    return float(v)
-
-
-def _cast_string(v):
-    assert isinstance(v, str)
-    return v
-
-
-def _cast_binary(v):
-    assert isinstance(v, str)
-    return v
-
-
-def _cast_list(t):
-    assert t[0] == TType.LIST
-
-    def __cast_list(v):
-        assert isinstance(v, list)
-        map(_cast(t[1]), v)
-        return v
-    return __cast_list
-
-
-def _cast_set(t):
-    assert t[0] == TType.SET
-
-    def __cast_set(v):
-        assert isinstance(v, (list, set))
-        map(_cast(t[1]), v)
-        if not isinstance(v, set):
-            return set(v)
-        return v
-    return __cast_set
-
-
-def _cast_map(t):
-    assert t[0] == TType.MAP
-
-    def __cast_map(v):
-        assert isinstance(v, dict)
-        for key in v:
-            v[_cast(t[1][0])(key)] = \
-                _cast(t[1][1])(v[key])
-        return v
-    return __cast_map
-
-
-def _cast_enum(t):
-    assert t[0] == TType.I32
-
-    def __cast_enum(v):
-        assert isinstance(v, int)
-        if v in t[1]._VALUES_TO_NAMES:
-            return v
-        raise ThriftParserError('Couldn\'t find a named value in enum '
-                                '%s for value %d' % (t[1].__name__, v))
-    return __cast_enum
-
-
-def _cast_struct(t):   # struct/exception/union
-    assert t[0] == TType.STRUCT
-
-    def __cast_struct(v):
-        if isinstance(v, t[1]):
-            return v  # already cast
-
-        assert isinstance(v, dict)
-        tspec = getattr(t[1], '_tspec')
-
-        for key in tspec:  # requirement check
-            if tspec[key][0] and key not in v:
-                raise ThriftParserError('Field %r was required to create '
-                                        'constant for type %r' %
-                                        (key, t[1].__name__))
-
-        for key in v:  # cast values
-            if key not in tspec:
-                raise ThriftParserError('No field named %r was '
-                                        'found in struct of type %r' %
-                                        (key, t[1].__name__))
-            v[key] = _cast(tspec[key][1])(v[key])
-        return t[1](**v)
-    return __cast_struct
-
-
-def _make_enum(name, kvs):
-    attrs = {'__module__': thrift_stack[-1].__name__, '_ttype': TType.I32}
+def _make_enum(name, kvs, module):
+    attrs = {'__module__': module.__name__, '_ttype': TType.I32}
     cls = type(name, (object, ), attrs)
 
     _values_to_names = {}
@@ -790,20 +223,22 @@ def _make_enum(name, kvs):
             val = -1
         for item in kvs:
             if item[1] is None:
-                item[1] = val + 1
-            val = item[1]
-        for key, val in kvs:
+                val = val + 1
+            else:
+                val = item[1]
+            key = item[0]
             setattr(cls, key, val)
             _values_to_names[val] = key
             _names_to_values[key] = val
-    setattr(cls, '_VALUES_TO_NAMES', _values_to_names)
-    setattr(cls, '_NAMES_TO_VALUES', _names_to_values)
+    cls._VALUES_TO_NAMES = _values_to_names
+    cls._NAMES_TO_VALUES = _names_to_values
     return cls
 
 
-def _make_empty_struct(name, ttype=TType.STRUCT, base_cls=TPayload):
-    attrs = {'__module__': thrift_stack[-1].__name__, '_ttype': ttype}
-    return type(name, (base_cls, ), attrs)
+def _make_empty_struct(name, module, ttype=TType.STRUCT, base_cls=TPayload, docstring=''):
+    attrs = {'__module__': module.__name__, '_ttype': ttype, '__doc__': docstring}
+    module.__dict__[name] = type(name, (base_cls, ), attrs)
+    return module.__dict__[name]
 
 
 def _fill_in_struct(cls, fields, _gen_init=True):
@@ -812,64 +247,62 @@ def _fill_in_struct(cls, fields, _gen_init=True):
     _tspec = {}
 
     for field in fields:
-        if field[0] in thrift_spec or field[3] in _tspec:
+        if field.id in thrift_spec or field.name in _tspec:
             raise ThriftGrammerError(('\'%d:%s\' field identifier/name has '
-                                      'already been used') % (field[0],
-                                                              field[3]))
-        ttype = field[2]
-        thrift_spec[field[0]] = _ttype_spec(ttype, field[3], field[1])
-        default_spec.append((field[3], field[4]))
-        _tspec[field[3]] = field[1], ttype
-    setattr(cls, 'thrift_spec', thrift_spec)
-    setattr(cls, 'default_spec', default_spec)
-    setattr(cls, '_tspec', _tspec)
+                                      'already been used') % (field.id,
+                                                              field.name))
+        thrift_spec[field.id] = _ttype_spec(field.ttype, field.name, field.req)
+        default_spec.append((field.name, field.default))
+        _tspec[field.name] = field.req == 'required', field.ttype
+    cls.thrift_spec = thrift_spec
+    cls.default_spec = default_spec
+    cls._tspec = _tspec
     if _gen_init:
         gen_init(cls, thrift_spec, default_spec)
     return cls
 
 
-def _make_struct(name, fields, ttype=TType.STRUCT, base_cls=TPayload,
-                 _gen_init=True):
-    cls = _make_empty_struct(name, ttype=ttype, base_cls=base_cls)
-    return _fill_in_struct(cls, fields, _gen_init=_gen_init)
+def _make_struct(name, fields, module, ttype=TType.STRUCT, base_cls=TPayload,
+                 _gen_init=True, docstring=''):
+    cls = _make_empty_struct(name, module, ttype=ttype, base_cls=base_cls, docstring=docstring)
+    return _fill_in_struct(cls, fields or (), _gen_init=_gen_init)
 
 
-def _make_service(name, funcs, extends):
+def _make_service(name, funcs, extends, module, docstring):
     if extends is None:
         extends = object
 
-    attrs = {'__module__': thrift_stack[-1].__name__}
+    attrs = {'__module__': module.__name__, '__doc__': docstring}
     cls = type(name, (extends, ), attrs)
     thrift_services = []
 
     for func in funcs:
-        func_name = func[2]
         # args payload cls
-        args_name = '%s_args' % func_name
-        args_fields = func[3]
-        args_cls = _make_struct(args_name, args_fields)
+        args_name = '%s_args' % func.name
+        args_fields = func.fields
+        args_cls = _make_struct(args_name, args_fields, module, docstring=func.docstring)
         setattr(cls, args_name, args_cls)
         # result payload cls
-        result_name = '%s_result' % func_name
-        result_type = func[1]
-        result_throws = func[4]
-        result_oneway = func[0]
-        result_cls = _make_struct(result_name, result_throws,
+        result_name = '%s_result' % func.name
+        result_cls = _make_struct(result_name, func.throws, module,
                                   _gen_init=False)
-        setattr(result_cls, 'oneway', result_oneway)
-        if result_type != TType.VOID:
-            result_cls.thrift_spec[0] = _ttype_spec(result_type, 'success')
+        setattr(result_cls, 'oneway', func.oneway)
+        if func.ttype != TType.VOID:
+            result_cls.thrift_spec[0] = _ttype_spec(func.ttype, 'success')
             result_cls.default_spec.insert(0, ('success', None))
         gen_init(result_cls, result_cls.thrift_spec, result_cls.default_spec)
         setattr(cls, result_name, result_cls)
-        thrift_services.append(func_name)
+        thrift_services.append(func.name)
     if extends is not None and hasattr(extends, 'thrift_services'):
         thrift_services.extend(extends.thrift_services)
-    setattr(cls, 'thrift_services', thrift_services)
+    cls.thrift_services = thrift_services
+    cls.thrift_extends = extends
     return cls
 
 
 def _ttype_spec(ttype, name, required=False):
+    if required is not False:
+        required = (required == 'required')  # 'default' counts as 'optional'
     if isinstance(ttype, int):
         return ttype, name, required
     else:
@@ -880,3 +313,251 @@ def _get_ttype(inst, default_ttype=None):
     if hasattr(inst, '__dict__') and '_ttype' in inst.__dict__:
         return inst.__dict__['_ttype']
     return default_ttype
+
+
+def _make_exception(name, fields, module):
+    return _make_struct(name, fields, module, base_cls=TException)
+
+
+def _make_const(name, val, ttype):
+    return 'const', name, val, _cast(ttype)(val)
+
+
+def _add_definition(module, type, name, val, ttype):
+    module.__thrift_meta__[type + 's'].append(val)
+    setattr(module, name, val)
+    # TODO: this seems crazy
+    if hasattr(val, '_NAMES_TO_VALUES'):
+        module.__dict__.update(val._NAMES_TO_VALUES)
+    return type, name, val, ttype
+
+
+def _add_include(module, path, loadf):
+    included = loadf(path)
+    module.__dict__[included.__name__] = included
+    module.__thrift_meta__['includes'].append(included)
+    return 'include', included
+
+
+def _lookup_symbol(module, identifier):
+    names = identifier.split('.')
+    def lookup_from(val, names):
+        for name in names:
+            val = getattr(val, name)
+        return val
+    try:
+        return lookup_from(module, names)
+    except AttributeError:  # TODO: a cleaner way to handle multiple includes with same name?
+        mod_name, rest = names[0], names[1:]
+        for included in module.__thrift_meta__['includes']:
+            if mod_name == included.__name__:
+                try:
+                    return lookup_from(included, rest)
+                except AttributeError:
+                    pass
+        raise UnresovledReferenceError(
+            'could not resolve name {0} in module {1} (from {2})'.format(
+                identifier, module.__name__, module.__thrift_file__))
+
+
+class UnresovledReferenceError(ThriftParserError): pass
+
+
+def _ref_type(module, name):
+    'resolve a reference to a type, return the resulting ttype'
+    val = _lookup_symbol(module, name)
+    if val in BASE_TYPE_MAP.values():
+        return val
+    if isinstance(val, tuple):  # typedef
+        return val
+    return val._ttype, val  # struct or enum
+
+
+def _ref_val(module, name):
+    'resolve a reference to a value, return the value'
+    val = _lookup_symbol(module, name)
+    if isinstance(val, type):
+        raise UnresovledReferenceError("{0} in {1} is a type, not a value".format(name, module))
+    return val
+
+
+class NoSuchAttribute(ThriftParserError): pass
+
+
+def _attr_ttype(struct, attr):
+    'return the ttype of attr in struct'
+    if attr not in struct._tspec:
+        raise NoSuchAttribute('no attribute {0} of struct {1} in module {2}'.format(
+            attr, struct.__name__, struct.__module__))
+    return struct._tspec[attr][1]
+
+
+GRAMMAR = '''
+Document :module :load_module = (brk Header(module load_module))*:hs (brk Definition(module))*:ds brk -> Document(hs, ds)
+Header :module :load_module = <Include(module load_module) | Namespace>
+Include :module :load_module = brk 'include' brk Literal:path ListSeparator? -> Include(module, path, load_module)
+Namespace =\
+    brk 'namespace' brk <((NamespaceScope ('.' Identifier)?)| unsupported_namespacescope)>:scope brk\
+        Identifier:name brk uri? -> 'namespace', scope, name
+uri = '(' ws 'uri' ws '=' ws Literal:uri ws ')' -> uri
+NamespaceScope = ('*' | 'cpp' | 'java' | 'py.twisted' | 'py' | 'perl' | 'rb' | 'cocoa' | 'csharp' |
+                  'xsd' | 'c_glib' | 'js' | 'st' | 'go' | 'php' | 'delphi' | 'lua')
+unsupported_namespacescope = Identifier
+Definition :module = brk (Const(module) | Typedef(module) | Enum(module) | Struct(module) | Union(module) |
+                           Exception(module) | Service(module)):defn -> Definition(module, *defn)
+Const :module = 'const' brk FieldType(module):ttype brk Identifier:name brk '='\
+    brk ConstValue(module ttype):val brk ListSeparator? -> 'const', name, val, ttype
+Typedef :module = 'typedef' brk DefinitionType(module):type brk annotations brk Identifier:alias brk annotations\
+                   -> 'typedef', alias, type, None
+Enum :module = 'enum' brk Identifier:name brk '{' enum_item*:vals '}' brk annotations brk\
+                -> 'enum', name, Enum(name, vals, module), None
+# enum items are always referenced with the enum name as a prefix, so are never ambiguous
+# with language keywords; any token is okay not just valid identifiers
+enum_item = brk token:name brk ('=' brk int_val)?:value brk annotations ListSeparator? brk -> name, value
+Struct :module = 'struct' brk DeclareStruct(module):cls brk fields(module):fields brk immutable?\
+                 -> 'struct', cls.__name__, _fill_in_struct(cls, fields), None
+Union :module = 'union' brk DeclareStruct(module):cls brk fields(module):fields\
+                 -> 'union', cls.__name__, _fill_in_struct(cls, fields), None
+Exception :module = 'exception' brk Identifier:name brk fields(module):fields\
+                     -> 'exception', name, Exception_(name, fields, module), None
+DeclareStruct :module = Identifier:name !(DeclareStruct(name, module))
+fields :module = '{' (brk Field(module))*:fields brk '}' brk annotations brk -> fields
+Service :module =\
+    'service' brk Identifier:name (brk 'extends' brk identifier_ref(module))?:extends docstring:docstring\
+        '{' (brk Function(module))*:funcs brk annotations brk '}' brk annotations brk\
+    -> 'service', name, Service(name, funcs, extends, module, docstring), None
+Field :module = brk FieldID:id brk FieldReq?:req brk FieldType(module):ttype brk Identifier:name brk\
+    ('=' brk ConstValue(module ttype))?:default brk annotations brk ListSeparator? -> Field(id, req, ttype, name, default)
+FieldID = int_val:val ':' -> val
+FieldReq = 'required' | 'optional' | !(b'default')
+# Functions
+Function :module = 'oneway'?:oneway brk FunctionType(module):ft brk Identifier:name brk '(' (brk Field(module)*):fs brk ')'\
+     (brk Throws(module))?:throws (brk ListSeparator)? docstring:docstring -> Function(name, ft, fs, oneway, throws, docstring)
+FunctionType :module = ('void' !(TType.VOID)) | FieldType(module)
+Throws :module = 'throws' brk '(' (brk Field(module))*:fs ')' -> fs
+# Types
+FieldType :module = (ContainerType(module) | BaseType | RefType(module)):ttype brk annotations brk -> ttype
+DefinitionType :module = BaseType | ContainerType(module)
+BaseType = ('bool' | 'byte' | 'i8' | 'i16' | 'i32' | 'i64' | 'double' | 'string' | 'binary'):ttype\
+           -> BaseTType(ttype)
+ContainerType :module = (MapType(module) | SetType(module) | ListType(module)):type brk immutable? -> type
+MapType :module = 'map' CppType? brk '<' brk FieldType(module):keyt brk ',' brk FieldType(module):valt brk '>' -> TType.MAP, (keyt, valt)
+SetType :module = 'set' CppType? brk '<' brk FieldType(module):valt brk '>' -> TType.SET, valt
+ListType :module = 'list' brk '<' brk FieldType(module):valt brk '>' brk CppType? -> TType.LIST, valt
+RefType :module = Identifier:name !(_ref_type(module, name))
+RefVal :module = Identifier:name !(_ref_val(module, name))
+CppType = 'cpp_type' Literal -> None
+# Constant Values
+ConstValue :module :ttype = DoubleConstant(ttype) | BoolConstant(ttype) | IntConstant(ttype) | ConstList(module ttype)\
+                            | ConstSet(module ttype) | ConstMap(module ttype) | ConstStruct(module ttype)\
+                            | EnumConstant(ttype) | ConstLiteral(ttype) | RefVal(module)
+int_val = <('+' | '-')? digit+>:val -> int(val)
+IntConstant :ttype = ?(ttype in (TType.BYTE, TType.I16, TType.I32, TType.I64)) int_val
+EnumConstant :ttype = check_ttype(TType.I32 ttype)\
+                      (int_val:val ?(val in ttype[1]._VALUES_TO_NAMES) -> val) | \
+                      (token:val ?(type(ttype) is tuple and val in getattr(ttype[1], "_NAMES_TO_VALUES", ())) -> ttype[1]._NAMES_TO_VALUES[val])
+DoubleConstant :ttype = ?(ttype == TType.DOUBLE) <('+' | '-')? (digit* '.' digit+) | digit+ (('E' | 'e') int_val)?>:val\
+                 -> float(val)
+BoolConstant :ttype = ?(ttype == TType.BOOL) \
+                      ((('true' | 'false'):val -> val == 'true') | (int_val:val -> bool(val)))
+ConstLiteral :ttype = ?(ttype in (TType.STRING, TType.BINARY)) Literal
+ConstList :module :ttype = check_ttype(TType.LIST ttype) array_vals(module ttype[1])
+ConstSet :module :ttype = (check_ttype(TType.SET ttype) array_vals(module ttype[1]):vals -> set(vals)) | ('{}' -> set())
+array_vals :module :ttype = '[' (brk ConstValue(module ttype):val ListSeparator? -> val)*:vals ']' -> vals
+ConstMap :module :ttype = check_ttype(TType.MAP ttype)\
+    '{' (brk ConstValue(module ttype[1][0]):key brk ':' \
+        brk ConstValue(module ttype[1][1]):val ListSeparator? -> key, val)*:items brk '}' brk\
+    -> dict(items)
+ConstStruct :module :ttype = check_ttype(TType.STRUCT ttype) \
+    '{' (brk Literal:name brk ':' brk !(_attr_ttype(ttype[1], name)):attr_ttype \
+        ConstValue(module attr_ttype):val brk ListSeparator? brk -> name, val)*:items brk '}' brk\
+    -> _cast_struct(ttype, dict(items))
+check_ttype :match :ttype = ?(isinstance(ttype, tuple) and ttype[0] == match)
+# Basic Definitions
+Literal = str_val_a | str_val_b
+# 2 levels of string interpolation = \\\\ to get slash literal
+str_val_a = '"' <(('\\\\' '"') | (~'"' anything))*>:val '"' -> val
+sq :c = ?("'" == c)
+str_val_b = sq <(('\\\\' sq) | (~sq anything))*>:val sq -> val
+token = <(letter | '_') (letter | digit | '.' | '_')*>
+Identifier = token:val ?(not is_reserved(val))^(reserved keyword not valid in this context) -> val
+identifier_ref :module = Identifier:val -> IdentifierRef(module, val)  # unresolved reference
+annotations = (brk '(' annotation*:name_vals')' brk -> name_vals)? | !(())  # always optional
+annotation = brk Identifier:name brk ('=' brk Literal)?:val brk ListSeparator? brk -> name, val
+ListSeparator = ',' | ';'
+Comment = cpp_comment | c_comment | python_comment
+brk = (white | c_comment | cpp_comment | python_comment)*
+white = <' ' | '\t' | '\n' | '\r' | ('\xe2\x80' anything:c ?(0x80 <= ord(c) <= 0x8F))>
+docstring = brk:val -> '\\n'.join(val).strip()
+cpp_comment = '//' rest_of_line
+c_comment = '/*' <(~'*/' anything)*>:body '*/' -> body
+python_comment = '#' rest_of_line
+rest_of_line = <('\\\n' | (~'\n' anything))*>
+immutable = '(' brk 'python.immutable' brk '=' brk '""' brk ')'
+'''
+
+RESERVED_TOKENS = (
+    '__CLASS__' , '__DIR__' , '__FILE__' , '__FUNCTION__' , '__LINE__' , '__METHOD__' ,
+    '__NAMESPACE__' , 'abstract' , #'alias' , # TODO: so many reserved words...
+    'and' , 'args' , 'as' , 'assert' , 'BEGIN' ,
+    'begin' , 'binary' , 'bool' , 'break' , 'byte' , 'case' , 'catch' , 'class' , 'clone' ,
+    'const' , 'continue' , 'declare' , 'def' , 'default' , 'del' , 'delete' , 'do' ,
+    'double' , 'dynamic' , 'elif' , 'else' , 'elseif' , 'elsif' , # 'END' , 'end' ,  # TODO: cleaner way to handle use of 'end'
+    'enddeclare' , 'endfor' , 'endforeach' , 'endif' , 'endswitch' , 'endwhile' , 'ensure' ,
+    'enum' , 'except' , 'exception' , 'exec' , 'extends' , 'finally' , 'float' , 'for' ,
+    'foreach' , 'from' , 'function' , 'global' , 'goto' , 'i16' , 'i32' , 'i64' , 'if' ,
+    'implements' , 'import' , 'in' , 'include' , 'inline' , 'instanceof' , 'interface' ,
+    'is' , 'lambda' , 'list' , 'map' , 'module' , 'namespace' , 'native' , 'new' , 'next' ,
+    'nil' , 'not' , 'oneway' , 'optional' , 'or' , 'pass' , 'print' , 'private' ,
+    'protected' , 'public' , 'public' , 'raise' , 'redo' , 'register' , 'required' ,
+    'rescue' , #'retry' , 
+    'return' , 'self' , 'service' , 'set' , 'sizeof' , 'static' ,
+    'string' , 'struct' , 'super' , 'switch' , 'synchronized' , 'then' , 'this' ,
+    'throw' , 'throws' , 'transient' , 'try' , 'typedef' , 'undef' , 'union' , 'union' ,
+    'unless' , 'unsigned' , 'until' , 'use' , 'var' , 'virtual' , 'void' , 'volatile' ,
+    'when' , 'while' , 'with' , 'xor' , 'yield')
+
+
+is_reserved = re.compile('^({0})$'.format('|'.join(RESERVED_TOKENS))).match
+
+
+BASE_TYPE_MAP = {
+    'bool': TType.BOOL,
+    'byte': TType.BYTE,
+    'i8': TType.BYTE,
+    'i16': TType.I16,
+    'i32': TType.I32,
+    'i64': TType.I64,
+    'double': TType.DOUBLE,
+    'string': TType.STRING,
+    'binary': TType.BINARY
+}
+
+
+PARSER = parsley.makeGrammar(
+    GRAMMAR, 
+    {
+        'Document': collections.namedtuple('Document', 'headers definitions'),
+        'Include': _add_include,
+        'Definition': _add_definition,
+        'Enum': _make_enum,
+        '_fill_in_struct': _fill_in_struct,
+        'Exception_': _make_exception,
+        'Service': _make_service,
+        'Function': collections.namedtuple('Function', 'name ttype fields oneway throws docstring'),
+        'Field': collections.namedtuple('Field', 'id req ttype name default'),
+        'IdentifierRef': _lookup_symbol,
+        'BaseTType': BASE_TYPE_MAP.get,
+        'TType': TType,
+        '_cast_struct': _cast_struct,
+        'DeclareStruct': _make_empty_struct,
+        '_ref_type': _ref_type,
+        '_ref_val': _ref_val,
+        '_attr_ttype': _attr_ttype,
+        'is_reserved': is_reserved,
+    }
+)
+
+
+class ParseError(ThriftGrammerError): pass
+
