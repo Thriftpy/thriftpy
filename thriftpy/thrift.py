@@ -9,10 +9,8 @@
 
 from __future__ import absolute_import
 
+import copy
 import functools
-import linecache
-import types
-
 from ._compat import with_metaclass
 
 
@@ -54,25 +52,28 @@ def init_func_generator(cls, spec):
             self.number = number
     """
     if not spec:
-        def __init__(self):
-            pass
-        return __init__
+        spec = []
 
-    varnames, defaults = zip(*spec)
+    def __init__(self, *args, **kwargs):
+        # __init__ might get passed args or kwargs assume that positional args
+        # are in the same order specified by spec anything else is a kwarg
+        i = len(args)
+        arg_spec = spec[:i]
+        kw_spec = spec[i:]
 
-    args = ', '.join(map('{0[0]}={0[1]!r}'.format, spec))
-    init = "def __init__(self, {0}):\n".format(args)
-    init += "\n".join(map('    self.{0} = {0}'.format, varnames))
+        for arg, (name, _) in zip(args, arg_spec):
+            setattr(self, name, arg)
 
-    name = '<generated {0}.__init__>'.format(cls.__name__)
-    code = compile(init, name, 'exec')
-    func = next(c for c in code.co_consts if isinstance(c, types.CodeType))
+        for name, default in kw_spec:
+            if name in kwargs:
+                setattr(self, name, kwargs.pop(name))
+            else:
+                # make a copy of the default values so that we can mutate them
+                # without affecting anything else
+                setattr(self, name, copy.copy(default))
+        assert not kwargs
 
-    # Add a fake linecache entry so debuggers and the traceback module can
-    # better understand our generated code.
-    linecache.cache[name] = (len(init), None, init.splitlines(True), name)
-
-    return types.FunctionType(func, {}, argdefs=defaults)
+    return __init__
 
 
 class TType(object):

@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import linecache
-
 import pytest
 
 import thriftpy
@@ -70,8 +68,3 @@ def test_parse_spec():
 
     for spec, res in cases:
         assert parse_spec(*spec) == res
-
-
-def test_init_func():
-    thriftpy.load("addressbook.thrift")
-    assert linecache.getline('<generated PhoneNumber.__init__>', 1) != ''
