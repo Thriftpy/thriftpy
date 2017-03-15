@@ -5,6 +5,7 @@ from cpython cimport bool
 from thriftpy.transport.cybase cimport CyTransportBase, STACK_STRING_LEN
 
 from ..thrift import TDecodeException
+from ..statsd import statsd_client
 
 cdef extern from "endian_port.h":
     int16_t htobe16(int16_t n)
@@ -172,8 +173,8 @@ cdef inline read_struct(CyTransportBase buf, obj, decode_response=True):
 
         field_spec = field_specs[fid]
         ttype = field_spec[0]
-        if i32_i64_type_check(ttype, field_type) and \
-                i32_i64_type_check(field_type, ttype):
+        if i32_i64_type_check(ttype, field_type, buf) and \
+                i32_i64_type_check(field_type, ttype, buf):
             skip(buf, field_type)
             continue
 
@@ -284,7 +285,7 @@ cdef c_read_val(CyTransportBase buf, TType ttype, spec=None,
         orig_type = <TType>read_i08(buf)
         size = read_i32(buf)
 
-        if i32_i64_type_check(v_type, orig_type):
+        if i32_i64_type_check(v_type, orig_type, buf):
             for _ in range(size):
                 skip(buf, orig_type)
             return []
@@ -313,7 +314,7 @@ cdef c_read_val(CyTransportBase buf, TType ttype, spec=None,
         orig_type = <TType>read_i08(buf)
         size = read_i32(buf)
 
-        if i32_i64_type_check(k_type, orig_key_type) or i32_i64_type_check(v_type, orig_type):
+        if i32_i64_type_check(k_type, orig_key_type, buf) or i32_i64_type_check(v_type, orig_type, buf):
             for _ in range(size):
                 skip(buf, orig_key_type)
                 skip(buf, orig_type)
@@ -399,8 +400,14 @@ cpdef skip(CyTransportBase buf, TType ttype):
             skip(buf, f_type)
 
 
-def i32_i64_type_check(ttype, field_type):
-    return ttype != field_type and not (field_type == T_I64 and ttype == T_I32)
+def i32_i64_type_check(ttype, field_type, CyTransportBase buf):
+    diff = (ttype != field_type and not (field_type == T_I64 and ttype == T_I32))
+    if field_type == T_I64 and ttype == T_I32:
+        if not buf.trans.port:
+            statsd_client.incr("i32toi64", server=True)
+        else:
+            statsd_client.incr('i32toi64', client=True)
+    return diff
 
 
 def read_val(CyTransportBase buf, TType ttype, decode_response=True):
