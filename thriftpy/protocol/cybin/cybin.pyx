@@ -5,6 +5,7 @@ from cpython cimport bool
 from thriftpy.transport.cybase cimport CyTransportBase, STACK_STRING_LEN
 
 from ..thrift import TDecodeException
+from ..statsd import statsd_client
 
 cdef extern from "endian_port.h":
     int16_t htobe16(int16_t n)
@@ -172,7 +173,8 @@ cdef inline read_struct(CyTransportBase buf, obj, decode_response=True):
 
         field_spec = field_specs[fid]
         ttype = field_spec[0]
-        if field_type != ttype:
+        if i32_i64_type_check(ttype, field_type, buf) and \
+                i32_i64_type_check(field_type, ttype, buf):
             skip(buf, field_type)
             continue
 
@@ -182,7 +184,7 @@ cdef inline read_struct(CyTransportBase buf, obj, decode_response=True):
         else:
             spec = field_spec[2]
 
-        setattr(obj, name, c_read_val(buf, ttype, spec, decode_response))
+        setattr(obj, name, c_read_val(buf, field_type, spec, decode_response))
 
     return obj
 
@@ -283,12 +285,12 @@ cdef c_read_val(CyTransportBase buf, TType ttype, spec=None,
         orig_type = <TType>read_i08(buf)
         size = read_i32(buf)
 
-        if orig_type != v_type:
+        if i32_i64_type_check(v_type, orig_type, buf):
             for _ in range(size):
                 skip(buf, orig_type)
             return []
 
-        return [c_read_val(buf, v_type, v_spec, decode_response)
+        return [c_read_val(buf, orig_type, v_spec, decode_response)
                 for _ in range(size)]
 
     elif ttype == T_MAP:
@@ -312,13 +314,13 @@ cdef c_read_val(CyTransportBase buf, TType ttype, spec=None,
         orig_type = <TType>read_i08(buf)
         size = read_i32(buf)
 
-        if orig_key_type != k_type or orig_type != v_type:
+        if i32_i64_type_check(k_type, orig_key_type, buf) or i32_i64_type_check(v_type, orig_type, buf):
             for _ in range(size):
                 skip(buf, orig_key_type)
                 skip(buf, orig_type)
             return {}
 
-        return {c_read_val(buf, k_type, k_spec, decode_response): c_read_val(buf, v_type, v_spec, decode_response)
+        return {c_read_val(buf, orig_key_type, k_spec, decode_response): c_read_val(buf, orig_type, v_spec, decode_response)
                 for _ in range(size)}
 
     elif ttype == T_STRUCT:
@@ -396,6 +398,16 @@ cpdef skip(CyTransportBase buf, TType ttype):
                 break
             read_i16(buf)
             skip(buf, f_type)
+
+
+def i32_i64_type_check(ttype, field_type, CyTransportBase buf):
+    diff = (ttype != field_type and not (field_type == T_I64 and ttype == T_I32))
+    if field_type == T_I64 and ttype == T_I32:
+        if not buf.trans.port:
+            statsd_client.incr("i32toi64", server=True)
+        else:
+            statsd_client.incr('i32toi64', client=True)
+    return diff
 
 
 def read_val(CyTransportBase buf, TType ttype, decode_response=True):
