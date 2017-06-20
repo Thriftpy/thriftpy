@@ -141,7 +141,7 @@ class TSocket(object):
             self.sock.close()
             self.sock = None
         except (socket.error, OSError):
-            pass
+            self.sock = None
 
 
 class TServerSocket(object):
