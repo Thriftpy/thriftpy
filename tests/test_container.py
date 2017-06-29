@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import thriftpy
-thriftpy.install_import_hook()  # noqa
 
 from thriftpy.utils import serialize, deserialize
 
-import container_thrift as container
+thriftpy.install_import_hook()
+
+import container_thrift as container  # noqa
 
 
 def test_list_item():

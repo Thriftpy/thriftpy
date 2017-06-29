@@ -114,6 +114,7 @@ python lib):
 
   * tornado server and client (with tornado 4.0)
 
+  * http server and client
 
 - Can directly load thrift file as module, the sdk code will be generated on
   the fly.

@@ -33,8 +33,8 @@ if PY3:
 else:
     text_type = unicode  # noqa
     string_types = (str, unicode)  # noqa
-    from urllib2 import urlopen
-    from urlparse import urlparse
+    from urllib2 import urlopen  # noqa
+    from urlparse import urlparse  # noqa
 
     def u(s):
         if not isinstance(s, text_type):

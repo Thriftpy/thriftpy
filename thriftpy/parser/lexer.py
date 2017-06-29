@@ -56,6 +56,7 @@ thrift_reserved_keywords = (
     'float',
     'for',
     'foreach',
+    'from',
     'function',
     'global',
     'goto',

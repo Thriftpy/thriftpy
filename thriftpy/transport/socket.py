@@ -191,7 +191,13 @@ class TServerSocket(object):
 
         _sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         if hasattr(socket, "SO_REUSEPORT"):
-            _sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            try:
+                _sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            except socket.error as err:
+                if err[0] in (errno.ENOPROTOOPT, errno.EINVAL):
+                    pass
+                else:
+                    raise
         _sock.settimeout(None)
         self.sock = _sock
 

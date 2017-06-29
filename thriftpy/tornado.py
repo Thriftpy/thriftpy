@@ -18,7 +18,7 @@
 from __future__ import absolute_import
 
 from contextlib import contextmanager
-from tornado import tcpserver, ioloop, iostream, gen
+from tornado import tcpserver, ioloop, iostream, gen, locks
 from io import BytesIO
 from datetime import timedelta
 
@@ -32,7 +32,6 @@ from .protocol.binary import TBinaryProtocolFactory
 import logging
 import socket
 import struct
-import toro
 
 
 logger = logging.getLogger(__name__)
@@ -52,7 +51,7 @@ class TTornadoStreamTransport(TTransportBase):
         self.is_queuing_reads = False
         self.read_queue = []
         self.__wbuf = BytesIO()
-        self._read_lock = toro.Lock()
+        self._read_lock = locks.Lock()
         self.ssl_options = ssl_options
 
         # servers provide a ready-to-go stream
@@ -70,7 +69,8 @@ class TTornadoStreamTransport(TTransportBase):
         if self.ssl_options is None:
             self.stream = iostream.IOStream(sock)
         else:
-            self.stream = iostream.SSLIOStream(sock, ssl_options=self.ssl_options)
+            self.stream = iostream.SSLIOStream(
+                sock, ssl_options=self.ssl_options)
 
         try:
             yield self.with_timeout(timeout, self.stream.connect(
@@ -225,8 +225,9 @@ def make_client(
         io_loop=None, ssl_options=None,
         connect_timeout=TTornadoStreamTransport.DEFAULT_CONNECT_TIMEOUT,
         read_timeout=TTornadoStreamTransport.DEFAULT_READ_TIMEOUT):
-    transport = TTornadoStreamTransport(host, port, io_loop=io_loop, ssl_options=ssl_options,
-                                        read_timeout=read_timeout)
+    transport = TTornadoStreamTransport(
+        host, port, io_loop=io_loop,
+        ssl_options=ssl_options, read_timeout=read_timeout)
     iprot = proto_factory.get_protocol(TMemoryBuffer())
     oprot = proto_factory.get_protocol(transport)
     yield transport.open(connect_timeout)

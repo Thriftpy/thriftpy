@@ -140,8 +140,8 @@ the direct module.
 .. code:: python
 
     from thriftpy.protocol.binary import TBinaryProtocolFactory
-    from thriftpy.transport.transport import TBufferedTransportFactory
-    from thriftpy.transport.transport import TFramedTransportFactory
+    from thriftpy.transport.buffered import TBufferedTransportFactory
+    from thriftpy.transport.framed import TFramedTransportFactory
 
 
 Better Module
