@@ -149,7 +149,7 @@ def test_client_socket_set_timeout():
 
 
 def test_client_socket_not_open_after_failed_open():
-    client_socket = TSocket(host="localhost", port=12345, socket_timeout=100)
+    client_socket = TSocket(host="localhost", port=12345)
     assert not client_socket.is_open()
 
     with pytest.raises(TTransportException):
@@ -159,7 +159,7 @@ def test_client_socket_not_open_after_failed_open():
 
 
 def test_client_socket_not_open_after_close():
-    client_socket = TSocket(host="localhost", port=12345, socket_timeout=100)
+    client_socket = TSocket(host="localhost", port=12345)
     assert not client_socket.is_open()
 
     with pytest.raises(TTransportException):
