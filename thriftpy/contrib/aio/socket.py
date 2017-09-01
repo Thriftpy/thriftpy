@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import, division
 
+import ssl
 import asyncio
 import errno
 import os
@@ -12,7 +13,8 @@ import sys
 from thriftpy.transport import TTransportException
 from thriftpy.transport._ssl import (
     create_thriftpy_context,
-    RESTRICTED_SERVER_CIPHERS
+    RESTRICTED_SERVER_CIPHERS,
+    DEFAULT_CIPHERS
 )
 
 
@@ -21,7 +23,10 @@ class TAsyncSocket(object):
 
     def __init__(self, host=None, port=None, unix_socket=None,
                  sock=None, socket_family=socket.AF_INET,
-                 socket_timeout=3000, connect_timeout=None):
+                 socket_timeout=3000, connect_timeout=None,
+                 ssl_context=None, validate=True,
+                 cafile=None, capath=None, certfile=None, keyfile=None,
+                 ciphers=DEFAULT_CIPHERS):
         """Initialize a TSocket
 
         TSocket can be initialized in 3 ways:
@@ -60,6 +65,25 @@ class TAsyncSocket(object):
         self.socket_timeout = socket_timeout / 1000 if socket_timeout else None
         self.connect_timeout = connect_timeout / 1000 if connect_timeout \
             else self.socket_timeout
+
+        if ssl_context:
+            self.ssl_context = ssl_context
+        elif certfile or keyfile:
+            self.ssl_context = create_thriftpy_context(server_side=False,
+                                                       ciphers=ciphers)
+
+            if cafile or capath:
+                self.ssl_context.load_verify_locations(cafile=cafile,
+                                                       capath=capath)
+
+            if certfile:
+                self.ssl_context.load_cert_chain(certfile, keyfile=keyfile)
+
+            if not validate:
+                self.ssl_context.check_hostname = False
+                self.ssl_context.verify_mode = ssl.CERT_NONE
+        else:
+            self.ssl_context = None
 
     def _init_sock(self):
         if self.unix_socket:
@@ -106,7 +130,8 @@ class TAsyncSocket(object):
             if self.socket_timeout:
                 self.raw_sock.settimeout(self.socket_timeout)
 
-            self.reader, self.writer = yield from self.sock_factory(sock=self.raw_sock)
+            self.reader, self.writer = yield from self.sock_factory(
+                sock=self.raw_sock, ssl=self.ssl_context)
 
         except (socket.error, OSError):
             raise TTransportException(
@@ -195,7 +220,7 @@ class TAsyncServerSocket(object):
 
         if ssl_context:
             self.ssl_context = ssl_context
-        elif certfile and ciphers:
+        elif certfile or ciphers:
             if not os.access(certfile, os.R_OK):
                 raise IOError('No such certfile found: %s' % certfile)
 
