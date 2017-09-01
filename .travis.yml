@@ -14,7 +14,7 @@ matrix:
     - python: 3.5
       script: tox -e flake8
     - python: 2.6
-      script: tox -e flake8
+      script: tox -e py
       env:
         - IS_PY26=1
 
