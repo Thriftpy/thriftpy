@@ -116,7 +116,7 @@ def client_context(service, host="localhost", port=9090, unix_socket=None,
 
 
 if PY34:
-    from thriftpy.contrib.async.rpc import (
+    from thriftpy.contrib.aio.rpc import (
         make_server as make_async_server,
         make_client as make_async_client
     )
