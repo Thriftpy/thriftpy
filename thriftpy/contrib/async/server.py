@@ -18,7 +18,11 @@ class TAsyncServer(TServer):
         self.trans.listen()
         loop = asyncio.get_event_loop()
         self.server = loop.run_until_complete(self.trans.accept(self.handle))
-        loop.run_forever()
+        try:
+            loop.run_forever()
+        except:
+            self.close()
+            raise
 
     @asyncio.coroutine
     def handle(self, client):

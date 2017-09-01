@@ -10,6 +10,10 @@ import struct
 import sys
 
 from thriftpy.transport import TTransportException
+from thriftpy.transport._ssl import (
+    create_thriftpy_context,
+    RESTRICTED_SERVER_CIPHERS
+)
 
 
 class TAsyncSocket(object):
@@ -159,7 +163,8 @@ class TAsyncServerSocket(object):
 
     def __init__(self, host=None, port=None, unix_socket=None,
                  socket_family=socket.AF_INET, client_timeout=3000,
-                 backlog=128):
+                 backlog=128, ssl_context=None, certfile=None, keyfile=None,
+                 ciphers=RESTRICTED_SERVER_CIPHERS):
         """Initialize a TServerSocket
 
         TSocket can be initialized in 2 ways:
@@ -189,6 +194,18 @@ class TAsyncServerSocket(object):
         self.socket_family = socket_family
         self.client_timeout = client_timeout / 1000 if client_timeout else None
         self.backlog = backlog
+
+        if ssl_context:
+            self.ssl_context = ssl_context
+        elif certfile and ciphers:
+            if not os.access(certfile, os.R_OK):
+                raise IOError('No such certfile found: %s' % certfile)
+
+            self.ssl_context = create_thriftpy_context(server_side=True,
+                                                       ciphers=ciphers)
+            self.ssl_context.load_cert_chain(certfile, keyfile=keyfile)
+        else:
+            self.ssl_context = None
 
     def _init_sock(self):
         if self.unix_socket:
@@ -225,7 +242,8 @@ class TAsyncServerSocket(object):
     def accept(self, callback):
         server = yield from self.sock_factory(
             lambda reader, writer: callback(StreamHandler(reader, writer)),
-            sock=self.raw_sock
+            sock=self.raw_sock,
+            ssl=self.ssl_context
         )
         return server
 

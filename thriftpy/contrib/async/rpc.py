@@ -11,7 +11,7 @@ def make_server(service, handler,
                 host="localhost", port=9090, unix_socket=None,
                 proto_factory=TAsyncBinaryProtocolFactory(),
                 trans_factory=TAsyncBufferedTransportFactory(),
-                client_timeout=3000, certfile=None):
+                client_timeout=3000, certfile=None, keyfile=None, ssl_context=None):
     processor = TAsyncProcessor(service, handler)
 
     if unix_socket:
@@ -19,14 +19,10 @@ def make_server(service, handler,
         if certfile:
             warnings.warn("SSL only works with host:port, not unix_socket.")
     elif host and port:
-        if certfile:
-            # server_socket = TSSLServerSocket(
-            #     host=host, port=port, client_timeout=client_timeout,
-            #     certfile=certfile)
-            pass
-        else:
             server_socket = TAsyncServerSocket(
-                host=host, port=port, client_timeout=client_timeout)
+                host=host, port=port,
+                client_timeout=client_timeout,
+                certfile=certfile, keyfile=keyfile, ssl_context=ssl_context)
     else:
         raise ValueError("Either host/port or unix_socket must be provided.")
 
