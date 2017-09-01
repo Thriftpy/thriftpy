@@ -2,7 +2,7 @@
 import asyncio
 import thriftpy
 
-from thriftpy.contrib.async.rpc import make_server
+from thriftpy.rpc import make_async_server
 
 echo_thrift = thriftpy.load("echo.thrift", module_name="echo_thrift")
 
@@ -15,7 +15,7 @@ class Dispatcher(object):
 
 
 def main():
-    server = make_server(echo_thrift.EchoService, Dispatcher(), '127.0.0.1', 6000)
+    server = make_async_server(echo_thrift.EchoService, Dispatcher(), '127.0.0.1', 6000)
     server.serve()
 
 

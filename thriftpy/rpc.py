@@ -5,6 +5,8 @@ from __future__ import absolute_import
 import contextlib
 import warnings
 
+from thriftpy._compat import PY34
+
 from thriftpy.protocol import TBinaryProtocolFactory
 from thriftpy.server import TThreadedServer
 from thriftpy.thrift import TProcessor, TClient
@@ -111,3 +113,10 @@ def client_context(service, host="localhost", port=9090, unix_socket=None,
 
     finally:
         transport.close()
+
+
+if PY34:
+    from thriftpy.contrib.async.rpc import (
+        make_server as make_async_server,
+        make_client as make_async_client
+    )

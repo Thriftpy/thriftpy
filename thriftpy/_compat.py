@@ -13,6 +13,7 @@ import platform
 import sys
 
 PY3 = sys.version_info[0] == 3
+PY34 = sys.version_info[0] == 3 and sys.version_info[1] >= 4
 PYPY = "__pypy__" in sys.modules
 
 UNIX = platform.system() in ("Linux", "Darwin")
