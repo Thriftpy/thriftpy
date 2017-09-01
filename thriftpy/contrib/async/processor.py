@@ -36,16 +36,16 @@ class TAsyncProcessor(object):
 
     @asyncio.coroutine
     def send_exception(self, oprot, api, exc, seqid):
-        yield from oprot.write_message_begin(api, TMessageType.EXCEPTION, seqid)
+        oprot.write_message_begin(api, TMessageType.EXCEPTION, seqid)
         exc.write(oprot)
-        yield from oprot.write_message_end()
+        oprot.write_message_end()
         yield from oprot.trans.flush()
 
     @asyncio.coroutine
     def send_result(self, oprot, api, result, seqid):
-        yield from oprot.write_message_begin(api, TMessageType.REPLY, seqid)
-        yield from oprot.write_struct(result)
-        yield from oprot.write_message_end()
+        oprot.write_message_begin(api, TMessageType.REPLY, seqid)
+        oprot.write_struct(result)
+        oprot.write_message_end()
         yield from oprot.trans.flush()
 
     def handle_exception(self, e, result):

@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
 import thriftpy
+import asyncio
+from thriftpy.contrib.async.rpc import make_client
 
-from thriftpy.rpc import client_context
 
 echo_thrift = thriftpy.load("echo.thrift", module_name="echo_thrift")
 
 
-def main():
-    with client_context(echo_thrift.PingService, '127.0.0.1', 6000) as c:
-        pong = c.ping('echo')
-        print(pong)
+async def main():
+    client = await make_client(echo_thrift.EchoService, '127.0.0.1', 6000)
+    print(await client.echo('hello, world'))
+    client.close()
 
 
 if __name__ == '__main__':
-    main()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())

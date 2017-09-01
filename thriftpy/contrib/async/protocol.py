@@ -60,65 +60,59 @@ def unpack_double(buf):
     return struct.unpack("!d", buf)[0]
 
 
-@asyncio.coroutine
 def write_message_begin(outbuf, name, ttype, seqid, strict=True):
     if strict:
-        yield from outbuf.write(pack_i32(VERSION_1 | ttype))
-        yield from outbuf.write(pack_string(name.encode('utf-8')))
+        outbuf.write(pack_i32(VERSION_1 | ttype))
+        outbuf.write(pack_string(name.encode('utf-8')))
     else:
-        yield from outbuf.write(pack_string(name.encode('utf-8')))
-        yield from outbuf.write(pack_i8(ttype))
+        outbuf.write(pack_string(name.encode('utf-8')))
+        outbuf.write(pack_i8(ttype))
 
-    yield from outbuf.write(pack_i32(seqid))
+    outbuf.write(pack_i32(seqid))
 
 
-@asyncio.coroutine
 def write_field_begin(outbuf, ttype, fid):
-    yield from outbuf.write(pack_i8(ttype) + pack_i16(fid))
+    outbuf.write(pack_i8(ttype) + pack_i16(fid))
 
 
-@asyncio.coroutine
 def write_field_stop(outbuf):
-    yield from outbuf.write(pack_i8(TType.STOP))
+    outbuf.write(pack_i8(TType.STOP))
 
 
-@asyncio.coroutine
 def write_list_begin(outbuf, etype, size):
-    yield from outbuf.write(pack_i8(etype) + pack_i32(size))
+    outbuf.write(pack_i8(etype) + pack_i32(size))
 
 
-@asyncio.coroutine
 def write_map_begin(outbuf, ktype, vtype, size):
-    yield from outbuf.write(pack_i8(ktype) + pack_i8(vtype) + pack_i32(size))
+    outbuf.write(pack_i8(ktype) + pack_i8(vtype) + pack_i32(size))
 
 
-@asyncio.coroutine
 def write_val(outbuf, ttype, val, spec=None):
     if ttype == TType.BOOL:
         if val:
-            yield from outbuf.write(pack_i8(1))
+            outbuf.write(pack_i8(1))
         else:
-            yield from outbuf.write(pack_i8(0))
+            outbuf.write(pack_i8(0))
 
     elif ttype == TType.BYTE:
-        yield from outbuf.write(pack_i8(val))
+        outbuf.write(pack_i8(val))
 
     elif ttype == TType.I16:
-        yield from outbuf.write(pack_i16(val))
+        outbuf.write(pack_i16(val))
 
     elif ttype == TType.I32:
-        yield from outbuf.write(pack_i32(val))
+        outbuf.write(pack_i32(val))
 
     elif ttype == TType.I64:
-        yield from outbuf.write(pack_i64(val))
+        outbuf.write(pack_i64(val))
 
     elif ttype == TType.DOUBLE:
-        yield from outbuf.write(pack_double(val))
+        outbuf.write(pack_double(val))
 
     elif ttype == TType.STRING:
         if not isinstance(val, bytes):
             val = val.encode('utf-8')
-        yield from outbuf.write(pack_string(val))
+        outbuf.write(pack_string(val))
 
     elif ttype == TType.SET or ttype == TType.LIST:
         if isinstance(spec, tuple):
@@ -127,9 +121,9 @@ def write_val(outbuf, ttype, val, spec=None):
             e_type, t_spec = spec, None
 
         val_len = len(val)
-        yield from write_list_begin(outbuf, e_type, val_len)
+        write_list_begin(outbuf, e_type, val_len)
         for e_val in val:
-            yield from write_val(outbuf, e_type, e_val, t_spec)
+            write_val(outbuf, e_type, e_val, t_spec)
 
     elif ttype == TType.MAP:
         if isinstance(spec[0], int):
@@ -144,10 +138,10 @@ def write_val(outbuf, ttype, val, spec=None):
         else:
             v_type, v_spec = spec[1]
 
-        yield from write_map_begin(outbuf, k_type, v_type, len(val))
+        write_map_begin(outbuf, k_type, v_type, len(val))
         for k in iter(val):
-            yield from write_val(outbuf, k_type, k, k_spec)
-            yield from write_val(outbuf, v_type, val[k], v_spec)
+            write_val(outbuf, k_type, k, k_spec)
+            write_val(outbuf, v_type, val[k], v_spec)
 
     elif ttype == TType.STRUCT:
         for fid in iter(val.thrift_spec):
@@ -162,9 +156,9 @@ def write_val(outbuf, ttype, val, spec=None):
             if v is None:
                 continue
 
-            yield from write_field_begin(outbuf, f_type, fid)
-            yield from write_val(outbuf, f_type, v, f_container_spec)
-        yield from write_field_stop(outbuf)
+            write_field_begin(outbuf, f_type, fid)
+            write_val(outbuf, f_type, v, f_container_spec)
+        write_field_stop(outbuf)
 
 
 @asyncio.coroutine
@@ -414,14 +408,12 @@ class TAsyncBinaryProtocol(object):
     def read_message_end(self):
         pass
 
-    @asyncio.coroutine
     def write_message_begin(self, name, ttype, seqid):
-        yield from write_message_begin(
+        write_message_begin(
             self.trans, name, ttype,
             seqid, strict=self.strict_write
         )
 
-    @asyncio.coroutine
     def write_message_end(self):
         pass
 
@@ -430,9 +422,8 @@ class TAsyncBinaryProtocol(object):
         ret = yield from read_struct(self.trans, obj, self.decode_response)
         return ret
 
-    @asyncio.coroutine
     def write_struct(self, obj):
-        yield from write_val(self.trans, TType.STRUCT, obj)
+        write_val(self.trans, TType.STRUCT, obj)
 
 
 class TAsyncBinaryProtocolFactory(object):

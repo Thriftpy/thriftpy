@@ -61,7 +61,6 @@ class TAsyncBufferedTransport(TTransportBase):
         ret = yield from readall(self._read, sz)
         return ret
 
-    @asyncio.coroutine
     def write(self, buf):
         self._wbuf.write(buf)
 
@@ -70,7 +69,7 @@ class TAsyncBufferedTransport(TTransportBase):
         out = self._wbuf.getvalue()
         # reset wbuf before write/flush to preserve state on underlying failure
         self._wbuf = BytesIO()
-        yield from self._trans.write(out)
+        self._trans.write(out)
         yield from self._trans.flush()
 
     def getvalue(self):

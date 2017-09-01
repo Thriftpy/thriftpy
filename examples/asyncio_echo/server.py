@@ -8,14 +8,14 @@ echo_thrift = thriftpy.load("echo.thrift", module_name="echo_thrift")
 
 
 class Dispatcher(object):
-    async def ping(self, param):
+    async def echo(self, param):
         print(param)
         await asyncio.sleep(0.1)
         return param
 
 
 def main():
-    server = make_server(echo_thrift.PingService, Dispatcher(), '127.0.0.1', 6000)
+    server = make_server(echo_thrift.EchoService, Dispatcher(), '127.0.0.1', 6000)
     server.serve()
 
 

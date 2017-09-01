@@ -1,7 +1,7 @@
 # ping service demo
-service PingService {
+service EchoService {
     /*
      * Sexy c style comment
      */
-    string ping(1: string param),
+    string echo(1: string param),
 }

@@ -31,7 +31,8 @@ class TAsyncServer(TServer):
         iprot = self.iprot_factory.get_protocol(itrans)
         oprot = self.oprot_factory.get_protocol(otrans)
         try:
-            yield from self.processor.process(iprot, oprot)
+            while not client.reader.at_eof():
+                yield from self.processor.process(iprot, oprot)
         except TTransportException:
             pass
         except Exception as x:

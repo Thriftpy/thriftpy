@@ -47,13 +47,13 @@ class TAsyncSocket(object):
             self.unix_socket = unix_socket
             self.host = None
             self.port = None
-            self.sock = None
+            self.raw_sock = None
             self.sock_factory = asyncio.open_unix_connection
         else:
             self.unix_socket = None
             self.host = host
             self.port = port
-            self.sock = None
+            self.raw_sock = None
             self.sock_factory = asyncio.open_connection
 
         self.socket_family = socket_family
@@ -76,7 +76,7 @@ class TAsyncSocket(object):
         self.raw_sock = _sock
 
     def set_handle(self, sock):
-        self.sock = sock
+        self.raw_sock = sock
 
     def set_timeout(self, ms):
         """Backward compat api, will bind the timeout to both connect_timeout
@@ -85,11 +85,11 @@ class TAsyncSocket(object):
         self.socket_timeout = ms / 1000 if (ms and ms > 0) else None
         self.connect_timeout = self.socket_timeout
 
-        if self.sock is not None:
-            self.sock.settimeout(self.socket_timeout)
+        if self.raw_sock is not None:
+            self.raw_sock.settimeout(self.socket_timeout)
 
     def is_open(self):
-        return bool(self.sock)
+        return bool(self.raw_sock)
 
     @asyncio.coroutine
     def open(self):
@@ -136,24 +136,23 @@ class TAsyncSocket(object):
                                       message='TSocket read 0 bytes')
         return buff
 
-    @asyncio.coroutine
     def write(self, buff):
         self.writer.write(buff)
-        self.writer.write_eof()
 
     @asyncio.coroutine
     def flush(self):
-        pass
+        yield from self.writer.drain()
 
     def close(self):
-        if not self.sock:
+        if not self.raw_sock:
             return
 
         try:
             self.raw_sock.shutdown(socket.SHUT_RDWR)
             self.raw_sock.close()
+            self.writer.write_eof()
             self.writer.close()
-            self.sock = None
+            self.raw_sock = None
         except (socket.error, OSError):
             pass
 
@@ -179,7 +178,6 @@ class TAsyncServerSocket(object):
         @param client_timeout   client socket timeout
         @param backlog          backlog for server socket
         """
-        self.clients = []
         if unix_socket:
             self.unix_socket = unix_socket
             self.host = None
@@ -285,15 +283,13 @@ class StreamHandler(object):
                                       message='TSocket read 0 bytes')
         return buff
 
-    @asyncio.coroutine
     def write(self, buff):
         self.writer.write(buff)
 
     @asyncio.coroutine
     def flush(self):
-        self.writer.write_eof()
+        yield from self.writer.drain()
 
-    @asyncio.coroutine
     def close(self):
         try:
             self.writer.close()
