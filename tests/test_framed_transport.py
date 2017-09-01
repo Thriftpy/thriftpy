@@ -2,13 +2,13 @@
 
 from __future__ import absolute_import
 
+import sys
 import logging
 import socket
 import threading
 import time
 
 from os import path
-from os import getenv
 from unittest import TestCase
 
 import pytest
@@ -85,7 +85,7 @@ class FramedTransportTestCase(TestCase):
         time.sleep(0.1)
         self.client = self.mk_client()
 
-    @pytest.mark.skipif(getenv('IS_PY26'), reason="not support")
+    @pytest.mark.skipif(sys.version_info[:2] == (2, 6), reason="not support")
     def test_able_to_communicate(self):
         dennis = addressbook.Person(name='Dennis Ritchie')
         success = self.client.add(dennis)
@@ -93,7 +93,7 @@ class FramedTransportTestCase(TestCase):
         success = self.client.add(dennis)
         assert not success
 
-    @pytest.mark.skipif(getenv('IS_PY26'), reason="not support")
+    @pytest.mark.skipif(sys.version_info[:2] == (2, 6), reason="not support")
     def test_zero_length_string(self):
         dennis = addressbook.Person(name='')
         success = self.client.add(dennis)

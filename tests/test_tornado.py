@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import
 
-from os import getenv
+import sys
 from os import path
 import logging
 import socket
@@ -88,7 +88,7 @@ class TornadoRPCTestCase(testing.AsyncTestCase):
         super(TornadoRPCTestCase, self).tearDown()
 
     @testing.gen_test
-    @pytest.mark.skipif(getenv('IS_PY26'), reason="not support")
+    @pytest.mark.skipif(sys.version_info[:2] == (2, 6), reason="not support")
     def test_synchronous_result(self):
         dennis = addressbook.Person(name='Dennis Ritchie')
         success = yield self.client.add(dennis)
@@ -99,7 +99,7 @@ class TornadoRPCTestCase(testing.AsyncTestCase):
         assert person.name == dennis.name
 
     @testing.gen_test
-    @pytest.mark.skipif(getenv('IS_PY26'), reason="not support")
+    @pytest.mark.skipif(sys.version_info[:2] == (2, 6), reason="not support")
     def test_synchronous_exception(self):
         exc = None
         try:
@@ -110,7 +110,7 @@ class TornadoRPCTestCase(testing.AsyncTestCase):
         assert isinstance(exc, addressbook.PersonNotExistsError)
 
     @testing.gen_test
-    @pytest.mark.skipif(getenv('IS_PY26'), reason="not support")
+    @pytest.mark.skipif(sys.version_info[:2] == (2, 6), reason="not support")
     def test_asynchronous_result(self):
         dennis = addressbook.Person(name='Dennis Ritchie')
         yield self.client.add(dennis)
@@ -118,7 +118,7 @@ class TornadoRPCTestCase(testing.AsyncTestCase):
         assert success
 
     @testing.gen_test
-    @pytest.mark.skipif(getenv('IS_PY26'), reason="not support")
+    @pytest.mark.skipif(sys.version_info[:2] == (2, 6), reason="not support")
     def test_asynchronous_exception(self):
         exc = None
         try:
