@@ -40,8 +40,7 @@ class TAsyncBufferedTransport(TTransportBase):
 
     @asyncio.coroutine
     def open(self):
-        ret = yield from self._trans.open()
-        return ret
+        return (yield from self._trans.open())
 
     def close(self):
         return self._trans.close()
@@ -58,8 +57,7 @@ class TAsyncBufferedTransport(TTransportBase):
 
     @asyncio.coroutine
     def read(self, sz):
-        ret = yield from readall(self._read, sz)
-        return ret
+        return (yield from readall(self._read, sz))
 
     def write(self, buf):
         self._wbuf.write(buf)

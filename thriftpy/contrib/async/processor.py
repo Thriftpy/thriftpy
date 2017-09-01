@@ -29,8 +29,7 @@ class TAsyncProcessor(object):
         @asyncio.coroutine
         def call():
             f = getattr(self._handler, api)
-            ret = yield from f(*(args.__dict__[k] for k in api_args))
-            return ret
+            return (yield from f(*(args.__dict__[k] for k in api_args)))
 
         return api, seqid, result, call
 

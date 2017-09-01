@@ -34,8 +34,7 @@ class TAsyncClient:
         yield from self._send(_api, **kwargs)
         # wait result only if non-oneway
         if not getattr(result_cls, "oneway"):
-            ret = yield from self._recv(_api)
-            return ret
+            return (yield from self._recv(_api))
 
     @asyncio.coroutine
     def _send(self, _api, **kwargs):

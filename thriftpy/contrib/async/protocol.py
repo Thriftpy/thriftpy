@@ -419,8 +419,7 @@ class TAsyncBinaryProtocol(object):
 
     @asyncio.coroutine
     def read_struct(self, obj):
-        ret = yield from read_struct(self.trans, obj, self.decode_response)
-        return ret
+        return (yield from read_struct(self.trans, obj, self.decode_response))
 
     def write_struct(self, obj):
         write_val(self.trans, TType.STRUCT, obj)
