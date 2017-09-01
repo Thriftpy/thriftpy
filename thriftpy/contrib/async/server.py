@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-
-from __future__ import absolute_import
-
 import asyncio
 from thriftpy.server import TServer, logger
 from thriftpy.transport import TTransportException

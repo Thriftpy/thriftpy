@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-
-from __future__ import absolute_import
-
 import asyncio
 from io import BytesIO
 
@@ -24,7 +21,7 @@ def readall(read_fn, sz):
     return buff
 
 
-class TBufferedTransport(TTransportBase):
+class TAsyncBufferedTransport(TTransportBase):
     """Class that wraps another transport and buffers its I/O.
 
     The implementation uses a (configurable) fixed-size read buffer
@@ -80,6 +77,6 @@ class TBufferedTransport(TTransportBase):
         return self._trans.getvalue()
 
 
-class TBufferedTransportFactory(object):
+class TAsyncBufferedTransportFactory(object):
     def get_transport(self, trans):
-        return TBufferedTransport(trans)
+        return TAsyncBufferedTransport(trans)

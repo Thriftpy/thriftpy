@@ -389,7 +389,7 @@ def skip(inbuf, ftype):
             yield from skip(inbuf, f_type)
 
 
-class TBinaryProtocol(object):
+class TAsyncBinaryProtocol(object):
     """Binary implementation of the Thrift protocol driver."""
 
     def __init__(self, trans,
@@ -435,7 +435,7 @@ class TBinaryProtocol(object):
         yield from write_val(self.trans, TType.STRUCT, obj)
 
 
-class TBinaryProtocolFactory(object):
+class TAsyncBinaryProtocolFactory(object):
     def __init__(self, strict_read=True, strict_write=True,
                  decode_response=True):
         self.strict_read = strict_read
@@ -443,6 +443,9 @@ class TBinaryProtocolFactory(object):
         self.decode_response = decode_response
 
     def get_protocol(self, trans):
-        return TBinaryProtocol(trans,
-                               self.strict_read, self.strict_write,
-                               self.decode_response)
+        return TAsyncBinaryProtocol(
+            trans,
+            self.strict_read,
+            self.strict_write,
+            self.decode_response
+        )

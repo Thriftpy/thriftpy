@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-
 import asyncio
 from thriftpy.thrift import TApplicationException, TType, TMessageType
 
 
-class TProcessor(object):
+class TAsyncProcessor(object):
     """Base class for procsessor, which works on two streams."""
 
     def __init__(self, service, handler):

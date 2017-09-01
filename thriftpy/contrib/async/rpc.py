@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-import warnings
 import warnings
-from .processor import TProcessor
-from .protocol import TBinaryProtocolFactory
-from .buffered import TBufferedTransportFactory
+from .processor import TAsyncProcessor
+from .protocol import TAsyncBinaryProtocolFactory
+from .buffered import TAsyncBufferedTransportFactory
 from .socket import TAsyncServerSocket
 from .server import TAsyncServer
 
 
 def make_server(service, handler,
                 host="localhost", port=9090, unix_socket=None,
-                proto_factory=TBinaryProtocolFactory(),
-                trans_factory=TBufferedTransportFactory(),
+                proto_factory=TAsyncBinaryProtocolFactory(),
+                trans_factory=TAsyncBufferedTransportFactory(),
                 client_timeout=3000, certfile=None):
-    processor = TProcessor(service, handler)
+    processor = TAsyncProcessor(service, handler)
 
     if unix_socket:
         server_socket = TAsyncServerSocket(unix_socket=unix_socket)
