@@ -26,7 +26,7 @@ class TAsyncSocket(object):
                  socket_timeout=3000, connect_timeout=None,
                  ssl_context=None, validate=True,
                  cafile=None, capath=None, certfile=None, keyfile=None,
-                 ciphers=DEFAULT_CIPHERS):
+                 ciphers=DEFAULT_CIPHERS, server_hostname=None):
         """Initialize a TSocket
 
         TSocket can be initialized in 3 ways:
@@ -53,12 +53,14 @@ class TAsyncSocket(object):
             self.host = None
             self.port = None
             self.raw_sock = None
+            self.server_hostname = server_hostname
             self.sock_factory = asyncio.open_unix_connection
         else:
             self.unix_socket = None
             self.host = host
             self.port = port
             self.raw_sock = None
+            self.server_hostname = server_hostname
             self.sock_factory = asyncio.open_connection
 
         self.socket_family = socket_family
@@ -131,7 +133,8 @@ class TAsyncSocket(object):
                 self.raw_sock.settimeout(self.socket_timeout)
 
             self.reader, self.writer = yield from self.sock_factory(
-                sock=self.raw_sock, ssl=self.ssl_context)
+                sock=self.raw_sock, ssl=self.ssl_context,
+                server_hostname=self.server_hostname)
 
         except (socket.error, OSError):
             raise TTransportException(
@@ -173,10 +176,9 @@ class TAsyncSocket(object):
             return
 
         try:
+            self.writer.close()
             self.raw_sock.shutdown(socket.SHUT_RDWR)
             self.raw_sock.close()
-            self.writer.write_eof()
-            self.writer.close()
             self.raw_sock = None
         except (socket.error, OSError):
             pass

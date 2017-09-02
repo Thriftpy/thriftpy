@@ -14,13 +14,18 @@ def make_client(service, host="localhost", port=9090, unix_socket=None,
                 proto_factory=TAsyncBinaryProtocolFactory(),
                 trans_factory=TAsyncBufferedTransportFactory(),
                 timeout=None,
-                cafile=None, ssl_context=None, certfile=None, keyfile=None):
+                cafile=None, ssl_context=None,
+                certfile=None, keyfile=None, validate=True, server_hostname=None):
     if unix_socket:
         socket = TAsyncSocket(unix_socket=unix_socket)
         if certfile:
             warnings.warn("SSL only works with host:port, not unix_socket.")
     elif host and port:
-            socket = TAsyncSocket(host, port, socket_timeout=timeout)
+            socket = TAsyncSocket(
+                host, port, socket_timeout=timeout,
+                cafile=cafile, ssl_context=ssl_context,
+                certfile=certfile, keyfile=keyfile, validate=validate,
+                server_hostname=server_hostname)
     else:
         raise ValueError("Either host/port or unix_socket must be provided.")
 

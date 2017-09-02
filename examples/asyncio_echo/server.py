@@ -15,7 +15,9 @@ class Dispatcher(object):
 
 
 def main():
-    server = make_async_server(echo_thrift.EchoService, Dispatcher(), '127.0.0.1', 6000)
+    server = make_async_server(
+        echo_thrift.EchoService, Dispatcher(), '127.0.0.1', 6000,
+        certfile='./server.pem', keyfile='./server.key')
     server.serve()
 
 
