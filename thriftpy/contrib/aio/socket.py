@@ -26,7 +26,7 @@ class TAsyncSocket(object):
                  socket_timeout=3000, connect_timeout=None,
                  ssl_context=None, validate=True,
                  cafile=None, capath=None, certfile=None, keyfile=None,
-                 ciphers=DEFAULT_CIPHERS, server_hostname=None):
+                 ciphers=DEFAULT_CIPHERS):
         """Initialize a TSocket
 
         TSocket can be initialized in 3 ways:
@@ -45,6 +45,22 @@ class TAsyncSocket(object):
         @param socket_timeout   socket timeout in ms
         @param connect_timeout  connect timeout in ms, only used in
             connection, will be set to socket_timeout if not set.
+        @param validate(bool)       Set to False to disable SSL certificate
+            validation and hostname validation. Default enabled.
+        @param cafile(str)          Path to a file of concatenated CA
+            certificates in PEM format.
+        @param capath(str)           path to a directory containing several CA
+            certificates in PEM format, following an OpenSSL specific layout.
+        @param certfile(str)        The certfile string must be the path to a
+            single file in PEM format containing the certificate as well as
+            any number of CA certificates needed to establish the
+            certificate’s authenticity.
+        @param keyfile(str)         The keyfile string, if not present,
+            the private key will be taken from certfile as well.
+        @param ciphers(list<str>)   The cipher suites to allow
+        @param ssl_context(SSLContext)  Customize the SSLContext, can be used
+            to persist SSLContext object. Caution it's easy to get wrong, only
+            use if you know what you're doing.
         """
         if sock:
             self.raw_sock = sock
@@ -53,14 +69,14 @@ class TAsyncSocket(object):
             self.host = None
             self.port = None
             self.raw_sock = None
-            self.server_hostname = server_hostname
+            self.server_hostname = host
             self.sock_factory = asyncio.open_unix_connection
         else:
             self.unix_socket = None
             self.host = host
             self.port = port
             self.raw_sock = None
-            self.server_hostname = server_hostname
+            self.server_hostname = host
             self.sock_factory = asyncio.open_connection
 
         self.socket_family = socket_family
@@ -211,6 +227,12 @@ class TAsyncServerSocket(object):
             take effect when using host/port
         @param client_timeout   client socket timeout
         @param backlog          backlog for server socket
+        @param certfile(str)        The server cert pem filename
+        @param keyfile(str)         The server cert key filename
+        @param ciphers(list<str>)   The cipher suites to allow
+        @param ssl_context(SSLContext)  Customize the SSLContext, can be used
+            to persist SSLContext object. Caution it's easy to get wrong, only
+            use if you know what you're doing.
         """
         if unix_socket:
             self.unix_socket = unix_socket

@@ -4,7 +4,6 @@ from thriftpy.thrift import TApplicationException, TType, TMessageType
 
 
 class TAsyncProcessor(object):
-    """Base class for procsessor, which works on two streams."""
 
     def __init__(self, service, handler):
         self._service = service

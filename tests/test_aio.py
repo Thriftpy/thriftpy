@@ -14,13 +14,13 @@ import thriftpy
 
 thriftpy.install_import_hook()
 
-from thriftpy.rpc import make_aio_server, make_aio_client
-from thriftpy.transport import TTransportException
+from thriftpy.rpc import make_aio_server, make_aio_client  # noqa
+from thriftpy.transport import TTransportException  # noqa
 
 addressbook = thriftpy.load(os.path.join(os.path.dirname(__file__),
                                          "addressbook.thrift"))
-unix_sock = "/tmp/thriftpy_test.sock"
-SSL_PORT = 50441
+unix_sock = "/tmp/aio_thriftpy_test.sock"
+SSL_PORT = 50442
 
 
 class Dispatcher:
@@ -79,7 +79,7 @@ class Dispatcher:
 
 
 @pytest.fixture(scope="module")
-def server(request):
+def aio_server(request):
     loop = asyncio.new_event_loop()
     server = make_aio_server(
         addressbook.AddressBookService,
@@ -90,11 +90,11 @@ def server(request):
     st = threading.Thread(target=server.serve)
     st.daemon = True
     st.start()
-    time.sleep(0.01)
+    time.sleep(0.1)
 
 
 @pytest.fixture(scope="module")
-def ssl_server(request):
+def aio_ssl_server(request):
     loop = asyncio.new_event_loop()
     ssl_server = make_aio_server(
         addressbook.AddressBookService, Dispatcher(),
@@ -104,7 +104,7 @@ def ssl_server(request):
     st = threading.Thread(target=ssl_server.serve)
     st.daemon = True
     st.start()
-    time.sleep(0.01)
+    time.sleep(0.1)
 
 
 @pytest.fixture(scope="module")
@@ -140,39 +140,39 @@ async def ssl_client(timeout=3000):
         host='localhost', port=SSL_PORT,
         socket_timeout=timeout,
         cafile="ssl/CA.pem", certfile="ssl/client.crt",
-        keyfile="ssl/client.key", server_hostname='localhost')
+        keyfile="ssl/client.key")
 
 
 @pytest.mark.asyncio
-async def test_void_api(server):
+async def test_void_api(aio_server):
     c = await client()
     assert await c.ping() is None
     c.close()
 
 
 @pytest.mark.asyncio
-async def test_void_api_with_ssl(ssl_server):
+async def test_void_api_with_ssl(aio_ssl_server):
     c = await ssl_client()
     assert await c.ping() is None
     c.close()
 
 
 @pytest.mark.asyncio
-async def test_string_api(server):
+async def test_string_api(aio_server):
     c = await client()
     assert await c.hello("world") == "hello world"
     c.close()
 
 
 @pytest.mark.asyncio
-async def test_string_api_with_ssl(ssl_server):
+async def test_string_api_with_ssl(aio_ssl_server):
     c = await client()
     assert await c.hello("world") == "hello world"
     c.close()
 
 
 @pytest.mark.asyncio
-async def test_huge_res(server):
+async def test_huge_res(aio_server):
     c = await client()
     big_str = "world" * 100000
     assert await c.hello(big_str) == "hello " + big_str
@@ -180,7 +180,7 @@ async def test_huge_res(server):
 
 
 @pytest.mark.asyncio
-async def test_huge_res_with_ssl(ssl_server):
+async def test_huge_res_with_ssl(aio_ssl_server):
     c = await ssl_client()
     big_str = "world" * 100000
     assert await c.hello(big_str) == "hello " + big_str
