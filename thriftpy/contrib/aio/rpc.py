@@ -13,7 +13,7 @@ from .server import TAsyncServer
 def make_client(service, host="localhost", port=9090, unix_socket=None,
                 proto_factory=TAsyncBinaryProtocolFactory(),
                 trans_factory=TAsyncBufferedTransportFactory(),
-                timeout=None,
+                socket_timeout=3000, connect_timeout=None,
                 cafile=None, ssl_context=None,
                 certfile=None, keyfile=None,
                 validate=True, server_hostname=None):
@@ -23,7 +23,8 @@ def make_client(service, host="localhost", port=9090, unix_socket=None,
             warnings.warn("SSL only works with host:port, not unix_socket.")
     elif host and port:
             socket = TAsyncSocket(
-                host, port, socket_timeout=timeout,
+                host, port,
+                socket_timeout=socket_timeout, connect_timeout=connect_timeout,
                 cafile=cafile, ssl_context=ssl_context,
                 certfile=certfile, keyfile=keyfile, validate=validate,
                 server_hostname=server_hostname)
@@ -41,7 +42,7 @@ def make_server(service, handler,
                 proto_factory=TAsyncBinaryProtocolFactory(),
                 trans_factory=TAsyncBufferedTransportFactory(),
                 client_timeout=3000, certfile=None,
-                keyfile=None, ssl_context=None):
+                keyfile=None, ssl_context=None, loop=None):
     processor = TAsyncProcessor(service, handler)
 
     if unix_socket:
@@ -58,5 +59,5 @@ def make_server(service, handler,
 
     server = TAsyncServer(processor, server_socket,
                           iprot_factory=proto_factory,
-                          itrans_factory=trans_factory)
+                          itrans_factory=trans_factory, loop=loop)
     return server

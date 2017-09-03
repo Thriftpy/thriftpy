@@ -132,9 +132,13 @@ class TAsyncSocket(object):
             if self.socket_timeout:
                 self.raw_sock.settimeout(self.socket_timeout)
 
-            self.reader, self.writer = yield from self.sock_factory(
-                sock=self.raw_sock, ssl=self.ssl_context,
-                server_hostname=self.server_hostname)
+            self.reader, self.writer = yield from asyncio.wait_for(
+                self.sock_factory(
+                    sock=self.raw_sock, ssl=self.ssl_context,
+                    server_hostname=self.server_hostname
+                ),
+                self.socket_timeout
+            )
 
         except (socket.error, OSError):
             raise TTransportException(

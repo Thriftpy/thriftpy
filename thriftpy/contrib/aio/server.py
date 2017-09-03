@@ -7,6 +7,9 @@ from thriftpy.transport import TTransportException
 class TAsyncServer(TServer):
 
     def __init__(self, *args, **kwargs):
+        self.loop = kwargs['loop']
+        kwargs.pop('loop')
+
         TServer.__init__(
             self,
             *args,
@@ -15,14 +18,18 @@ class TAsyncServer(TServer):
         self.closed = False
 
     def serve(self):
-        self.trans.listen()
-        loop = asyncio.get_event_loop()
-        self.server = loop.run_until_complete(self.trans.accept(self.handle))
+        self.init_server()
         try:
-            loop.run_forever()
+            self.loop.run_forever()
         except:
             self.close()
             raise
+
+    def init_server(self):
+        self.trans.listen()
+        if not self.loop:
+            self.loop = asyncio.get_event_loop()
+        self.server = self.loop.run_until_complete(self.trans.accept(self.handle))
 
     @asyncio.coroutine
     def handle(self, client):

@@ -225,7 +225,7 @@ def read_map_begin(inbuf):
 @asyncio.coroutine
 def read_val(inbuf, ttype, spec=None, decode_response=True):
     if ttype == TType.BOOL:
-        _buf = inbuf.read(1)
+        _buf = yield from inbuf.read(1)
         return bool(unpack_i8(_buf))
 
     elif ttype == TType.BYTE:
@@ -311,7 +311,7 @@ def read_val(inbuf, ttype, spec=None, decode_response=True):
 
     elif ttype == TType.STRUCT:
         obj = spec()
-        yield read_struct(inbuf, obj, decode_response)
+        yield from read_struct(inbuf, obj, decode_response)
         return obj
 
 
