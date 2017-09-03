@@ -15,7 +15,8 @@ def make_client(service, host="localhost", port=9090, unix_socket=None,
                 trans_factory=TAsyncBufferedTransportFactory(),
                 timeout=None,
                 cafile=None, ssl_context=None,
-                certfile=None, keyfile=None, validate=True, server_hostname=None):
+                certfile=None, keyfile=None,
+                validate=True, server_hostname=None):
     if unix_socket:
         socket = TAsyncSocket(unix_socket=unix_socket)
         if certfile:
@@ -39,7 +40,8 @@ def make_server(service, handler,
                 host="localhost", port=9090, unix_socket=None,
                 proto_factory=TAsyncBinaryProtocolFactory(),
                 trans_factory=TAsyncBufferedTransportFactory(),
-                client_timeout=3000, certfile=None, keyfile=None, ssl_context=None):
+                client_timeout=3000, certfile=None,
+                keyfile=None, ssl_context=None):
     processor = TAsyncProcessor(service, handler)
 
     if unix_socket:

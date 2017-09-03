@@ -144,7 +144,10 @@ class TAsyncSocket(object):
     @asyncio.coroutine
     def read(self, sz):
         try:
-            buff = yield from self.reader.read(sz)
+            buff = yield from asyncio.wait_for(
+                self.reader.read(sz),
+                self.connect_timeout
+            )
         except socket.error as e:
             if (e.args[0] == errno.ECONNRESET and
                     (sys.platform == 'darwin' or
@@ -169,7 +172,7 @@ class TAsyncSocket(object):
 
     @asyncio.coroutine
     def flush(self):
-        yield from self.writer.drain()
+        yield from asyncio.wait_for(self.writer.drain(), self.connect_timeout)
 
     def close(self):
         if not self.raw_sock:
@@ -222,7 +225,7 @@ class TAsyncServerSocket(object):
 
         if ssl_context:
             self.ssl_context = ssl_context
-        elif certfile or ciphers:
+        elif certfile:
             if not os.access(certfile, os.R_OK):
                 raise IOError('No such certfile found: %s' % certfile)
 
@@ -266,7 +269,10 @@ class TAsyncServerSocket(object):
     @asyncio.coroutine
     def accept(self, callback):
         server = yield from self.sock_factory(
-            lambda reader, writer: callback(StreamHandler(reader, writer)),
+            lambda reader, writer: asyncio.wait_for(
+                callback(StreamHandler(reader, writer)),
+                self.client_timeout
+            ),
             sock=self.raw_sock,
             ssl=self.ssl_context
         )

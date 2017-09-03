@@ -9,8 +9,7 @@ echo_thrift = thriftpy.load("echo.thrift", module_name="echo_thrift")
 
 async def main():
     client = await make_async_client(
-        echo_thrift.EchoService, '127.0.0.1', 6000,
-        certfile='./client.pem', keyfile='./client.key', validate=False, server_hostname='127.0.0.1')
+        echo_thrift.EchoService, '127.0.0.1', 6000)
     print(await client.echo('hello, world'))
     client.close()
 
