@@ -16,7 +16,7 @@ def make_client(service, host="localhost", port=9090, unix_socket=None,
                 socket_timeout=3000, connect_timeout=None,
                 cafile=None, ssl_context=None,
                 certfile=None, keyfile=None,
-                validate=True, server_hostname=None):
+                validate=True):
     if unix_socket:
         socket = TAsyncSocket(unix_socket=unix_socket)
         if certfile:
@@ -26,8 +26,7 @@ def make_client(service, host="localhost", port=9090, unix_socket=None,
                 host, port,
                 socket_timeout=socket_timeout, connect_timeout=connect_timeout,
                 cafile=cafile, ssl_context=ssl_context,
-                certfile=certfile, keyfile=keyfile, validate=validate,
-                server_hostname=server_hostname)
+                certfile=certfile, keyfile=keyfile, validate=validate)
     else:
         raise ValueError("Either host/port or unix_socket must be provided.")
 

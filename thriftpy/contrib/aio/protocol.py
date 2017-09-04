@@ -163,16 +163,14 @@ def write_val(outbuf, ttype, val, spec=None):
 
 @asyncio.coroutine
 def read_message_begin(inbuf, strict=True):
-    _buf = yield from inbuf.read(4)
-    sz = unpack_i32(_buf)
+    sz = unpack_i32((yield from inbuf.read(4)))
     if sz < 0:
         version = sz & VERSION_MASK
         if version != VERSION_1:
             raise TProtocolException(
                 type=TProtocolException.BAD_VERSION,
                 message='Bad version in read_message_begin: %d' % (sz))
-        _buf = yield from inbuf.read(4)
-        name_sz = unpack_i32(_buf)
+        name_sz = unpack_i32((yield from inbuf.read(4)))
         name = yield from inbuf.read(name_sz)
         name = name.decode('utf-8')
 
@@ -183,74 +181,59 @@ def read_message_begin(inbuf, strict=True):
                                      message='No protocol version header')
 
         name = yield from inbuf.read(sz)
-        _buf = yield from inbuf.read(1)
-        type_ = unpack_i8(_buf)
+        type_ = unpack_i8((yield from inbuf.read(1)))
 
-    _buf = yield from inbuf.read(4)
-    seqid = unpack_i32(_buf)
+    seqid = unpack_i32((yield from inbuf.read(4)))
 
     return name, type_, seqid
 
 
 @asyncio.coroutine
 def read_field_begin(inbuf):
-    _buf = yield from inbuf.read(1)
-    f_type = unpack_i8(_buf)
+    f_type = unpack_i8((yield from inbuf.read(1)))
     if f_type == TType.STOP:
         return f_type, 0
 
-    _buf = yield from inbuf.read(2)
-    return f_type, unpack_i16(_buf)
+    return f_type, unpack_i16((yield from inbuf.read(2)))
 
 
 @asyncio.coroutine
 def read_list_begin(inbuf):
-    _buf = yield from inbuf.read(1)
-    e_type = unpack_i8(_buf)
-    _buf = yield from inbuf.read(4)
-    sz = unpack_i32(_buf)
+    e_type = unpack_i8((yield from inbuf.read(1)))
+    sz = unpack_i32((yield from inbuf.read(4)))
     return e_type, sz
 
 
 @asyncio.coroutine
 def read_map_begin(inbuf):
-    _k = yield from inbuf.read(1)
-    _v = yield from inbuf.read(1)
-    k_type, v_type = unpack_i8(_k), unpack_i8(_v)
-    _sz = yield from inbuf.read(4)
-    sz = unpack_i32(_sz)
+    k_type = unpack_i8((yield from inbuf.read(1)))
+    v_type = unpack_i8((yield from inbuf.read(1)))
+    sz = unpack_i32((yield from inbuf.read(4)))
     return k_type, v_type, sz
 
 
 @asyncio.coroutine
 def read_val(inbuf, ttype, spec=None, decode_response=True):
     if ttype == TType.BOOL:
-        _buf = yield from inbuf.read(1)
-        return bool(unpack_i8(_buf))
+        return bool(unpack_i8((yield from inbuf.read(1))))
 
     elif ttype == TType.BYTE:
-        _buf = yield from inbuf.read(1)
-        return unpack_i8(_buf)
+        return unpack_i8((yield from inbuf.read(1)))
 
     elif ttype == TType.I16:
-        _buf = yield from inbuf.read(2)
-        return unpack_i16(_buf)
+        return unpack_i16((yield from inbuf.read(2)))
 
     elif ttype == TType.I32:
-        _buf = yield from inbuf.read(4)
-        return unpack_i32(_buf)
+        return unpack_i32((yield from inbuf.read(4)))
 
     elif ttype == TType.I64:
-        _buf = yield from inbuf.read(8)
-        return unpack_i64(_buf)
+        return unpack_i64((yield from inbuf.read(8)))
 
     elif ttype == TType.DOUBLE:
-        _buf = yield from inbuf.read(8)
-        return unpack_double(_buf)
+        return unpack_double((yield from inbuf.read(8)))
 
     elif ttype == TType.STRING:
-        _buf = yield from inbuf.read(4)
-        sz = unpack_i32(_buf)
+        sz = unpack_i32((yield from inbuf.read(4)))
         byte_payload = yield from inbuf.read(sz)
 
         # Since we cannot tell if we're getting STRING or BINARY
@@ -277,8 +260,11 @@ def read_val(inbuf, ttype, spec=None, decode_response=True):
             return []
 
         for i in range(sz):
-            _buf = yield from read_val(inbuf, v_type, v_spec, decode_response)
-            result.append(_buf)
+            result.append(
+                (yield from read_val(
+                    inbuf, v_type, v_spec, decode_response
+                ))
+            )
         return result
 
     elif ttype == TType.MAP:

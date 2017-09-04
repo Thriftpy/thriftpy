@@ -69,14 +69,12 @@ class TAsyncSocket(object):
             self.host = None
             self.port = None
             self.raw_sock = None
-            self.server_hostname = host
             self.sock_factory = asyncio.open_unix_connection
         else:
             self.unix_socket = None
             self.host = host
             self.port = port
             self.raw_sock = None
-            self.server_hostname = host
             self.sock_factory = asyncio.open_connection
 
         self.socket_family = socket_family
@@ -86,7 +84,9 @@ class TAsyncSocket(object):
 
         if ssl_context:
             self.ssl_context = ssl_context
+            self.server_hostname = host
         elif certfile or keyfile:
+            self.server_hostname = host
             self.ssl_context = create_thriftpy_context(server_side=False,
                                                        ciphers=ciphers)
 
@@ -102,6 +102,7 @@ class TAsyncSocket(object):
                 self.ssl_context.verify_mode = ssl.CERT_NONE
         else:
             self.ssl_context = None
+            self.server_hostname = None
 
     def _init_sock(self):
         if self.unix_socket:
@@ -148,11 +149,12 @@ class TAsyncSocket(object):
             if self.socket_timeout:
                 self.raw_sock.settimeout(self.socket_timeout)
 
+            kwargs = {'sock': self.raw_sock, 'ssl': self.ssl_context}
+            if self.server_hostname:
+                kwargs['server_hostname'] = self.server_hostname
+
             self.reader, self.writer = yield from asyncio.wait_for(
-                self.sock_factory(
-                    sock=self.raw_sock, ssl=self.ssl_context,
-                    server_hostname=self.server_hostname
-                ),
+                self.sock_factory(**kwargs),
                 self.socket_timeout
             )
 
