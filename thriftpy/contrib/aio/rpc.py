@@ -3,8 +3,8 @@ import asyncio
 import warnings
 from .processor import TAsyncProcessor
 from .client import TAsyncClient
-from .protocol import TAsyncBinaryProtocolFactory
-from .buffered import TAsyncBufferedTransportFactory
+from .protocol.binary import TAsyncBinaryProtocolFactory
+from .transport.buffered import TAsyncBufferedTransportFactory
 from .socket import TAsyncSocket, TAsyncServerSocket
 from .server import TAsyncServer
 
