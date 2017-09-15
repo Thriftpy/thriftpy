@@ -46,7 +46,6 @@ class TAsyncServer(TServer):
             logger.exception(x)
 
         itrans.close()
-        otrans.close()
 
     @asyncio.coroutine
     def close(self):

@@ -202,7 +202,6 @@ class TAsyncSocket(object):
 
         try:
             self.writer.close()
-            self.raw_sock.shutdown(socket.SHUT_RDWR)
             self.raw_sock.close()
             self.raw_sock = None
         except (socket.error, OSError):
@@ -307,12 +306,12 @@ class TAsyncServerSocket(object):
         return server
 
     def close(self):
-        if not self.sock:
+        if not self.raw_sock:
             return
 
         try:
-            self.sock.shutdown(socket.SHUT_RDWR)
-            self.sock.close()
+            self.raw_sock.shutdown(socket.SHUT_RDWR)
+            self.raw_sock.close()
         except (socket.error, OSError):
             pass
 
