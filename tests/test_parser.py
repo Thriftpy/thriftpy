@@ -21,7 +21,7 @@ def test_constants():
     assert thrift.integer32 == 900
     assert thrift.tdouble == 1.3
     assert thrift.tlist == [1, 2, 3]
-    assert thrift.tset == set([1, 2, 3])
+    assert thrift.tset == {1, 2, 3}
     assert thrift.tmap1 == {'key': 'val'}
     assert thrift.tmap2 == {'key': 32}
     assert thrift.my_country == 4

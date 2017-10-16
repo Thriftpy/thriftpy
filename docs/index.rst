@@ -72,7 +72,7 @@ Features
 Currently ThriftPy have these features (also advantages over the upstream
 python lib):
 
-- Supports python2.6+, python3.3+, pypy and pypy3.
+- Supports Python 2.7, Python 3.3+, PyPy and PyPy3.
 
 - Pure python implementation. No longer need to compile & install the 'thrift'
   package. All you need is thriftpy and thrift file.
