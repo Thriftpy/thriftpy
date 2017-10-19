@@ -131,8 +131,8 @@ Usage Notice
 Cython Binary Protocol
 ----------------------
 
-The cython accelerated binary protocol is enabled by default for CPython if
-available, and is disabled for Pypy.
+The Cython accelerating binary protocol is enabled by default for CPython if it's
+available, but disabled for PyPy.
 
 To force use pure python version of binary protocol, you must import them from
 the direct module.
