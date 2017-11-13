@@ -504,7 +504,7 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
                          cached, this is enabled by default. If `module_name`
                          is provided, use it as cache key, else use the `path`.
     """
-    if os.name == 'nt' and sys.version_info < (3, 2):
+    if os.name == 'nt' and sys.version_info[0] < 3:
         os.path.samefile = lambda f1, f2: os.stat(f1) == os.stat(f2)
 
     # dead include checking on current stack
