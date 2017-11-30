@@ -41,6 +41,7 @@ def p_header_unit_(p):
 
 def p_header_unit(p):
     '''header_unit : include
+                   | cpp_include
                    | namespace'''
 
 
@@ -61,6 +62,10 @@ def p_include(p):
             return
     raise ThriftParserError(('Couldn\'t include thrift %s in any '
                              'directories provided') % p[2])
+
+
+def p_cpp_include(p):
+    '''cpp_include : CPP_INCLUDE LITERAL'''
 
 
 def p_namespace(p):

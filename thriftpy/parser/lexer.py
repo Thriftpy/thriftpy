@@ -119,6 +119,7 @@ thrift_reserved_keywords = (
 keywords = (
     'namespace',
     'include',
+    'cpp_include',
     'void',
     'bool',
     'byte',

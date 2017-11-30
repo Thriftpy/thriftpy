@@ -35,6 +35,10 @@ def test_include():
     assert thrift.datetime == 1422009523
 
 
+def test_cpp_include():
+    load('parser-cases/cpp_include.thrift')
+
+
 def test_tutorial():
     thrift = load('parser-cases/tutorial.thrift', include_dirs=[
         './parser-cases'])
