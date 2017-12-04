@@ -17,10 +17,17 @@
 
 from __future__ import absolute_import
 
+import logging
+import socket
+import struct
+
 from contextlib import contextmanager
-from tornado import tcpserver, ioloop, iostream, gen
 from io import BytesIO
 from datetime import timedelta
+
+import toro
+
+from tornado import tcpserver, ioloop, iostream, gen
 
 from .transport import TTransportException, TTransportBase
 from .transport.memory import TMemoryBuffer
@@ -28,11 +35,6 @@ from .thrift import TApplicationException, TProcessor, TClient
 
 # TODO need TCyTornadoStreamTransport to work with cython binary protocol
 from .protocol.binary import TBinaryProtocolFactory
-
-import logging
-import socket
-import struct
-import toro
 
 
 logger = logging.getLogger(__name__)

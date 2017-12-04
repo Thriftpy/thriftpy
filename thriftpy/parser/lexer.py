@@ -8,7 +8,7 @@ from .exc import ThriftLexerError
 literals = ':;,=*{}()<>[]'
 
 
-thrift_reserved_keywords = (
+thrift_reserved_keywords = set([
     'BEGIN',
     'END',
     '__CLASS__',
@@ -113,7 +113,7 @@ thrift_reserved_keywords = (
     'with',
     'xor',
     'yield'
-)
+])
 
 
 keywords = (
@@ -237,7 +237,7 @@ def t_LITERAL(t):
             if s[i] in maps:
                 val += maps[s[i]]
             else:
-                msg = 'Unexcepted escaping characher: %s' % s[i]
+                msg = 'Unexpected escaping character: %s' % s[i]
                 raise ThriftLexerError(msg)
         else:
             val += s[i]

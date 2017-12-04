@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import binascii
 
@@ -34,4 +34,4 @@ def hexprint(byte_array, delimeter=' ', count=10):
 
     print("\nHex:")
     g = hexlify(byte_array, delimeter).split(delimeter)
-    print('\n'.join(' '.join(g[i:i+10]) for i in range(0, len(g), 10)))
+    print('\n'.join(' '.join(g[i:i+count]) for i in range(0, len(g), count)))
