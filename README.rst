@@ -3,7 +3,7 @@ ThriftPy
 ========
 
 .. image:: http://img.shields.io/travis/eleme/thriftpy/develop.svg?style=flat
-   :target: https://travis-ci.org/eleme/thriftpy
+   :target: https://travis-ci.org/lo5twind/thriftpy
 
 .. image:: http://img.shields.io/github/release/eleme/thriftpy.svg?style=flat
    :target: https://github.com/eleme/thriftpy/releases

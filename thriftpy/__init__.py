@@ -9,3 +9,4 @@ __version__ = '0.3.9'
 __python__ = sys.version_info
 __all__ = ["install_import_hook", "remove_import_hook",  "load", "load_module",
            "load_fp"]
+"""modify this for travis-ci testing """
