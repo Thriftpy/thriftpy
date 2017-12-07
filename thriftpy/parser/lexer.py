@@ -119,6 +119,7 @@ thrift_reserved_keywords = (
 keywords = (
     'namespace',
     'include',
+    'cpp_include',
     'void',
     'bool',
     'byte',
@@ -159,7 +160,7 @@ t_ignore = ' \t\r'   # whitespace
 
 
 def t_error(t):
-    raise ThriftLexerError('Illegal characher %r at line %d' %
+    raise ThriftLexerError('Illegal character %r at line %d' %
                            (t.value[0], t.lineno))
 
 
@@ -198,7 +199,7 @@ def t_BOOLCONSTANT(t):
 
 
 def t_DUBCONSTANT(t):
-    r'-?\d+\.\d*(e-?\d+)?'
+    r'[+-]?\d+(?=\.|[Ee])(\.\d*)?([Ee][+-]?\d+)?'
     t.value = float(t.value)
     return t
 

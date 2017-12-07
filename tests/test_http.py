@@ -40,14 +40,14 @@ class Dispatcher():
             return True
         except KeyError:
             raise addressbook.PersonNotExistsError(
-                "{0} not exists".format(name))
+                "{} not exists".format(name))
 
     def get(self, name):
         try:
             return self.ab.people[name]
         except KeyError:
             raise addressbook.PersonNotExistsError(
-                "{0} not exists".format(name))
+                "{} not exists".format(name))
 
     def book(self):
         return self.ab

@@ -456,7 +456,7 @@ def test_type_tolerance():
     cases = [
         T(phones=["123", "234"]),
         T(phones=("123", "234")),
-        T(phones=set(["123", "234"])),
+        T(phones={"123", "234"}),
         T(phones={"123": 'a', "234": 'b'}),
 
         T(mm={234: [3, 4, 5], 123: [6, 7, 8]}),
