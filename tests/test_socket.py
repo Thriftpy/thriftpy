@@ -39,6 +39,7 @@ def test_inet_socket():
     _test_socket(server_socket, client_socket)
 
 
+
 @pytest.mark.skipif(os.getenv('TRAVIS', '') == 'true',
                     reason='Travis CI dose not support IPv6')
 def test_inet6_socket():
