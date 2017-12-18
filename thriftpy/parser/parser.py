@@ -49,7 +49,7 @@ def p_include(p):
     '''include : INCLUDE LITERAL'''
     thrift = thrift_stack[-1]
     if thrift.__thrift_file__ is None:
-        raise ThriftParserError('Unexcepted include statement while loading'
+        raise ThriftParserError('Unexpected include statement while loading '
                                 'from file like object.')
     replace_include_dirs = [os.path.dirname(thrift.__thrift_file__)] \
         + include_dirs_
@@ -598,8 +598,8 @@ def parse_fp(source, module_name, lexer=None, parser=None, enable_cache=True):
         return thrift_cache[module_name]
 
     if not hasattr(source, 'read'):
-        raise ThriftParserError('Except `source` to be a file-like object with'
-                                'a method named \'read\'')
+        raise ThriftParserError('Expected `source` to be a file-like object '
+                                'with a method named \'read\'')
 
     if lexer is None:
         lexer = lex.lex()

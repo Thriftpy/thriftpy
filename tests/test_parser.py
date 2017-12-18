@@ -243,7 +243,7 @@ def test_e_load_fp():
     with pytest.raises(ThriftParserError) as excinfo:
         with open('parser-cases/tutorial.thrift') as thrift_fp:
             load_fp(thrift_fp, 'tutorial_thrift')
-        assert ('Unexcepted include statement while loading'
+        assert ('Unexpected include statement while loading '
                 'from file like object.') == str(excinfo.value)
 
 
