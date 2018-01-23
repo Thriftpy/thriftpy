@@ -3,10 +3,11 @@
 from __future__ import absolute_import
 
 import contextlib
-import warnings
+import warnings, multiprocessing
 
 from thriftpy.protocol import TBinaryProtocolFactory
 from thriftpy.server import TThreadedServer
+from thriftpy.nonblockingserver import TNonblockingServer
 from thriftpy.thrift import TProcessor, TClient
 from thriftpy.transport import (
     TBufferedTransportFactory,
@@ -47,7 +48,8 @@ def make_server(service, handler,
                 host="localhost", port=9090, unix_socket=None,
                 proto_factory=TBinaryProtocolFactory(),
                 trans_factory=TBufferedTransportFactory(),
-                client_timeout=3000, certfile=None):
+                client_timeout=3000, certfile=None, blocking=True,
+                threads=multiprocessing.cpu_count()):
     processor = TProcessor(service, handler)
 
     if unix_socket:
@@ -65,9 +67,13 @@ def make_server(service, handler,
     else:
         raise ValueError("Either host/port or unix_socket must be provided.")
 
-    server = TThreadedServer(processor, server_socket,
-                             iprot_factory=proto_factory,
-                             itrans_factory=trans_factory)
+    if blocking:
+        server = TThreadedServer(processor, server_socket,
+                                 iprot_factory=proto_factory,
+                                 itrans_factory=trans_factory)
+    else:
+        server = TNonblockingServer(processor, server_socket, threads,
+                                    proto_factory, proto_factory)
     return server
 
 
