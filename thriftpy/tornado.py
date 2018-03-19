@@ -33,7 +33,11 @@ from .protocol.binary import TBinaryProtocolFactory
 import logging
 import socket
 import struct
-import toro
+
+try:
+    from tornado.locks import Lock
+except ImportError:
+    from toro import Lock
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +57,7 @@ class TTornadoStreamTransport(TTransportBase):
         self.is_queuing_reads = False
         self.read_queue = []
         self.__wbuf = BytesIO()
-        self._read_lock = toro.Lock()
+        self._read_lock = Lock()
         self.ssl_options = ssl_options
 
         # servers provide a ready-to-go stream
