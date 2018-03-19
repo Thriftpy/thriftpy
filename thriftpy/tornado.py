@@ -18,7 +18,7 @@
 from __future__ import absolute_import
 
 from contextlib import contextmanager
-from tornado import tcpserver, ioloop, iostream, gen
+from tornado import tcpserver, iostream, gen
 from tornado import version as tornado_version
 from io import BytesIO
 from datetime import timedelta
