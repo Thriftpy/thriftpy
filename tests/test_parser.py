@@ -21,7 +21,7 @@ def test_constants():
     assert thrift.integer32 == 900
     assert thrift.tdouble == 1.3
     assert thrift.tlist == [1, 2, 3]
-    assert thrift.tset == set([1, 2, 3])
+    assert thrift.tset == {1, 2, 3}
     assert thrift.tmap1 == {'key': 'val'}
     assert thrift.tmap2 == {'key': 32}
     assert thrift.my_country == 4
@@ -33,6 +33,10 @@ def test_include():
     thrift = load('parser-cases/include.thrift', include_dirs=[
         './parser-cases'])
     assert thrift.datetime == 1422009523
+
+
+def test_cpp_include():
+    load('parser-cases/cpp_include.thrift')
 
 
 def test_tutorial():
@@ -239,7 +243,7 @@ def test_e_load_fp():
     with pytest.raises(ThriftParserError) as excinfo:
         with open('parser-cases/tutorial.thrift') as thrift_fp:
             load_fp(thrift_fp, 'tutorial_thrift')
-        assert ('Unexcepted include statement while loading'
+        assert ('Unexpected include statement while loading '
                 'from file like object.') == str(excinfo.value)
 
 
@@ -262,13 +266,16 @@ def test_issue_215():
     assert thrift.falseValue == 123
 
 
-def test_issue_242():
-    thrift = load('parser-cases/double_type_int.thrift')
+def test_doubles():
+    thrift = load('parser-cases/doubles.thrift')
     book = thrift.Book()
     assert book.price == 1
     assert isinstance(book.price, float)
     assert isinstance(thrift.value1, float) and thrift.value1 == 3
     assert isinstance(thrift.value2, float) and thrift.value2 == 3.1
+    assert isinstance(thrift.value3, float) and thrift.value3 == 100000.0
+    assert isinstance(thrift.value4, float) and thrift.value4 == -1.5e-05
+    assert isinstance(thrift.value5, float) and thrift.value5 == 150000.0
 
 
 def test_annotations():
