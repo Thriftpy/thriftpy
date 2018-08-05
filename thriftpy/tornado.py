@@ -37,7 +37,11 @@ import struct
 try:
     from tornado.locks import Lock
 except ImportError:
-    from toro import Lock
+    try:
+        from toro import Lock
+    except ImportError:
+        raise RuntimeError('With tornado {}, you need to install '
+                           '"toro"'.format(tornado_version))
 
 
 logger = logging.getLogger(__name__)
