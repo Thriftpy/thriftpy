@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import, division
-
+try:
+    from gevent import monkey
+    monkey.patch_all()
+except Exception:
+    pass
 import errno
 import os
 import socket

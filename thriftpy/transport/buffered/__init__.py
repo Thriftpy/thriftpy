@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-
+try:
+    from gevent import monkey
+    monkey.patch_all()
+except Exception:
+    pass
 from io import BytesIO
 
 from thriftpy._compat import CYTHON
