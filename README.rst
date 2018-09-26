@@ -1,23 +1,8 @@
 ========
-ThriftPy
+ThriftPy2
 ========
 
-.. image:: http://img.shields.io/travis/eleme/thriftpy/develop.svg?style=flat
-   :target: https://travis-ci.org/eleme/thriftpy
-
-.. image:: http://img.shields.io/github/release/eleme/thriftpy.svg?style=flat
-   :target: https://github.com/eleme/thriftpy/releases
-
-.. image:: http://img.shields.io/pypi/v/thriftpy.svg?style=flat
-   :target: https://pypi.python.org/pypi/thriftpy
-
-.. image:: http://img.shields.io/pypi/dm/thriftpy.svg?style=flat
-   :target: https://pypi.python.org/pypi/thriftpy
-
-ThriftPy is a pure python implementation of
-`Apache Thrift <http://thrift.apache.org/>`_ in a pythonic way.
-
-Documentation: https://thriftpy.readthedocs.org/
+ThriftPy: https://github.com/eleme/thriftpy has deprecated, ThriftPy2 aims to provide long term support.
 
 
 Installation
