@@ -18,9 +18,16 @@ install_requires = [
 ]
 
 tornado_requires = [
-    "tornado>=4.0,<5.0",
-    "toro>=0.6"
+    "tornado>=4.0,<6.0",
 ]
+
+try:
+    from tornado import version as tornado_version
+    if tornado_version < '5.0':
+        tornado_requires.append("toro>=0.6")
+except ImportError:
+    # tornado will now only get installed and we'll get the newer one
+    pass
 
 dev_requires = [
     "cython>=0.28.4",
