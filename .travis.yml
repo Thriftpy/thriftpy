@@ -6,14 +6,17 @@ python:
   - 3.4
   - 3.5
   - 3.6
-  - 3.7
   - pypy
 
 matrix:
   include:
     - python: 3.6
       script: tox -e flake8
-
+    # This is a workaround to make 3.7 running in travis-ci
+    # See https://github.com/travis-ci/travis-ci/issues/9815
+    - python: 3.7
+      dist: xenial
+      sudo: true
 
 install:
   - pip install cython tox
