@@ -10,10 +10,10 @@ python:
   - pypy
 
 matrix:
-  # include test for flake8
   include:
     - python: 3.6
       script: tox -e flake8
+
 
 install:
   - pip install cython tox

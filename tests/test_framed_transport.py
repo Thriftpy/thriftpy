@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import
 
+import sys
 import logging
 import socket
 import threading
@@ -10,6 +11,7 @@ import time
 from os import path
 from unittest import TestCase
 
+import pytest
 from tornado import ioloop
 
 import thriftpy
@@ -93,6 +95,7 @@ class FramedTransportTestCase(TestCase):
     def tearDown(self):
         self.io_loop.stop()
 
+    @pytest.mark.skipif(sys.version_info[:2] == (2, 6), reason="not support")
     def test_able_to_communicate(self):
         dennis = addressbook.Person(name='Dennis Ritchie')
         success = self.client.add(dennis)
@@ -100,6 +103,7 @@ class FramedTransportTestCase(TestCase):
         success = self.client.add(dennis)
         assert not success
 
+    @pytest.mark.skipif(sys.version_info[:2] == (2, 6), reason="not support")
     def test_zero_length_string(self):
         dennis = addressbook.Person(name='')
         success = self.client.add(dennis)
