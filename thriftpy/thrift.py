@@ -287,9 +287,8 @@ class TProcessor(object):
             _, exc_name, exc_cls, _ = result.thrift_spec[k]
             if isinstance(e, exc_cls):
                 setattr(result, exc_name, e)
-                break
-        else:
-            raise
+                return True
+        return False
 
     def process(self, iprot, oprot):
         api, seqid, result, call = self.process_in(iprot)
@@ -301,7 +300,8 @@ class TProcessor(object):
             result.success = call()
         except Exception as e:
             # raise if api don't have throws
-            self.handle_exception(e, result)
+            if not self.handle_exception(e, result):
+                raise
 
         if not result.oneway:
             self.send_result(oprot, api, result, seqid)
