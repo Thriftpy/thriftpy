@@ -63,7 +63,7 @@ def write_varint(trans, n):
     if PY3:
         trans.write(data.tobytes())
     else:
-        trans.write(bytes(data.tostring()))
+        trans.write(data.tostring())
 
 
 def read_varint(trans):
