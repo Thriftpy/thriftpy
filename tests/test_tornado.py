@@ -39,7 +39,7 @@ class Dispatcher(object):
         """
         if name not in self.registry:
             raise addressbook.PersonNotExistsError(
-                'Person "{0}" does not exist!'.format(name))
+                'Person "{}" does not exist!'.format(name))
         return self.registry[name]
 
     @gen.coroutine
@@ -51,7 +51,7 @@ class Dispatcher(object):
         yield gen.Task(self.io_loop.add_callback)
         if name not in self.registry:
             raise addressbook.PersonNotExistsError(
-                'Person "{0}" does not exist!'.format(name))
+                'Person "{}" does not exist!'.format(name))
         del self.registry[name]
         raise gen.Return(True)
 

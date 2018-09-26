@@ -18,6 +18,11 @@ from thriftpy.rpc import make_client
 from thriftpy.transport.framed import TFramedTransportFactory
 from thriftpy.protocol.binary import TBinaryProtocolFactory
 
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
+
 from thriftpy._compat import CYTHON
 logging.basicConfig(level=logging.INFO)
 
@@ -53,14 +58,9 @@ class FramedTransportTestCase(TestCase):
     PROTOCOL_FACTORY = TBinaryProtocolFactory()
 
     def mk_server(self):
-        self.io_loop = ioloop.IOLoop()
-        server = make_server(addressbook.AddressBookService,
-                             Dispatcher(self.io_loop), io_loop=self.io_loop)
-
-        self.server = server
         sock = self.server_sock = socket.socket(socket.AF_INET,
                                                 socket.SOCK_STREAM)
-        sock.bind(('localhost', 0))
+        sock.bind(('127.0.0.1', 0))
         sock.setblocking(0)
         self.port = sock.getsockname()[-1]
         self.server_thread = threading.Thread(target=self.listen)
@@ -69,7 +69,14 @@ class FramedTransportTestCase(TestCase):
 
     def listen(self):
         self.server_sock.listen(128)
-        self.server.add_socket(self.server_sock)
+        if asyncio:
+            # In Tornado 5.0+, the asyncio event loop will be used
+            # automatically by default
+            asyncio.set_event_loop(asyncio.new_event_loop())
+        self.io_loop = ioloop.IOLoop.current()
+        server = make_server(addressbook.AddressBookService,
+                             Dispatcher(self.io_loop), io_loop=self.io_loop)
+        server.add_socket(self.server_sock)
         self.io_loop.start()
 
     def mk_client(self):
@@ -82,6 +89,9 @@ class FramedTransportTestCase(TestCase):
         self.mk_server()
         time.sleep(0.1)
         self.client = self.mk_client()
+
+    def tearDown(self):
+        self.io_loop.stop()
 
     def test_able_to_communicate(self):
         dennis = addressbook.Person(name='Dennis Ritchie')

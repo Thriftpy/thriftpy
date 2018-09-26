@@ -18,9 +18,16 @@ install_requires = [
 ]
 
 tornado_requires = [
-    "tornado>=4.0,<5.0",
-    "toro>=0.6"
+    "tornado>=4.0,<6.0",
 ]
+
+try:
+    from tornado import version as tornado_version
+    if tornado_version < '5.0':
+        tornado_requires.append("toro>=0.6")
+except ImportError:
+    # tornado will now only get installed and we'll get the newer one
+    pass
 
 dev_requires = [
     "cython>=0.28.4",
@@ -79,6 +86,7 @@ setup(name="thriftpy2",
       long_description=open("README.rst").read(),
       install_requires=install_requires,
       tests_require=tornado_requires,
+      python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
       extras_require={
           "dev": dev_requires,
           "tornado": tornado_requires
@@ -90,9 +98,9 @@ setup(name="thriftpy2",
           "Development Status :: 4 - Beta",
           "Intended Audience :: Developers",
           "License :: OSI Approved :: MIT License",
-          "Programming Language :: Python :: 2.6",
+          "Programming Language :: Python :: 2",
           "Programming Language :: Python :: 2.7",
-          "Programming Language :: Python :: 3.3",
+          "Programming Language :: Python :: 3",
           "Programming Language :: Python :: 3.4",
           "Programming Language :: Python :: 3.5",
           "Programming Language :: Python :: 3.6",

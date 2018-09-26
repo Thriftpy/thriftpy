@@ -72,7 +72,7 @@ Features
 Currently ThriftPy have these features (also advantages over the upstream
 python lib):
 
-- Supports python2.6+, python3.3+, pypy and pypy3.
+- Supports Python 2.7, Python 3.4+, PyPy and PyPy3.
 
 - Pure python implementation. No longer need to compile & install the 'thrift'
   package. All you need is thriftpy and thrift file.
@@ -131,8 +131,8 @@ Usage Notice
 Cython Binary Protocol
 ----------------------
 
-The cython accelerated binary protocol is enabled by default for CPython if
-available, and is disabled for Pypy.
+The Cython accelerating binary protocol is enabled by default for CPython if it's
+available, but disabled for PyPy.
 
 To force use pure python version of binary protocol, you must import them from
 the direct module.
