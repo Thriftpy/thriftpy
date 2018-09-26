@@ -251,7 +251,7 @@ async def test_client_socket_timeout():
         try:
             c = await ssl_client(timeout=500)
             await c.sleep(1000)
-        except:
+        except Exception:
             c.close()
             raise
 
@@ -264,7 +264,7 @@ async def test_ssl_socket_timeout():
         try:
             c = await ssl_client(timeout=500)
             await c.sleep(1000)
-        except:
+        except Exception:
             c.close()
             raise
 
