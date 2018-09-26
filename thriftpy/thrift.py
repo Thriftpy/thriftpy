@@ -61,10 +61,10 @@ def init_func_generator(cls, spec):
     varnames, defaults = zip(*spec)
 
     args = ', '.join(map('{0[0]}={0[1]!r}'.format, spec))
-    init = "def __init__(self, {0}):\n".format(args)
+    init = "def __init__(self, {}):\n".format(args)
     init += "\n".join(map('    self.{0} = {0}'.format, varnames))
 
-    name = '<generated {0}.__init__>'.format(cls.__name__)
+    name = '<generated {}.__init__>'.format(cls.__name__)
     code = compile(init, name, 'exec')
     func = next(c for c in code.co_consts if isinstance(c, types.CodeType))
 
@@ -317,7 +317,7 @@ class TMultiplexedProcessor(TProcessor):
         if service_name in self.processors:
             raise TApplicationException(
                 type=TApplicationException.INTERNAL_ERROR,
-                message='processor for `{0}` already registered'
+                message='processor for `{}` already registered'
                 .format(service_name))
         self.processors[service_name] = processor
 

@@ -63,11 +63,54 @@ And a client:
     client = make_client(pingpong_thrift.PingPong, '127.0.0.1', 6000)
     print(client.ping())
 
+And it also supports asyncio on Python 3.5 or later:
+
+.. code:: python
+
+    import thriftpy
+    import asyncio
+    from thriftpy.rpc import make_aio_client
+
+
+    echo_thrift = thriftpy.load("echo.thrift", module_name="echo_thrift")
+
+
+    async def request():
+        client = await make_aio_client(
+            echo_thrift.EchoService, '127.0.0.1', 6000)
+        print(await client.echo('hello, world'))
+        client.close()
+
+.. code:: python
+
+    import asyncio
+    import thriftpy
+
+    from thriftpy.rpc import make_aio_server
+
+    echo_thrift = thriftpy.load("echo.thrift", module_name="echo_thrift")
+
+
+    class Dispatcher(object):
+        async def echo(self, param):
+            print(param)
+            await asyncio.sleep(0.1)
+            return param
+
+
+    def main():
+        server = make_aio_server(
+            echo_thrift.EchoService, Dispatcher(), '127.0.0.1', 6000)
+        server.serve()
+
+
+    if __name__ == '__main__':
+        main()
+
 See, it's that easy!
 
 You can refer to 'examples' and 'tests' directory in source code for more
 usage examples.
-
 
 
 Features
@@ -76,7 +119,7 @@ Features
 Currently ThriftPy have these features (also advantages over the upstream
 python lib):
 
-- Supports python2.6+, python3.3+, pypy and pypy3.
+- Supports Python 2.7, Python 3.4+, PyPy and PyPy3.
 
 - Pure python implementation. No longer need to compile & install the 'thrift'
   package. All you need is thriftpy and thrift file.
@@ -100,6 +143,8 @@ python lib):
   * tornado server and client (with tornado 4.0)
 
   * http server and client
+
+  * asyncio support (python 3.5 or later)
 
 - Can directly load thrift file as module, the sdk code will be generated on
   the fly.

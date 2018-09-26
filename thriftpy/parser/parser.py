@@ -41,6 +41,7 @@ def p_header_unit_(p):
 
 def p_header_unit(p):
     '''header_unit : include
+                   | cpp_include
                    | namespace'''
 
 
@@ -48,7 +49,7 @@ def p_include(p):
     '''include : INCLUDE LITERAL'''
     thrift = thrift_stack[-1]
     if thrift.__thrift_file__ is None:
-        raise ThriftParserError('Unexcepted include statement while loading'
+        raise ThriftParserError('Unexpected include statement while loading '
                                 'from file like object.')
     replace_include_dirs = [os.path.dirname(thrift.__thrift_file__)] \
         + include_dirs_
@@ -61,6 +62,10 @@ def p_include(p):
             return
     raise ThriftParserError(('Couldn\'t include thrift %s in any '
                              'directories provided') % p[2])
+
+
+def p_cpp_include(p):
+    '''cpp_include : CPP_INCLUDE LITERAL'''
 
 
 def p_namespace(p):
@@ -504,7 +509,7 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
                          cached, this is enabled by default. If `module_name`
                          is provided, use it as cache key, else use the `path`.
     """
-    if os.name == 'nt' and sys.version_info < (3, 2):
+    if os.name == 'nt' and sys.version_info[0] < 3:
         os.path.samefile = lambda f1, f2: os.stat(f1) == os.stat(f2)
 
     # dead include checking on current stack
@@ -593,8 +598,8 @@ def parse_fp(source, module_name, lexer=None, parser=None, enable_cache=True):
         return thrift_cache[module_name]
 
     if not hasattr(source, 'read'):
-        raise ThriftParserError('Except `source` to be a file-like object with'
-                                'a method named \'read\'')
+        raise ThriftParserError('Expected `source` to be a file-like object '
+                                'with a method named \'read\'')
 
     if lexer is None:
         lexer = lex.lex()
@@ -620,7 +625,7 @@ def _add_thrift_meta(key, val):
 
     if not hasattr(thrift, '__thrift_meta__'):
         meta = collections.defaultdict(list)
-        setattr(thrift, '__thrift_meta__',  meta)
+        setattr(thrift, '__thrift_meta__', meta)
     else:
         meta = getattr(thrift, '__thrift_meta__')
 
