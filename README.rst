@@ -12,13 +12,13 @@ Install with pip.
 
 .. code:: bash
 
-    $ pip install thriftpy
+    $ pip install thriftpy2
 
 You may also install cython first to build cython extension locally.
 
 .. code:: bash
 
-    $ pip install cython thriftpy
+    $ pip install cython thriftpy2
 
 
 Code Demo
