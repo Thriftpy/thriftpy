@@ -4,6 +4,13 @@ Changelog
 0.3.x
 ~~~~~
 
+Version 0.3.10
+-------------
+
+Released on September 26, 2018.
+
+- update cython version.
+
 Version 0.3.9
 -------------
 
@@ -11,7 +18,7 @@ Released on August 26, 2016.
 
 - add support for timeout and ssl in `make_server` / `make_client` helper
   funcs, via `#204`_, `#205`_ and `#229`_.
-- add support for `thrift_file` path in http protocol, via `#225`_. 
+- add support for `thrift_file` path in http protocol, via `#225`_.
 
 - preserve traceback when re-raise undeclared exception, via `#206`_.
 - performance improvement by dynamically compile spec'd `__init__`
