@@ -1,23 +1,11 @@
 ========
-ThriftPy
+ThriftPy2
 ========
 
-.. image:: http://img.shields.io/travis/eleme/thriftpy/develop.svg?style=flat
-   :target: https://travis-ci.org/eleme/thriftpy
+.. image:: https://travis-ci.com/Thriftpy/thriftpy2.svg?branch=develop
+    :target: https://travis-ci.com/Thriftpy/thriftpy2
 
-.. image:: http://img.shields.io/github/release/eleme/thriftpy.svg?style=flat
-   :target: https://github.com/eleme/thriftpy/releases
-
-.. image:: http://img.shields.io/pypi/v/thriftpy.svg?style=flat
-   :target: https://pypi.python.org/pypi/thriftpy
-
-.. image:: http://img.shields.io/pypi/dm/thriftpy.svg?style=flat
-   :target: https://pypi.python.org/pypi/thriftpy
-
-ThriftPy is a pure python implementation of
-`Apache Thrift <http://thrift.apache.org/>`_ in a pythonic way.
-
-Documentation: https://thriftpy.readthedocs.org/
+ThriftPy: https://github.com/eleme/thriftpy has deprecated, ThriftPy2 aims to provide long term support.
 
 
 Installation
@@ -27,13 +15,13 @@ Install with pip.
 
 .. code:: bash
 
-    $ pip install thriftpy
+    $ pip install thriftpy2
 
 You may also install cython first to build cython extension locally.
 
 .. code:: bash
 
-    $ pip install cython thriftpy
+    $ pip install cython thriftpy2
 
 
 Code Demo
@@ -78,11 +66,54 @@ And a client:
     client = make_client(pingpong_thrift.PingPong, '127.0.0.1', 6000)
     print(client.ping())
 
+And it also supports asyncio on Python 3.5 or later:
+
+.. code:: python
+
+    import thriftpy
+    import asyncio
+    from thriftpy.rpc import make_aio_client
+
+
+    echo_thrift = thriftpy.load("echo.thrift", module_name="echo_thrift")
+
+
+    async def request():
+        client = await make_aio_client(
+            echo_thrift.EchoService, '127.0.0.1', 6000)
+        print(await client.echo('hello, world'))
+        client.close()
+
+.. code:: python
+
+    import asyncio
+    import thriftpy
+
+    from thriftpy.rpc import make_aio_server
+
+    echo_thrift = thriftpy.load("echo.thrift", module_name="echo_thrift")
+
+
+    class Dispatcher(object):
+        async def echo(self, param):
+            print(param)
+            await asyncio.sleep(0.1)
+            return param
+
+
+    def main():
+        server = make_aio_server(
+            echo_thrift.EchoService, Dispatcher(), '127.0.0.1', 6000)
+        server.serve()
+
+
+    if __name__ == '__main__':
+        main()
+
 See, it's that easy!
 
 You can refer to 'examples' and 'tests' directory in source code for more
 usage examples.
-
 
 
 Features
@@ -115,6 +146,8 @@ python lib):
   * tornado server and client (with tornado 4.0)
 
   * http server and client
+
+  * asyncio support (python 3.5 or later)
 
 - Can directly load thrift file as module, the sdk code will be generated on
   the fly.

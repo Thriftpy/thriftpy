@@ -18,12 +18,19 @@ install_requires = [
 ]
 
 tornado_requires = [
-    "tornado>=4.0,<5.0",
-    "toro>=0.6"
+    "tornado>=4.0,<6.0",
 ]
 
+try:
+    from tornado import version as tornado_version
+    if tornado_version < '5.0':
+        tornado_requires.append("toro>=0.6")
+except ImportError:
+    # tornado will now only get installed and we'll get the newer one
+    pass
+
 dev_requires = [
-    "cython>=0.23",
+    "cython>=0.28.4",
     "flake8>=2.5",
     "pytest>=2.8",
     "sphinx-rtd-theme>=0.1.9",
@@ -64,12 +71,12 @@ if UNIX and not PYPY:
     ext_modules.append(Extension("thriftpy.protocol.cybin",
                                  ["thriftpy/protocol/cybin/cybin.c"]))
 
-setup(name="thriftpy",
+setup(name="thriftpy2",
       version=version,
       description="Pure python implementation of Apache Thrift.",
       keywords="thrift python thriftpy",
-      author="Lx Yu",
-      author_email="i@lxyu.net",
+      author="ThriftPy Organization",
+      author_email="gotzehsing@gmail.com",
       packages=find_packages(exclude=['benchmark', 'docs', 'tests']),
       package_data={"thriftpy": ["contrib/tracking/tracking.thrift"]},
       entry_points={},
@@ -97,6 +104,7 @@ setup(name="thriftpy",
           "Programming Language :: Python :: 3.4",
           "Programming Language :: Python :: 3.5",
           "Programming Language :: Python :: 3.6",
+          "Programming Language :: Python :: 3.7",
           "Programming Language :: Python :: Implementation :: CPython",
           "Programming Language :: Python :: Implementation :: PyPy",
       ])

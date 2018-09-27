@@ -70,7 +70,7 @@ def test_ssl_hostname_validate():
         host="127.0.0.1", port=12345, socket_timeout=3000,
         cafile="ssl/CA.pem", certfile="ssl/client.crt",
         keyfile="ssl/client.key")
-    with pytest.raises(ssl.CertificateError):
+    with pytest.raises((ssl.CertificateError, TTransportException)):
         _test_socket(server_socket, client_socket)
 
     # bypass check with validate False
