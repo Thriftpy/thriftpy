@@ -70,7 +70,7 @@ def load_module(fullname):
         path = os.path.join(path_prefix, thrift_module_name)
     else:
         path = fullname
-    thrift_file = "{0}.thrift".format(path[:-7])
+    thrift_file = "{}.thrift".format(path[:-7])
 
     module = load(thrift_file, module_name=fullname)
     sys.modules[fullname] = module

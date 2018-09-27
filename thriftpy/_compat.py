@@ -13,14 +13,14 @@ import platform
 import sys
 
 PY3 = sys.version_info[0] == 3
+PY35 = sys.version_info >= (3, 5)
 PYPY = "__pypy__" in sys.modules
 
 UNIX = platform.system() in ("Linux", "Darwin")
 CYTHON = UNIX and not PYPY  # Cython always disabled in pypy and windows
 
-# only python2.7.9 and python 3.4 or above have true ssl context
-MODERN_SSL = (2, 7, 9) <= sys.version_info < (3, 0, 0) or \
-    sys.version_info >= (3, 4)
+# only Python 2.7.9 and Python 3.4 or above have true ssl context
+MODERN_SSL = sys.version_info >= (2, 7, 9)
 
 if PY3:
     text_type = str
