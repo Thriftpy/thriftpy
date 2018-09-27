@@ -2,6 +2,9 @@
 ThriftPy2
 ========
 
+.. image:: https://travis-ci.com/Thriftpy/thriftpy2.svg?branch=develop
+    :target: https://travis-ci.com/Thriftpy/thriftpy2
+
 ThriftPy: https://github.com/eleme/thriftpy has deprecated, ThriftPy2 aims to provide long term support.
 
 
