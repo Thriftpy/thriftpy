@@ -2,6 +2,9 @@
 ThriftPy
 ========
 
+**Thriftpy has been deprecated, please migrate to** `thriftpy2 <https://github.com/Thriftpy/thriftpy2>`_
+
+
 .. image:: http://img.shields.io/travis/eleme/thriftpy/develop.svg?style=flat
    :target: https://travis-ci.org/eleme/thriftpy
 
