@@ -58,7 +58,10 @@ def write_varint(trans, n):
         else:
             out.append((n & 0xff) | 0x80)
             n = n >> 7
-    data = array.array('B', out).tostring()
+
+    # 3.2+ uses tobytes(). Thriftpy doesn't support Python 3 pre-3.3
+    a = array.array('B', out)
+    data = a.tobytes() if PY3 else a.tostring()
 
     if PY3:
         trans.write(data)
