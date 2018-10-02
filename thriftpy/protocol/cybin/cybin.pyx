@@ -39,6 +39,10 @@ ctypedef enum TType:
     T_UTF8 = 16,
     T_UTF16 = 17
 
+
+T_BINARY = 1
+
+
 class ProtocolError(Exception):
     pass
 
@@ -232,11 +236,14 @@ cdef inline c_read_binary(CyTransportBase buf, int32_t size):
     return py_data
 
 
-cdef inline c_read_string(CyTransportBase buf, int32_t size):
+cdef inline c_read_string(CyTransportBase buf, int32_t size,
+                          bool raise_on_error=False):
     py_data = c_read_binary(buf, size)
     try:
         return (<char *>py_data)[:size].decode("utf-8")
     except:
+        if raise_on_error:
+            raise
         return py_data
 
 
@@ -267,8 +274,12 @@ cdef c_read_val(CyTransportBase buf, TType ttype, spec=None,
 
     elif ttype == T_STRING:
         size = read_i32(buf)
-        if decode_response:
-            return c_read_string(buf, size)
+        if (
+            decode_response == "auto" and spec != T_BINARY or
+            decode_response != "auto" and decode_response
+        ):
+            raise_on_error = decode_response == "auto"
+            return c_read_string(buf, size, raise_on_error)
         else:
             return c_read_binary(buf, size)
 
@@ -398,8 +409,8 @@ cpdef skip(CyTransportBase buf, TType ttype):
             skip(buf, f_type)
 
 
-def read_val(CyTransportBase buf, TType ttype, decode_response=True):
-    return c_read_val(buf, ttype, None, decode_response)
+def read_val(CyTransportBase buf, TType ttype, spec=None, decode_response=True):
+    return c_read_val(buf, ttype, spec, decode_response)
 
 
 def write_val(CyTransportBase buf, TType ttype, val, spec=None):

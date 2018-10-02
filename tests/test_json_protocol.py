@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
+import pytest
 
 from thriftpy.protocol import TJSONProtocol
-from thriftpy.thrift import TPayload, TType
+from thriftpy.thrift import BINARY, TPayload, TType
 from thriftpy.transport import TMemoryBuffer
 from thriftpy._compat import u
 
@@ -12,8 +13,9 @@ class TItem(TPayload):
     thrift_spec = {
         1: (TType.I32, "id", False),
         2: (TType.LIST, "phones", TType.STRING, False),
+        3: (TType.STRING, "binary", BINARY, False),
     }
-    default_spec = [("id", None), ("phones", None)]
+    default_spec = [("id", None), ("phones", None), ("binary", None)]
 
 
 def test_map_to_obj():
@@ -49,23 +51,27 @@ def test_list_to_json():
 
 
 def test_struct_to_json():
-    obj = TItem(id=13, phones=["5234", "12346456"])
+    obj = TItem(id=13, phones=["5234", "12346456"], binary=b"\xff")
     json = proto.struct_to_json(obj)
 
-    assert {"id": 13, "phones": ["5234", "12346456"]} == json
+    assert {"id": 13, "phones": ["5234", "12346456"], "binary": "/w=="} == json
 
 
-def test_struct_to_obj():
-    json = {"id": 13, "phones": ["5234", "12346456"]}
+# We need to support base64 payloads with and without padding, hence two
+# variants
+@pytest.mark.parametrize("encoded_binary", ["/w==", "/w"])
+def test_struct_to_obj(encoded_binary):
+    json = {"id": 13, "phones": ["5234", "12346456"], "binary": encoded_binary}
     obj = TItem()
 
     obj = proto.struct_to_obj(json, obj)
 
-    assert obj.id == 13 and obj.phones == ["5234", "12346456"]
+    assert obj.id == 13 and obj.phones == ["5234", "12346456"] and \
+        obj.binary == b"\xff"
 
 
 def test_json_proto_api_write():
-    obj = TItem(id=13, phones=["5234", "12346456"])
+    obj = TItem(id=13, phones=["5234", "12346456"], binary=b"\xff")
     trans = TMemoryBuffer()
 
     p = TJSONProtocol(trans)
@@ -77,13 +83,14 @@ def test_json_proto_api_write():
     import json
     data = json.loads(data[4:])
 
-    assert length == "\x00\x00\x00S" and data == {
+    assert length == "\x00\x00\x00e" and data == {
         "metadata": {"version": 1},
-        "payload": {"phones": ["5234", "12346456"], "id": 13}}
+        "payload": {"phones": ["5234", "12346456"], "id": 13,
+                    "binary": "/w=="}}
 
 
 def test_json_proto_api_read():
-    obj = TItem(id=13, phones=["5234", "12346456"])
+    obj = TItem(id=13, phones=["5234", "12346456"], binary=b"\xff")
     trans = TMemoryBuffer()
 
     p = TJSONProtocol(trans)

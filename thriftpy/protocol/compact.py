@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import array
 from struct import pack, unpack
 
+from .common import process_read_string_or_binary
 from .exc import TProtocolException
 from ..thrift import TException
 from ..thrift import TType
@@ -154,7 +155,7 @@ class TCompactProtocol(object):
                                      'Bad version: %d (expect %d)'
                                      % (version, self.VERSION))
         seqid = read_varint(self.trans)
-        name = self.read_string()
+        name = self.read_string_or_binary(TType.STRING)
         return name, type, seqid
 
     def read_message_end(self):
@@ -226,16 +227,11 @@ class TCompactProtocol(object):
         val, = unpack('<d', buff)
         return val
 
-    def read_string(self):
+    def read_string_or_binary(self, spec):
         len = self._read_size()
         byte_payload = self.trans.read(len)
-
-        if self.decode_response:
-            try:
-                byte_payload = byte_payload.decode('utf-8')
-            except UnicodeDecodeError:
-                pass
-        return byte_payload
+        return process_read_string_or_binary(byte_payload, spec,
+                                             self.decode_response)
 
     def read_bool(self):
         if self._bool_value is not None:
@@ -285,7 +281,7 @@ class TCompactProtocol(object):
             return self.read_double()
 
         elif ttype == TType.STRING:
-            return self.read_string()
+            return self.read_string_or_binary(spec)
 
         elif ttype in (TType.LIST, TType.SET):
             if isinstance(spec, tuple):
@@ -351,7 +347,7 @@ class TCompactProtocol(object):
         self.write_ubyte(self.PROTOCOL_ID)
         self.write_ubyte(self.VERSION | (type << self.TYPE_SHIFT_AMOUNT))
         write_varint(self.trans, seqid)
-        self.write_string(name)
+        self.write_string_or_binary(name)
 
     def write_message_end(self):
         pass
@@ -424,7 +420,7 @@ class TCompactProtocol(object):
     def write_double(self, dub):
         self.trans.write(pack('<d', dub))
 
-    def write_string(self, s):
+    def write_string_or_binary(self, s):
         if not isinstance(s, bytes):
             s = s.encode('utf-8')
         self._write_size(len(s))
@@ -473,7 +469,7 @@ class TCompactProtocol(object):
             self.write_double(val)
 
         elif ttype == TType.STRING:
-            self.write_string(val)
+            self.write_string_or_binary(val)
 
         elif ttype == TType.LIST or ttype == TType.SET:
             if isinstance(spec, tuple):
@@ -526,7 +522,7 @@ class TCompactProtocol(object):
             self.read_double()
 
         elif ttype == TType.STRING:
-            self.read_string()
+            self.read_string_or_binary(spec)
 
         elif ttype == TType.STRUCT:
             name = self.read_struct_begin()

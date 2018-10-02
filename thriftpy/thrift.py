@@ -75,6 +75,9 @@ def init_func_generator(cls, spec):
     return types.FunctionType(func, {}, argdefs=defaults)
 
 
+BINARY = 1
+
+
 class TType(object):
     STOP = 0
     VOID = 1
@@ -87,7 +90,6 @@ class TType(object):
     I64 = 10
     STRING = 11
     UTF7 = 11
-    BINARY = 11  # This here just for parsing. For all purposes, it's a string
     STRUCT = 12
     MAP = 13
     SET = 14
@@ -107,7 +109,6 @@ class TType(object):
         I64: 'I64',
         STRING: 'STRING',
         UTF7: 'STRING',
-        BINARY: 'STRING',
         STRUCT: 'STRUCT',
         MAP: 'MAP',
         SET: 'SET',

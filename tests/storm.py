@@ -5,6 +5,7 @@ This file shows what dynamically generated
 """
 
 from thriftpy.thrift import (
+    BINARY,
     TPayload,
     TException,
     TType,
@@ -16,7 +17,7 @@ class JavaObjectArg(TPayload):
                    2: (TType.I64, 'long_arg', False),
                    3: (TType.STRING, 'string_arg', False),
                    4: (TType.BOOL, 'bool_arg', False),
-                   5: (TType.BINARY, 'binary_arg', False),
+                   5: (TType.STRING, 'binary_arg', BINARY, False),
                    6: (TType.DOUBLE, 'double_arg', False)}
 
 
@@ -42,7 +43,7 @@ class Grouping(TPayload):
                    4: (TType.STRUCT, 'none', NullStruct),
                    5: (TType.STRUCT, 'direct', NullStruct),
                    6: (TType.STRUCT, 'custom_object', JavaObject),
-                   7: (TType.BINARY, 'custom_serialized'),
+                   7: (TType.STRING, 'custom_serialized', BINARY),
                    8: (TType.STRUCT, 'local_or_shuffle', NullStruct)}
 
 
@@ -57,7 +58,7 @@ class ShellComponent(TPayload):
 
 
 class ComponentObject(TPayload):
-    thrift_spec = {1: (TType.BINARY, 'serialized_java'),
+    thrift_spec = {1: (TType.STRING, 'serialized_java', BINARY),
                    2: (TType.STRUCT, 'shell', ShellComponent),
                    3: (TType.STRUCT, 'java_object', JavaObject)}
 
@@ -301,7 +302,7 @@ class Nimbus(object):
 
     class uploadChunk_args(TPayload):
         thrift_spec = {1: (TType.STRING, 'location'),
-                       2: (TType.BINARY, 'chunk')}
+                       2: (TType.STRING, 'chunk', BINARY)}
 
     class uploadChunk_result(TPayload):
         thrift_spec = {}
@@ -322,7 +323,7 @@ class Nimbus(object):
         thrift_spec = {1: (TType.STRING, 'id')}
 
     class downloadChunk_result(TPayload):
-        thrift_spec = {0: (TType.BINARY, 'success')}
+        thrift_spec = {0: (TType.STRING, 'success', BINARY)}
 
     class getNimbusConf_args(TPayload):
         thrift_spec = {}

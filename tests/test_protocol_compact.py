@@ -2,8 +2,10 @@
 
 from io import BytesIO
 
+import pytest
+
 from thriftpy._compat import u
-from thriftpy.thrift import TType, TPayload
+from thriftpy.thrift import BINARY, TType, TPayload
 from thriftpy.utils import hexlify
 from thriftpy.protocol import compact
 
@@ -85,16 +87,21 @@ def test_unpack_double():
     assert 1234567890.1234567890 == proto.read_val(TType.DOUBLE)
 
 
-def test_pack_string():
+@pytest.mark.parametrize(
+    "spec,data,expected_result",
+    [
+        (None, "hello world!",
+         "0c 68 65 6c 6c 6f 20 77 6f 72 6c 64 21"),
+        (BINARY, b"hello world!",
+         "0c 68 65 6c 6c 6f 20 77 6f 72 6c 64 21"),
+        (None, u("你好世界"),
+         "0c e4 bd a0 e5 a5 bd e4 b8 96 e7 95 8c"),
+    ],
+)
+def test_pack_string_or_binary(spec, data, expected_result):
     b, proto = gen_proto()
-    proto.write_val(TType.STRING, "hello world!")
-    assert "0c 68 65 6c 6c 6f 20 77 6f 72 6c 64 21" == \
-           hexlify(b.getvalue())
-
-    b1, proto1 = gen_proto()
-    proto1.write_val(TType.STRING, "你好世界")
-    assert "0c e4 bd a0 e5 a5 bd e4 b8 96 e7 95 8c" == \
-           hexlify(b1.getvalue())
+    proto.write_val(TType.STRING, data, spec)
+    assert expected_result == hexlify(b.getvalue())
 
 
 def test_unpack_string():
@@ -102,17 +109,25 @@ def test_unpack_string():
                          b"\x20\x77\x6f\x72\x6c\x64\x21")
     assert u('hello world!') == proto.read_val(TType.STRING)
 
+
+@pytest.mark.parametrize(
+    "spec,decode_response,expecting_text",
+    [
+        (None, True, True),
+        (None, False, False),
+        (None, "auto", True),
+        (BINARY, True, True),
+        (BINARY, False, False),
+        (BINARY, "auto", False),
+    ],
+)
+def test_unpack_string_or_binary(spec, decode_response, expecting_text):
     b, proto = gen_proto(b'\x0c\xe4\xbd\xa0\xe5\xa5'
                          b'\xbd\xe4\xb8\x96\xe7\x95\x8c')
-    assert u('你好世界') == proto.read_val(TType.STRING)
-
-
-def test_unpack_binary():
-    b, proto = gen_proto(b'\x0c\xe4\xbd\xa0\xe5\xa5'
-                         b'\xbd\xe4\xb8\x96\xe7\x95\x8c')
-    proto.decode_response = False
-
-    assert u('你好世界').encode("utf-8") == proto.read_val(TType.STRING)
+    proto.decode_response = decode_response
+    text = u('你好世界')
+    expected = text if expecting_text else text.encode('utf-8')
+    assert expected == proto.read_val(TType.STRING, spec)
 
 
 def test_pack_bool():

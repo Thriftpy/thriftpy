@@ -6,6 +6,7 @@ import struct
 
 from ..thrift import TType
 
+from .common import process_read_string_or_binary
 from .exc import TProtocolException
 
 # VERSION_MASK = 0xffff0000
@@ -35,8 +36,8 @@ def pack_double(dub):
     return struct.pack("!d", dub)
 
 
-def pack_string(string):
-    return struct.pack("!i%ds" % len(string), len(string), string)
+def pack_binary(binary):
+    return struct.pack("!i%ds" % len(binary), len(binary), binary)
 
 
 def unpack_i8(buf):
@@ -62,9 +63,9 @@ def unpack_double(buf):
 def write_message_begin(outbuf, name, ttype, seqid, strict=True):
     if strict:
         outbuf.write(pack_i32(VERSION_1 | ttype))
-        outbuf.write(pack_string(name.encode('utf-8')))
+        outbuf.write(pack_binary(name.encode('utf-8')))
     else:
-        outbuf.write(pack_string(name.encode('utf-8')))
+        outbuf.write(pack_binary(name.encode('utf-8')))
         outbuf.write(pack_i8(ttype))
 
     outbuf.write(pack_i32(seqid))
@@ -111,7 +112,7 @@ def write_val(outbuf, ttype, val, spec=None):
     elif ttype == TType.STRING:
         if not isinstance(val, bytes):
             val = val.encode('utf-8')
-        outbuf.write(pack_string(val))
+        outbuf.write(pack_binary(val))
 
     elif ttype == TType.SET or ttype == TType.LIST:
         if isinstance(spec, tuple):
@@ -227,15 +228,8 @@ def read_val(inbuf, ttype, spec=None, decode_response=True):
     elif ttype == TType.STRING:
         sz = unpack_i32(inbuf.read(4))
         byte_payload = inbuf.read(sz)
-
-        # Since we cannot tell if we're getting STRING or BINARY
-        # if not asked not to decode, try both
-        if decode_response:
-            try:
-                return byte_payload.decode('utf-8')
-            except UnicodeDecodeError:
-                pass
-        return byte_payload
+        return process_read_string_or_binary(byte_payload, spec,
+                                             decode_response)
 
     elif ttype == TType.SET or ttype == TType.LIST:
         if isinstance(spec, tuple):

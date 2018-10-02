@@ -8,7 +8,7 @@ import time
 import pytest
 
 from thriftpy._compat import u
-from thriftpy.thrift import TType, TPayload, TDecodeException
+from thriftpy.thrift import BINARY, TType, TPayload, TDecodeException
 from thriftpy.transport import TSocket, TServerSocket
 from thriftpy.utils import hexlify
 
@@ -120,31 +120,42 @@ def test_read_double():
     assert 1234567890.1234567890 == proto.read_val(b, TType.DOUBLE)
 
 
-def test_write_string():
+@pytest.mark.parametrize(
+    "spec,data,expected_result",
+    [
+        (None, "hello world!",
+         "00 00 00 0c 68 65 6c 6c 6f 20 77 6f 72 6c 64 21"),
+        (BINARY, b"hello world!",
+         "00 00 00 0c 68 65 6c 6c 6f 20 77 6f 72 6c 64 21"),
+        (None, u("你好世界"),
+         "00 00 00 0c e4 bd a0 e5 a5 bd e4 b8 96 e7 95 8c"),
+    ],
+)
+def test_write_string_or_binary(spec, data, expected_result):
     b = TCyMemoryBuffer()
-    proto.write_val(b, TType.STRING, "hello world!")
+    proto.write_val(b, TType.STRING, data, spec)
     b.flush()
-    assert "00 00 00 0c 68 65 6c 6c 6f 20 77 6f 72 6c 64 21" == \
-        hexlify(b.getvalue())
-
-    b = TCyMemoryBuffer()
-    proto.write_val(b, TType.STRING, u("你好世界"))
-    b.flush()
-    assert "00 00 00 0c e4 bd a0 e5 a5 bd e4 b8 96 e7 95 8c" == \
-        hexlify(b.getvalue())
+    assert expected_result == hexlify(b.getvalue())
 
 
-def test_read_string():
+@pytest.mark.parametrize(
+    "spec,decode_response,expecting_text",
+    [
+        (None, True, True),
+        (None, False, False),
+        (None, "auto", True),
+        (BINARY, True, True),
+        (BINARY, False, False),
+        (BINARY, "auto", False),
+    ],
+)
+def test_read_string_or_binary(spec, decode_response, expecting_text):
     b = TCyMemoryBuffer(b"\x00\x00\x00\x0c"
                         b"\xe4\xbd\xa0\xe5\xa5\xbd\xe4\xb8\x96\xe7\x95\x8c")
-    assert u("你好世界") == proto.read_val(b, TType.STRING)
-
-
-def test_read_binary():
-    b = TCyMemoryBuffer(b"\x00\x00\x00\x0c"
-                        b"\xe4\xbd\xa0\xe5\xa5\xbd\xe4\xb8\x96\xe7\x95\x8c")
-    assert u("你好世界").encode("utf-8") == proto.read_val(
-        b, TType.STRING, decode_response=False)
+    text = u("你好世界")
+    expected = text if expecting_text else text.encode('utf-8')
+    assert expected == proto.read_val(
+        b, TType.STRING, spec, decode_response=decode_response)
 
 
 def test_write_message_begin():

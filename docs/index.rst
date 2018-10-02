@@ -173,6 +173,49 @@ You can also use `from ... import ...` style after a standard module load.
     >>> from addressbook_thrift import *
 
 
+Binaries/bytes vs. strings/text
+===============================
+
+It's important to distinguish between arbitrary arrays of bytes (str
+in Python 2, bytes in Python 3) and text (unicode in Python 2, str in
+python 3). ThriftPy deals with this as follows:
+
+When serializing - both string and binary fields accept bytes and unicode.
+If unicode is passed it will be converted to bytes using UTF-8 encoding.
+
+When deserializing - there's `decode_response` constructor parameter
+present in binary and compact protocols and their factories that controls
+ThriftPy's behavior in this regard. The default `decode_respone` value is
+`True`.
+
+The JSON protocol always deserializes binary and string fields correctly
+without any additional configuration.
+
+The complete list of field type and `decode_response` value
+combinations is listed here:
+
+string fields
+`````````````
+
+* `decode_response` set to True - the value is returned as text if it's
+  possible to decode it using UTF-8 or as bytes otherwise
+
+* `decode_response` set to False - the value is always returned as bytes
+
+* `decode_response` set to 'auto' - the value is decoded using UTF-8 and
+  returned as text, if decoding fails an exception is raised
+
+binary fields
+`````````````
+
+* `decode_response` set to True - the value is returned as text if it's
+  possible to decode it using UTF-8 or as bytes otherwise
+
+* `decode_response` set to False - the value is always returned as bytes
+
+* `decode_response` set to 'auto' - the value is always returned as bytes
+
+
 Benchmarks
 ==========
 

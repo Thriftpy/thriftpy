@@ -11,11 +11,12 @@ import collections
 import os
 import sys
 import types
+
 from ply import lex, yacc
 from .lexer import *  # noqa
 from .exc import ThriftParserError, ThriftGrammerError
-from thriftpy._compat import urlopen, urlparse
-from ..thrift import gen_init, TType, TPayload, TException
+from thriftpy._compat import text_type, urlopen, urlparse
+from ..thrift import BINARY, gen_init, TType, TPayload, TException
 
 
 def p_error(p):
@@ -415,7 +416,7 @@ def p_simple_base_type(p):  # noqa
     if p[1] == 'string':
         p[0] = TType.STRING
     if p[1] == 'binary':
-        p[0] = TType.BINARY
+        p[0] = TType.STRING, BINARY
 
 
 def p_base_type(p):
@@ -641,7 +642,7 @@ def _parse_seq(p):
         p[0] = []
 
 
-def _cast(t):  # noqa
+def _cast(t, spec=None):  # noqa
     if t == TType.BOOL:
         return _cast_bool
     if t == TType.BYTE:
@@ -656,7 +657,8 @@ def _cast(t):  # noqa
         return _cast_double
     if t == TType.STRING:
         return _cast_string
-    if t == TType.BINARY:
+    if t[0] == TType.STRING:
+        # t[1] will be BINARY here
         return _cast_binary
     if t[0] == TType.LIST:
         return _cast_list(t)
@@ -701,12 +703,14 @@ def _cast_double(v):
 
 
 def _cast_string(v):
-    assert isinstance(v, str)
+    if isinstance(v, bytes):
+        v = v.decode('utf-8')
+    assert isinstance(v, text_type)
     return v
 
 
 def _cast_binary(v):
-    assert isinstance(v, str)
+    assert isinstance(v, bytes)
     return v
 
 

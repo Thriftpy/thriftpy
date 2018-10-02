@@ -2,10 +2,11 @@
 
 from __future__ import absolute_import
 
+import base64
 import json
 import struct
 
-from thriftpy.thrift import TType
+from thriftpy.thrift import BINARY, TType
 
 from .exc import TProtocolException
 
@@ -16,6 +17,9 @@ VERSION = 1
 
 
 def json_value(ttype, val, spec=None):
+    if ttype == TType.STRING and spec == BINARY:
+        return base64.b64encode(val).decode()
+
     if ttype in INTEGER or ttype in FLOAT or ttype == TType.STRING:
         return val
 
@@ -38,6 +42,14 @@ def obj_value(ttype, val, spec=None):
 
     if ttype in FLOAT:
         return float(val)
+
+    if ttype == TType.STRING and spec == BINARY:
+        # base64 data without padding is allowed here so we need to append
+        # padding ourselves in order for b64decode to work
+        missing_padding = 4 - len(val) % 4
+        if missing_padding:
+            val = val + '=' * missing_padding
+        return base64.b64decode(val)
 
     if ttype in (TType.STRING, TType.BOOL):
         return val
