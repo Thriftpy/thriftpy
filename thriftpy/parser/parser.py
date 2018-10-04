@@ -625,7 +625,7 @@ def _add_thrift_meta(key, val):
 
     if not hasattr(thrift, '__thrift_meta__'):
         meta = collections.defaultdict(list)
-        setattr(thrift, '__thrift_meta__',  meta)
+        setattr(thrift, '__thrift_meta__', meta)
     else:
         meta = getattr(thrift, '__thrift_meta__')
 
