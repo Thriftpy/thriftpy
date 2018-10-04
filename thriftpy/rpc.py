@@ -2,11 +2,12 @@
 
 from __future__ import absolute_import
 
+import signal
 import contextlib
 import warnings
 
 from thriftpy.protocol import TBinaryProtocolFactory
-from thriftpy.server import TThreadedServer
+from thriftpy.server import TThreadedServer, TProcessPoolServer
 from thriftpy.thrift import TProcessor, TClient
 from thriftpy.transport import (
     TBufferedTransportFactory,
@@ -43,11 +44,18 @@ def make_client(service, host="localhost", port=9090, unix_socket=None,
     return TClient(service, protocol)
 
 
+def _init_handler():
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        signal.signal(signal.SIGHUP, signal.SIG_DFL)
+
+
 def make_server(service, handler,
                 host="localhost", port=9090, unix_socket=None,
                 proto_factory=TBinaryProtocolFactory(),
                 trans_factory=TBufferedTransportFactory(),
-                client_timeout=3000, certfile=None):
+                client_timeout=3000, certfile=None,
+                num_workers=None):
     processor = TProcessor(service, handler)
 
     if unix_socket:
@@ -65,9 +73,16 @@ def make_server(service, handler,
     else:
         raise ValueError("Either host/port or unix_socket must be provided.")
 
-    server = TThreadedServer(processor, server_socket,
-                             iprot_factory=proto_factory,
-                             itrans_factory=trans_factory)
+    if num_workers is None:
+        server = TThreadedServer(processor, server_socket,
+                                 iprot_factory=proto_factory,
+                                 itrans_factory=trans_factory)
+    else:
+        server = TProcessPoolServer(processor, server_socket,
+                                    iprot_factory=proto_factory,
+                                    itrans_factory=trans_factory)
+        server.setNumWorkers(num_workers)
+        server.setPostForkCallback(_init_handler)
     return server
 
 
