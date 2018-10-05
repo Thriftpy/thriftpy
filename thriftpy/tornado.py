@@ -18,7 +18,7 @@
 from __future__ import absolute_import
 
 from contextlib import contextmanager
-from tornado import tcpserver, ioloop, iostream, gen
+from tornado import tcpserver, ioloop, iostream, gen, locks
 from io import BytesIO
 from datetime import timedelta
 
@@ -32,7 +32,6 @@ from .protocol.binary import TBinaryProtocolFactory
 import logging
 import socket
 import struct
-import toro
 
 
 logger = logging.getLogger(__name__)
@@ -52,7 +51,7 @@ class TTornadoStreamTransport(TTransportBase):
         self.is_queuing_reads = False
         self.read_queue = []
         self.__wbuf = BytesIO()
-        self._read_lock = toro.Lock()
+        self._read_lock = locks.Lock()
         self.ssl_options = ssl_options
 
         # servers provide a ready-to-go stream
