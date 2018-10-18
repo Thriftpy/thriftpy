@@ -104,21 +104,27 @@ class TSocket(object):
                 message="Could not connect to %s" % str(addr))
 
     def read(self, sz):
-        try:
-            buff = self.sock.recv(sz)
-        except socket.error as e:
-            if (e.args[0] == errno.ECONNRESET and
-                    (sys.platform == 'darwin' or
-                     sys.platform.startswith('freebsd'))):
-                # freebsd and Mach don't follow POSIX semantic of recv
-                # and fail with ECONNRESET if peer performed shutdown.
-                # See corresponding comment and code in TSocket::read()
-                # in lib/cpp/src/transport/TSocket.cpp.
-                self.close()
-                # Trigger the check to raise the END_OF_FILE exception below.
-                buff = ''
+        while True:
+            try:
+                buff = self.sock.recv(sz)
+            except socket.error as e:
+                if e.errno == errno.EINTR:
+                    continue
+                if (e.args[0] == errno.ECONNRESET and
+                        (sys.platform == 'darwin' or
+                         sys.platform.startswith('freebsd'))):
+                    # freebsd and Mach don't follow POSIX semantic of recv
+                    # and fail with ECONNRESET if peer performed shutdown.
+                    # See corresponding comment and code in TSocket::read()
+                    # in lib/cpp/src/transport/TSocket.cpp.
+                    self.close()
+                    # Trigger the check to raise the END_OF_FILE exception.
+                    buff = ''
+                    break
+                else:
+                    raise
             else:
-                raise
+                break
 
         if len(buff) == 0:
             raise TTransportException(type=TTransportException.END_OF_FILE,
