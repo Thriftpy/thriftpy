@@ -97,6 +97,9 @@ class TSocket(object):
 
             if self.socket_timeout:
                 self.sock.settimeout(self.socket_timeout)
+            elif self.connect_timeout:
+                # Reset timeout
+                self.sock.settimeout(None)
 
         except (socket.error, OSError):
             raise TTransportException(
