@@ -47,8 +47,8 @@ def make_server(service, handler,
                 host="localhost", port=9090, unix_socket=None,
                 proto_factory=TBinaryProtocolFactory(),
                 trans_factory=TBufferedTransportFactory(),
-                client_timeout=3000, certfile=None):
-    processor = TProcessor(service, handler)
+                client_timeout=3000, certfile=None, processor=TProcessor):
+    processor = processor(service, handler)
 
     if unix_socket:
         server_socket = TServerSocket(unix_socket=unix_socket)
