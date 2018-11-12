@@ -19,3 +19,7 @@ install:
 
 script:
   - tox -e py
+
+env:
+  global:
+    - TRAVIS="true"
