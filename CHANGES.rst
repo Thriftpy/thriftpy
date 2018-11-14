@@ -4,6 +4,14 @@ Changelog
 0.3.x
 ~~~~~
 
+Version 0.3.11
+-------------
+
+Released on September 26, 2018.
+
+- support asyncio
+- support tornado 5.x
+
 Version 0.3.10
 -------------
 
