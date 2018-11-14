@@ -4,6 +4,13 @@ Changelog
 0.3.x
 ~~~~~
 
+Version 0.3.12
+-------------
+
+Released on November 14, 2018.
+
+- handle EINTER signal
+
 Version 0.3.11
 -------------
 
