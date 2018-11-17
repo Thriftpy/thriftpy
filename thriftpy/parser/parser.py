@@ -15,7 +15,7 @@ from ply import lex, yacc
 from .lexer import *  # noqa
 from .exc import ThriftParserError, ThriftGrammerError
 from thriftpy._compat import urlopen, urlparse
-from ..thrift import gen_init, TType, TPayload, TException
+from ..thrift import gen_init, TType, TPayload, TSPayload, TException
 
 
 def p_error(p):
@@ -220,7 +220,9 @@ def p_struct(p):
 
 def p_seen_struct(p):
     '''seen_struct : STRUCT IDENTIFIER '''
-    val = _make_empty_struct(p[2])
+    use_slots = p.parser.__use_slots__
+    base_cls = TSPayload if use_slots else TPayload
+    val = _make_empty_struct(p[2], base_cls=base_cls)
     setattr(thrift_stack[-1], p[2], val)
     p[0] = val
 
@@ -233,7 +235,9 @@ def p_union(p):
 
 def p_seen_union(p):
     '''seen_union : UNION IDENTIFIER '''
-    val = _make_empty_struct(p[2])
+    use_slots = p.parser.__use_slots__
+    base_cls = TSPayload if use_slots else TPayload
+    val = _make_empty_struct(p[2], base_cls=base_cls)
     setattr(thrift_stack[-1], p[2], val)
     p[0] = val
 
@@ -267,7 +271,8 @@ def p_simple_service(p):
     else:
         extends = None
 
-    val = _make_service(p[2], p[len(p) - 2], extends)
+    use_slots = p.parser.__use_slots__
+    val = _make_service(p[2], p[len(p) - 2], extends, use_slots=use_slots)
     setattr(thrift, p[2], val)
     _add_thrift_meta('services', val)
 
@@ -486,8 +491,12 @@ include_dirs_ = ['.']
 thrift_cache = {}
 
 
+def _get_cache_key(prefix, use_slots=False):
+    return ('%s:slotted' % prefix) if use_slots else prefix
+
+
 def parse(path, module_name=None, include_dirs=None, include_dir=None,
-          lexer=None, parser=None, enable_cache=True):
+          lexer=None, parser=None, enable_cache=True, use_slots=False):
     """Parse a single thrift file to module object, e.g.::
 
         >>> from thriftpy.parser.parser import parse
@@ -508,6 +517,7 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
     :param enable_cache: if this is set to be `True`, parsed module will be
                          cached, this is enabled by default. If `module_name`
                          is provided, use it as cache key, else use the `path`.
+    :param use_slots: if set to `True` uses slots for struct members
     """
     if os.name == 'nt' and sys.version_info[0] < 3:
         os.path.samefile = lambda f1, f2: os.stat(f1) == os.stat(f2)
@@ -520,7 +530,8 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
 
     global thrift_cache
 
-    cache_key = module_name or os.path.normpath(path)
+    cache_prefix = module_name or os.path.normpath(path)
+    cache_key = _get_cache_key(cache_prefix, use_slots)
 
     if enable_cache and cache_key in thrift_cache:
         return thrift_cache[cache_key]
@@ -529,6 +540,8 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
         lexer = lex.lex()
     if parser is None:
         parser = yacc.yacc(debug=False, write_tables=0)
+
+    parser.__use_slots__ = use_slots
 
     global include_dirs_
 
@@ -574,7 +587,7 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
     return thrift
 
 
-def parse_fp(source, module_name, lexer=None, parser=None, enable_cache=True):
+def parse_fp(source, module_name, lexer=None, parser=None, enable_cache=True, use_slots=False):
     """Parse a file-like object to thrift module object, e.g.::
 
         >>> from thriftpy.parser.parser import parse_fp
@@ -589,13 +602,16 @@ def parse_fp(source, module_name, lexer=None, parser=None, enable_cache=True):
     :param parser: ply parser to use, if not provided, `parse` will new one.
     :param enable_cache: if this is set to be `True`, parsed module will be
                          cached by `module_name`, this is enabled by default.
+    :param use_slots: if set to `True` uses slots for struct members
     """
     if not module_name.endswith('_thrift'):
         raise ThriftParserError('ThriftPy can only generate module with '
                                 '\'_thrift\' suffix')
 
+    cache_key = _get_cache_key(module_name, use_slots)
+
     if enable_cache and module_name in thrift_cache:
-        return thrift_cache[module_name]
+        return thrift_cache[cache_key]
 
     if not hasattr(source, 'read'):
         raise ThriftParserError('Expected `source` to be a file-like object '
@@ -605,6 +621,8 @@ def parse_fp(source, module_name, lexer=None, parser=None, enable_cache=True):
         lexer = lex.lex()
     if parser is None:
         parser = yacc.yacc(debug=False, write_tables=0)
+
+    parser.__use_slots__ = use_slots
 
     data = source.read()
 
@@ -616,7 +634,7 @@ def parse_fp(source, module_name, lexer=None, parser=None, enable_cache=True):
     thrift_stack.pop()
 
     if enable_cache:
-        thrift_cache[module_name] = thrift
+        thrift_cache[cache_key] = thrift
     return thrift
 
 
@@ -808,6 +826,8 @@ def _make_enum(name, kvs):
 
 def _make_empty_struct(name, ttype=TType.STRUCT, base_cls=TPayload):
     attrs = {'__module__': thrift_stack[-1].__name__, '_ttype': ttype}
+    if issubclass(base_cls, TSPayload):
+        attrs['__slots__'] = []
     return type(name, (base_cls, ), attrs)
 
 
@@ -828,6 +848,9 @@ def _fill_in_struct(cls, fields, _gen_init=True):
     setattr(cls, 'thrift_spec', thrift_spec)
     setattr(cls, 'default_spec', default_spec)
     setattr(cls, '_tspec', _tspec)
+    # add __slots__ for easy introspection
+    if issubclass(cls, TSPayload):
+        cls.__slots__ = [field for field, _ in default_spec]
     if _gen_init:
         gen_init(cls, thrift_spec, default_spec)
     return cls
@@ -839,11 +862,13 @@ def _make_struct(name, fields, ttype=TType.STRUCT, base_cls=TPayload,
     return _fill_in_struct(cls, fields, _gen_init=_gen_init)
 
 
-def _make_service(name, funcs, extends):
+def _make_service(name, funcs, extends, use_slots=False):
     if extends is None:
         extends = object
 
     attrs = {'__module__': thrift_stack[-1].__name__}
+    base_cls = TSPayload if use_slots else TPayload
+    # service class itself will not be created with slots
     cls = type(name, (extends, ), attrs)
     thrift_services = []
 
@@ -852,7 +877,7 @@ def _make_service(name, funcs, extends):
         # args payload cls
         args_name = '%s_args' % func_name
         args_fields = func[3]
-        args_cls = _make_struct(args_name, args_fields)
+        args_cls = _make_struct(args_name, args_fields, base_cls=base_cls)
         setattr(cls, args_name, args_cls)
         # result payload cls
         result_name = '%s_result' % func_name
@@ -860,13 +885,15 @@ def _make_service(name, funcs, extends):
         result_throws = func[4]
         result_oneway = func[0]
         result_cls = _make_struct(result_name, result_throws,
-                                  _gen_init=False)
+                                  _gen_init=False, base_cls=base_cls)
         setattr(result_cls, 'oneway', result_oneway)
         if result_type != TType.VOID:
             result_cls.thrift_spec[0] = _ttype_spec(result_type, 'success')
             result_cls.default_spec.insert(0, ('success', None))
         gen_init(result_cls, result_cls.thrift_spec, result_cls.default_spec)
         setattr(cls, result_name, result_cls)
+        # default spec is modified after making struct so add slots here
+        result_cls.__slots__ = [f for f, _ in result_cls.default_spec]
         thrift_services.append(func_name)
     if extends is not None and hasattr(extends, 'thrift_services'):
         thrift_services.extend(extends.thrift_services)

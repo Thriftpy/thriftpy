@@ -72,3 +72,69 @@ def test_tpayload_pickle():
     person_2 = pickle.loads(PICKLED_BYTES)
 
     assert person == person_2
+
+
+def test_load_slots():
+    thrift = thriftpy.load(
+        'addressbook.thrift',
+        use_slots=True,
+        module_name='addressbook_thrift'
+    )
+
+    # normal structs will have slots
+    assert thrift.PhoneNumber.__slots__ == ['type', 'number', 'mix_item']
+    assert thrift.Person.__slots__ == ['name', 'phones', 'created_at']
+    assert thrift.AddressBook.__slots__ == ['people']
+
+    # get/set undefined attributes
+    person = thrift.Person()
+    with pytest.raises(AttributeError):
+        person.attr_not_exist = "Does not work"
+
+    with pytest.raises(AttributeError):
+        person.attr_not_exist
+
+    pn = thrift.PhoneNumber()
+    with pytest.raises(AttributeError):
+        pn.attr_not_exist = "Does not work"
+
+    with pytest.raises(AttributeError):
+        pn.attr_not_exist
+
+    ab = thrift.AddressBook()
+    with pytest.raises(AttributeError):
+        ab.attr_not_exist = "Does not work"
+
+    with pytest.raises(AttributeError):
+        ab.attr_not_exist
+    # eo: get/set
+
+    # exceptions will not have slots
+    assert not hasattr(thrift.PersonNotExistsError, '__slots__')
+
+    # enums will not have slots
+    assert not hasattr(thrift.PhoneType, '__slots__')
+
+    # service itself will not be created with slots
+    assert not hasattr(thrift.AddressBookService, '__slots__')
+
+    # service args will have slots
+    args_slots = thrift.AddressBookService.get_phonenumbers_args.__slots__
+    assert args_slots == ['name', 'count']
+
+    result_slots = thrift.AddressBookService.get_phonenumbers_result.__slots__
+    assert result_slots == ['success']
+
+    # should be able to pickle slotted objects - if load with module_name
+    bob = thrift.Person(name="Bob")
+    p_str = pickle.dumps(bob)
+
+    assert pickle.loads(p_str) == bob
+
+    # works for recursive types too
+    rec = thriftpy.load('parser-cases/recursive_union.thrift', use_slots=True)
+    rec_slots = rec.Dynamic.__slots__
+    assert rec_slots == ['boolean', 'integer', 'doubl', 'str', 'arr', 'object']
+    dyn = rec.Dynamic()
+    with pytest.raises(AttributeError):
+        dyn.attr_not_exist = "shouldn't work"

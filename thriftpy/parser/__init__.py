@@ -15,7 +15,7 @@ import sys
 from .parser import parse, parse_fp
 
 
-def load(path, module_name=None, include_dirs=None, include_dir=None):
+def load(path, module_name=None, include_dirs=None, include_dir=None, use_slots=False):
     """Load thrift file as a module.
 
     The module loaded and objects inside may only be pickled if module_name
@@ -27,17 +27,17 @@ def load(path, module_name=None, include_dirs=None, include_dir=None):
     """
     real_module = bool(module_name)
     thrift = parse(path, module_name, include_dirs=include_dirs,
-                   include_dir=include_dir)
+                   include_dir=include_dir, use_slots=use_slots)
 
     if real_module:
         sys.modules[module_name] = thrift
     return thrift
 
 
-def load_fp(source, module_name):
+def load_fp(source, module_name, use_slots=False):
     """Load thrift file like object as a module.
     """
-    thrift = parse_fp(source, module_name)
+    thrift = parse_fp(source, module_name, use_slots=use_slots)
     sys.modules[module_name] = thrift
     return thrift
 
