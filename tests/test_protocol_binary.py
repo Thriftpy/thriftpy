@@ -2,8 +2,10 @@
 
 from io import BytesIO
 
+import pytest
+
 from thriftpy._compat import u
-from thriftpy.thrift import TType, TPayload
+from thriftpy.thrift import TType, TPayload, TDecodeException
 from thriftpy.utils import hexlify
 from thriftpy.protocol import binary as proto
 
@@ -109,6 +111,33 @@ def test_write_message_begin_not_strict():
         .write_message_begin("test", TType.STRING, 1)
     assert "00 00 00 04 74 65 73 74 0b 00 00 00 01" == \
         hexlify(b.getvalue())
+
+
+def test_write_decode_error():
+    b = BytesIO()
+    p = proto.TBinaryProtocol(b)
+
+    class T(TPayload):
+        thrift_spec = {
+            1: (TType.I32, "id", False),
+            2: (TType.LIST, "phones", TType.STRING, False),
+            3: (TType.STRUCT, "item", TItem, False),
+            4: (TType.MAP, "mm", (TType.STRING, (TType.STRUCT, TItem)), False)
+        }
+        default_spec = [("id", None), ("phones", None), ("item", None),
+                        ("mm", None)]
+
+    cases = [
+        (T(id="hello"), "Field 'id(1)' of 'T' needs type 'I32', but the value is `'hello'`"),  # noqa
+        (T(phones=[90, 12]), "Field 'phones(2)' of 'T' needs type 'LIST<STRING>', but the value is `[90, 12]`"),  # noqa
+        (T(item=12), "Field 'item(3)' of 'T' needs type 'TItem', but the value is `12`"),  # noqa
+        (T(mm=[45, 56]), "Field 'mm(4)' of 'T' needs type 'MAP<STRING, TItem>', but the value is `[45, 56]`")  # noqa
+    ]
+
+    for obj, res in cases:
+        with pytest.raises(TDecodeException) as exc:
+            p.write_struct(obj)
+        assert str(exc.value) == res
 
 
 def test_read_message_begin():

@@ -4,7 +4,7 @@ from __future__ import absolute_import
 
 import struct
 
-from ..thrift import TType
+from ..thrift import TType, TDecodeException
 
 from .exc import TProtocolException
 
@@ -86,6 +86,60 @@ def write_map_begin(outbuf, ktype, vtype, size):
     outbuf.write(pack_i8(ktype) + pack_i8(vtype) + pack_i32(size))
 
 
+def write_struct(outbuf, val):
+    for fid in iter(val.thrift_spec):
+        f_spec = val.thrift_spec[fid]
+        if len(f_spec) == 3:
+            f_type, f_name, f_req = f_spec
+            f_container_spec = None
+        else:
+            f_type, f_name, f_container_spec, f_req = f_spec
+
+        v = getattr(val, f_name)
+        if v is None:
+            continue
+
+        write_field_begin(outbuf, f_type, fid)
+        try:
+            write_val(outbuf, f_type, v, f_container_spec)
+        except (TypeError, AttributeError, AssertionError, OverflowError, struct.error):
+            raise TDecodeException(val.__class__.__name__, fid, f_name, v,
+                                   f_type, f_container_spec)
+
+    write_field_stop(outbuf)
+
+
+def write_dict(outbuf, val, spec):
+    if isinstance(spec[0], int):
+        k_type = spec[0]
+        k_spec = None
+    else:
+        k_type, k_spec = spec[0]
+
+    if isinstance(spec[1], int):
+        v_type = spec[1]
+        v_spec = None
+    else:
+        v_type, v_spec = spec[1]
+
+    write_map_begin(outbuf, k_type, v_type, len(val))
+    for k in iter(val):
+        write_val(outbuf, k_type, k, k_spec)
+        write_val(outbuf, v_type, val[k], v_spec)
+
+
+def write_list(outbuf, val, spec):
+    if isinstance(spec, tuple):
+        e_type, t_spec = spec[0], spec[1]
+    else:
+        e_type, t_spec = spec, None
+
+    val_len = len(val)
+    write_list_begin(outbuf, e_type, val_len)
+    for e_val in val:
+        write_val(outbuf, e_type, e_val, t_spec)
+
+
 def write_val(outbuf, ttype, val, spec=None):
     if ttype == TType.BOOL:
         if val:
@@ -114,50 +168,13 @@ def write_val(outbuf, ttype, val, spec=None):
         outbuf.write(pack_string(val))
 
     elif ttype == TType.SET or ttype == TType.LIST:
-        if isinstance(spec, tuple):
-            e_type, t_spec = spec[0], spec[1]
-        else:
-            e_type, t_spec = spec, None
-
-        val_len = len(val)
-        write_list_begin(outbuf, e_type, val_len)
-        for e_val in val:
-            write_val(outbuf, e_type, e_val, t_spec)
+        write_list(outbuf, val, spec)
 
     elif ttype == TType.MAP:
-        if isinstance(spec[0], int):
-            k_type = spec[0]
-            k_spec = None
-        else:
-            k_type, k_spec = spec[0]
-
-        if isinstance(spec[1], int):
-            v_type = spec[1]
-            v_spec = None
-        else:
-            v_type, v_spec = spec[1]
-
-        write_map_begin(outbuf, k_type, v_type, len(val))
-        for k in iter(val):
-            write_val(outbuf, k_type, k, k_spec)
-            write_val(outbuf, v_type, val[k], v_spec)
+        write_dict(outbuf, val, spec)
 
     elif ttype == TType.STRUCT:
-        for fid in iter(val.thrift_spec):
-            f_spec = val.thrift_spec[fid]
-            if len(f_spec) == 3:
-                f_type, f_name, f_req = f_spec
-                f_container_spec = None
-            else:
-                f_type, f_name, f_container_spec, f_req = f_spec
-
-            v = getattr(val, f_name)
-            if v is None:
-                continue
-
-            write_field_begin(outbuf, f_type, fid)
-            write_val(outbuf, f_type, v, f_container_spec)
-        write_field_stop(outbuf)
+        write_struct(outbuf, val)
 
 
 def read_message_begin(inbuf, strict=True):
