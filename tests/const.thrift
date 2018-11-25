@@ -1,6 +1,7 @@
 const i16 NEGATIVE_I16 = -10
 const double NEGATIVE_DOUBLE = -123.456
 
+const i8 I8_CONST = 10
 const i16 I16_CONST = 10
 const i32 I32_CONST = 100000
 const double DOUBLE_CONST = 123.456
