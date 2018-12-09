@@ -120,6 +120,9 @@ cdef class TCyFramedTransport(CyTransportBase):
         self.rframe_buf.clean()
         self.wframe_buf.clean()
 
+    def getvalue(self):
+        return self._trans.getvalue()
+
 
 class TCyFramedTransportFactory(object):
     def get_transport(self, trans):
