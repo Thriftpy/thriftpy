@@ -332,21 +332,29 @@ def p_field_seq(p):
 
 
 def p_simple_field(p):
-    '''simple_field : field_id field_req field_type IDENTIFIER
-             | field_id field_req field_type IDENTIFIER '=' const_value
-             '''
+    '''simple_field : field_req field_type IDENTIFIER
+                    | field_req field_type IDENTIFIER '=' const_value
+                    | field_id field_req field_type IDENTIFIER
+                    | field_id field_req field_type IDENTIFIER '=' const_value
+    '''
+    if len(p) == 5 or len(p) == 7:
+        field_id = p[1]
+        field_req, field_type, identifier = p[2:5]
+    else:
+        field_id = None
+        field_req, field_type, identifier = p[1:4]
 
-    if len(p) == 7:
+    if len(p) >= 6:
         try:
-            val = _cast(p[3])(p[6])
+            val = _cast(field_type)(p.slice[-1].value)
         except AssertionError:
             raise ThriftParserError(
                 'Type error for field %s '
-                'at line %d' % (p[4], p.lineno(4)))
+                'at line %d' % (identifier, p.lineno(4)))
     else:
         val = None
 
-    p[0] = [p[1], p[2], p[3], p[4], val]
+    p[0] = [field_id, field_req, field_type, identifier, val]
 
 
 def p_field(p):
@@ -816,7 +824,16 @@ def _fill_in_struct(cls, fields, _gen_init=True):
     default_spec = []
     _tspec = {}
 
+    # Fields without explicit keys are automatically assigned starting from -1
+    # and working their way down. Implicit field keys are deprecated by Apache
+    # Thrift, but we support them for greater Thrift IDL compatibility.
+    next_implicit_id = -1
+
     for field in fields:
+        if field[0] is None:
+            field[0] = next_implicit_id
+            next_implicit_id -= 1
+
         if field[0] in thrift_spec or field[3] in _tspec:
             raise ThriftGrammerError(('\'%d:%s\' field identifier/name has '
                                       'already been used') % (field[0],

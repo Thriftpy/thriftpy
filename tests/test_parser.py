@@ -281,3 +281,26 @@ def test_doubles():
 def test_annotations():
     load('parser-cases/annotations.thrift')
     load('parser-cases/issue_252.thrift')
+
+
+def test_implicit_field_keys():
+    thrift = load('parser-cases/implicit_field_keys.thrift')
+    assert thrift.NetworkError.thrift_spec == {
+        -1: (TType.STRING, 'message', False),
+        -2: (TType.I32, 'http_code', False),
+    }
+    assert thrift.Service.thrift_services == ['send']
+    assert thrift.Service.send_args.thrift_spec == {
+        -1: (TType.I64, 'id', False),
+        -2: (TType.STRING, 'message', False),
+    }
+    assert thrift.Service.send_args.default_spec == [
+        ('id', None), ('message', None)
+    ]
+    assert thrift.Service.send_result.thrift_spec == {
+        0: (TType.BOOL, 'success', False),
+        -1: (TType.STRUCT, 'network_error', thrift.NetworkError, False)
+    }
+    assert thrift.Service.send_result.default_spec == [
+        ('success', None), ('network_error', None)
+    ]
