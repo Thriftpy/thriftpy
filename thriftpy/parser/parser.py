@@ -6,6 +6,7 @@ IDL Ref:
 """
 
 from __future__ import absolute_import
+from io import open
 
 import collections
 import os
@@ -56,7 +57,7 @@ def p_include(p):
     for include_dir in replace_include_dirs:
         path = os.path.join(include_dir, p[2])
         if os.path.exists(path):
-            child = parse(path)
+            child = parse(path, encoding=thrift.__thrift_encoding__)
             setattr(thrift, child.__name__, child)
             _add_thrift_meta('includes', child)
             return
@@ -487,7 +488,7 @@ thrift_cache = {}
 
 
 def parse(path, module_name=None, include_dirs=None, include_dir=None,
-          lexer=None, parser=None, enable_cache=True):
+          lexer=None, parser=None, enable_cache=True, encoding=None):
     """Parse a single thrift file to module object, e.g.::
 
         >>> from thriftpy.parser.parser import parse
@@ -508,6 +509,9 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
     :param enable_cache: if this is set to be `True`, parsed module will be
                          cached, this is enabled by default. If `module_name`
                          is provided, use it as cache key, else use the `path`.
+    :param encoding: encoding is the name of the encoding used to decode or encode the file.
+                     This should only be used in text mode. The default encoding is platform dependent,
+                     but any encoding supported by Python can be passed.
     """
     if os.name == 'nt' and sys.version_info[0] < 3:
         os.path.samefile = lambda f1, f2: os.stat(f1) == os.stat(f2)
@@ -542,10 +546,10 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
 
     url_scheme = urlparse(path).scheme
     if url_scheme == 'file':
-        with open(urlparse(path).netloc + urlparse(path).path) as fh:
+        with open(urlparse(path).netloc + urlparse(path).path, encoding=encoding) as fh:
             data = fh.read()
     elif url_scheme == '':
-        with open(path) as fh:
+        with open(path, encoding=encoding) as fh:
             data = fh.read()
     elif url_scheme in ('http', 'https'):
         data = urlopen(path).read()
@@ -564,6 +568,7 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
 
     thrift = types.ModuleType(module_name)
     setattr(thrift, '__thrift_file__', path)
+    setattr(thrift, '__thrift_encoding__', encoding)
     thrift_stack.append(thrift)
     lexer.lineno = 1
     parser.parse(data)
