@@ -297,13 +297,23 @@ class TProcessor(object):
         if isinstance(result, TApplicationException):
             return self.send_exception(oprot, api, result, seqid)
 
+        has_exc = False
         try:
-            result.success = call()
+            success = call()
         except Exception as e:
             # raise if api don't have throws
             self.handle_exception(e, result)
+            has_exc = True
 
         if not result.oneway:
+            # raise missing result on server side
+            if not has_exc and hasattr(result, 'success'):
+                if success is None:
+                    raise TApplicationException(
+                        TApplicationException.MISSING_RESULT,
+                        message='{} miss out result'.format(api)
+                    )
+                result.success = success
             self.send_result(oprot, api, result, seqid)
 
 
