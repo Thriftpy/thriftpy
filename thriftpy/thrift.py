@@ -408,24 +408,23 @@ class TApplicationException(TException):
     INTERNAL_ERROR = 6
     PROTOCOL_ERROR = 7
 
+    _unknown_message = 'Default (unknown) TApplicationException'
+    _default_messages = {
+        UNKNOWN: _unknown_message,
+        UNKNOWN_METHOD: 'Unknown method',
+        INVALID_MESSAGE_TYPE: 'Invalid message type',
+        WRONG_METHOD_NAME: 'Wrong method name',
+        BAD_SEQUENCE_ID: 'Bad sequence ID',
+        MISSING_RESULT: 'Missing result',
+        INTERNAL_ERROR: 'Unknown internal error',
+        PROTOCOL_ERROR: 'Unknown protocol error',
+    }
+
     def __init__(self, type=UNKNOWN, message=None):
         super(TApplicationException, self).__init__()
         self.type = type
-        self.message = message
+        self.message = message or self._default_messages.get(
+            type, self._unknown_message)
 
     def __str__(self):
-        if self.message:
-            return self.message
-
-        if self.type == self.UNKNOWN_METHOD:
-            return 'Unknown method'
-        elif self.type == self.INVALID_MESSAGE_TYPE:
-            return 'Invalid message type'
-        elif self.type == self.WRONG_METHOD_NAME:
-            return 'Wrong method name'
-        elif self.type == self.BAD_SEQUENCE_ID:
-            return 'Bad sequence ID'
-        elif self.type == self.MISSING_RESULT:
-            return 'Missing result'
-        else:
-            return 'Default (unknown) TApplicationException'
+        return self.message
