@@ -96,3 +96,17 @@ def test_persist_ssl_context():
                                ssl_context=client_ssl_context)
 
     _test_socket(server_socket, client_socket)
+
+
+def test_server_socket_closed():
+    server_ssl_context = create_thriftpy_context(server_side=True)
+    server_ssl_context.load_cert_chain(certfile="ssl/server.pem")
+    server_socket = TSSLServerSocket(host="localhost", port=12345,
+                                     ssl_context=server_ssl_context)
+    server_socket.listen()
+
+    server_socket.close()
+
+    with pytest.raises(TTransportException) as e:
+        server_socket.accept()
+    assert "Could not accept on closed socket" in e.value.message

@@ -7,6 +7,7 @@ import socket
 import ssl
 import struct
 
+from . import TTransportException
 from ._ssl import (
     create_thriftpy_context,
     RESTRICTED_SERVER_CIPHERS,
@@ -109,6 +110,11 @@ class TSSLServerSocket(TServerSocket):
             self.ssl_context.load_cert_chain(certfile=certfile)
 
     def accept(self):
+        if self.sock is None:
+            raise TTransportException(
+                type=TTransportException.NOT_OPEN,
+                message="Could not accept on closed socket")
+
         sock, _ = self.sock.accept()
         try:
             ssl_sock = self.ssl_context.wrap_socket(sock, server_side=True)

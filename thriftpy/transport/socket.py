@@ -104,6 +104,11 @@ class TSocket(object):
                 message="Could not connect to %s" % str(addr))
 
     def read(self, sz):
+        if self.sock is None:
+            raise TTransportException(
+                type=TTransportException.NOT_OPEN,
+                message="Could not read from closed socket")
+
         try:
             buff = self.sock.recv(sz)
         except socket.error as e:
@@ -126,6 +131,11 @@ class TSocket(object):
         return buff
 
     def write(self, buff):
+        if self.sock is None:
+            raise TTransportException(
+                type=TTransportException.NOT_OPEN,
+                message="Could not write into closed socket")
+
         self.sock.sendall(buff)
 
     def flush(self):
@@ -209,6 +219,11 @@ class TServerSocket(object):
         self.sock.listen(self.backlog)
 
     def accept(self):
+        if self.sock is None:
+            raise TTransportException(
+                type=TTransportException.NOT_OPEN,
+                message="Could not accept on closed socket")
+
         client, _ = self.sock.accept()
         if self.client_timeout:
             client.settimeout(self.client_timeout)
@@ -221,5 +236,6 @@ class TServerSocket(object):
         try:
             self.sock.shutdown(socket.SHUT_RDWR)
             self.sock.close()
+            self.sock = None
         except (socket.error, OSError):
             pass

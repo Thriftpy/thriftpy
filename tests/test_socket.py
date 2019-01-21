@@ -108,6 +108,29 @@ def test_client_socket_close():
     server_socket.close()
 
 
+def test_client_socket_closed():
+    server_socket = TServerSocket(host="localhost", port=12345)
+    server_socket.listen()
+
+    client_socket = TSocket(host="localhost", port=12345)
+    client_socket.open()
+
+    conn = server_socket.accept()
+    client_socket.close()
+    assert not client_socket.is_open()
+
+    with pytest.raises(TTransportException) as e:
+        client_socket.read(1024)
+    assert "Could not read from closed socket" in e.value.message
+
+    with pytest.raises(TTransportException) as e:
+        client_socket.write(b"world")
+    assert "Could not write into closed socket" in e.value.message
+
+    conn.close()
+    server_socket.close()
+
+
 def test_server_socket_close():
     server_socket = TServerSocket(host="localhost", port=12345)
     server_socket.listen()
@@ -124,6 +147,17 @@ def test_server_socket_close():
 
     conn.close()
     server_socket.close()
+
+
+def test_server_socket_closed():
+    server_socket = TServerSocket(host="localhost", port=12345)
+    server_socket.listen()
+
+    server_socket.close()
+
+    with pytest.raises(TTransportException) as e:
+        server_socket.accept()
+    assert "Could not accept on closed socket" in e.value.message
 
 
 def test_client_socket_set_timeout():
