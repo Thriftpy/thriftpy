@@ -545,7 +545,7 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
         with open(urlparse(path).netloc + urlparse(path).path) as fh:
             data = fh.read()
     elif url_scheme == '':
-        with open(path) as fh:
+        with open(path, encoding='utf-8') as fh:
             data = fh.read()
     elif url_scheme in ('http', 'https'):
         data = urlopen(path).read()
