@@ -57,6 +57,14 @@ def p_include(p):
         path = os.path.join(include_dir, p[2])
         if os.path.exists(path):
             child = parse(path)
+            check = getattr(thrift, child.__name__, None)
+            if check is not None:
+            # 判断是否已经存在child.__name__，如果已经存在，更新该值，否则直接setattr
+                for t, info in child.__thrift_meta__.iteritems():
+                    # 此处可能会有structs，exceptions等类型
+                    for c in info:
+                        setattr(check, c.__name__, c)
+                return
             setattr(thrift, child.__name__, child)
             _add_thrift_meta('includes', child)
             return
@@ -254,7 +262,15 @@ def p_simple_service(p):
     if len(p) == 8:
         extends = thrift
         for name in p[4].split('.'):
-            extends = getattr(extends, name, None)
+            if isinstance(extends, list):
+                for e in extends:
+                    temp = getattr(e, name, None)
+                    if temp:
+                        extends = temp
+                        break
+            else:
+                extends = getattr(extends, name, None)
+
             if extends is None:
                 raise ThriftParserError('Can\'t find service %r for '
                                         'service %r to extend' %
@@ -380,10 +396,19 @@ def p_ref_type(p):
     ref_type = thrift_stack[-1]
 
     for name in p[1].split('.'):
-        ref_type = getattr(ref_type, name, None)
-        if ref_type is None:
-            raise ThriftParserError('No type found: %r, at line %d' %
-                                    (p[1], p.lineno(1)))
+        if isinstance(ref_type, list):
+            for r in ref_type:
+                temp = getattr(r, name, None)
+                if temp:
+                    ref_type = temp
+                    break
+        else:
+            ref_type = getattr(ref_type, name, None)
+
+    if ref_type is None:
+        raise ThriftParserError('No type found: %r, at line %d' %
+                                (p[1], p.lineno(1)))
+
 
     if hasattr(ref_type, '_ttype'):
         p[0] = getattr(ref_type, '_ttype'), ref_type
@@ -489,11 +514,9 @@ thrift_cache = {}
 def parse(path, module_name=None, include_dirs=None, include_dir=None,
           lexer=None, parser=None, enable_cache=True):
     """Parse a single thrift file to module object, e.g.::
-
         >>> from thriftpy.parser.parser import parse
         >>> note_thrift = parse("path/to/note.thrift")
         <module 'note_thrift' (built-in)>
-
     :param path: file path to parse, should be a string ending with '.thrift'.
     :param module_name: the name for parsed module, the default is the basename
                         without extension of `path`.
@@ -576,12 +599,10 @@ def parse(path, module_name=None, include_dirs=None, include_dir=None,
 
 def parse_fp(source, module_name, lexer=None, parser=None, enable_cache=True):
     """Parse a file-like object to thrift module object, e.g.::
-
         >>> from thriftpy.parser.parser import parse_fp
         >>> with open("path/to/note.thrift") as fp:
                 parse_fp(fp, "note_thrift")
         <module 'note_thrift' (built-in)>
-
     :param source: file-like object, expected to have a method named `read`.
     :param module_name: the name for parsed module, shoule be endswith
                         '_thrift'.
