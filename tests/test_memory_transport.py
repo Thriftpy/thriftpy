@@ -17,9 +17,20 @@ class MemoryTransport(TestCase):
 
     def test_read(self):
         m = self.trans(b"hello world")
-        b = m.read(5)
 
-        assert b"hello" == b
+        assert b"hello" == m.read(5)
+        m.write(b"hello")
+        assert b" world" == m.read(6)
+        assert b"hello" == m.getvalue()
+
+    def test_clean(self):
+        m = self.trans(b'hello world')
+
+        assert b"hello world" == m.getvalue()
+        m.clean()
+        assert b"" == m.getvalue()
+        m.write(b"hello")
+        assert b"hello" == m.getvalue()
 
 
 if CYTHON:
