@@ -14,7 +14,6 @@ Version 0.6.0
 - Every ``thriftpy`` (sub)module resolves to the same object as its
   ``thriftpy2`` twin, preserving ``isinstance`` checks, pickling and identity.
 - Releases now track the wrapped ``thriftpy2`` version in lockstep.
-- New code should depend on `thriftpy2`_ directly.
 
 .. _thriftpy2: https://github.com/Thriftpy/thriftpy2
 
