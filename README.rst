@@ -2,7 +2,9 @@
 ThriftPy
 ========
 
-**Thriftpy has been deprecated, please migrate to** `thriftpy2 <https://github.com/Thriftpy/thriftpy2>`_
+**thriftpy is now a thin shim around** `thriftpy2 <https://github.com/Thriftpy/thriftpy2>`_.
+The actual implementation lives in thriftpy2, and installing thriftpy just re-exports it under the historical ``thriftpy`` name.
+The two packages are released in sync and contain identical functionality at the same version, so you can pick whichever name you prefer.
 
 
 .. image:: http://img.shields.io/travis/eleme/thriftpy/develop.svg?style=flat

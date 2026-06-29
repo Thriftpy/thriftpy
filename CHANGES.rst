@@ -1,6 +1,23 @@
 Changelog
 =========
 
+0.6.x
+~~~~~
+
+Version 0.6.0
+-------------
+
+- thriftpy is now a thin compatibility shim around `thriftpy2`_. Installing
+  ``thriftpy`` pulls in the matching ``thriftpy2`` release and re-exports it
+  under the historical ``thriftpy`` name, so existing ``import thriftpy`` code
+  keeps working unchanged on the maintained implementation.
+- Every ``thriftpy`` (sub)module resolves to the same object as its
+  ``thriftpy2`` twin, preserving ``isinstance`` checks, pickling and identity.
+- Releases now track the wrapped ``thriftpy2`` version in lockstep.
+- New code should depend on `thriftpy2`_ directly.
+
+.. _thriftpy2: https://github.com/Thriftpy/thriftpy2
+
 0.3.x
 ~~~~~
 
