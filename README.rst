@@ -2,52 +2,34 @@
 ThriftPy
 ========
 
-**thriftpy is now a thin shim around** `thriftpy2 <https://github.com/Thriftpy/thriftpy2>`_.
-The actual implementation lives in thriftpy2, and installing thriftpy just re-exports it under the historical ``thriftpy`` name.
-The two packages are released in sync and contain identical functionality at the same version, so you can pick whichever name you prefer.
+``thriftpy`` is now a thin compatibility shim around `thriftpy2 <https://github.com/Thriftpy/thriftpy2>`_.
+
+Installing ``thriftpy`` installs the matching ``thriftpy2`` release and re-exports it under the historical ``thriftpy`` package name. Existing code that uses ``import thriftpy`` can keep that import while running on the maintained ``thriftpy2`` implementation.
+
+For full documentation and usage details, use the thriftpy2 project:
+https://github.com/Thriftpy/thriftpy2
 
 
-.. image:: http://img.shields.io/travis/eleme/thriftpy/develop.svg?style=flat
-   :target: https://travis-ci.org/eleme/thriftpy
+Background
+==========
 
-.. image:: http://img.shields.io/github/release/eleme/thriftpy.svg?style=flat
-   :target: https://github.com/eleme/thriftpy/releases
+For a while we did not have release access for the original ``thriftpy`` package, so active development moved to ``thriftpy2``. ``thriftpy2`` is the direct continuation of ``thriftpy``; apart from the package name, it provides the same project and implementation.
 
-.. image:: http://img.shields.io/pypi/v/thriftpy.svg?style=flat
-   :target: https://pypi.python.org/pypi/thriftpy
-
-.. image:: http://img.shields.io/pypi/dm/thriftpy.svg?style=flat
-   :target: https://pypi.python.org/pypi/thriftpy
-
-ThriftPy is a pure python implementation of
-`Apache Thrift <http://thrift.apache.org/>`_ in a pythonic way.
-
-Documentation: https://thriftpy.readthedocs.org/
+After seeing that some users still depend on the ``thriftpy`` name, we recovered the needed release access and turned ``thriftpy`` into a shim around ``thriftpy2``. Going forward, ``thriftpy`` and ``thriftpy2`` are released in sync with the same version number, and users can choose either package name.
 
 
 Installation
 ============
 
-Install with pip.
-
 .. code:: bash
 
-    $ pip install thriftpy
-
-You may also install cython first to build cython extension locally.
-
-.. code:: bash
-
-    $ pip install cython thriftpy
+    pip install thriftpy
 
 
-Code Demo
-=========
+Minimal Example
+===============
 
-ThriftPy make it super easy to write server/client code with thrift. Let's
-checkout this simple pingpong service demo.
-
-We need a 'pingpong.thrift' file:
+Given a ``pingpong.thrift`` file:
 
 ::
 
@@ -55,106 +37,30 @@ We need a 'pingpong.thrift' file:
         string ping(),
     }
 
-Then we can make a server:
+Server:
 
 .. code:: python
 
     import thriftpy
-    pingpong_thrift = thriftpy.load("pingpong.thrift", module_name="pingpong_thrift")
-
     from thriftpy.rpc import make_server
+
+    pingpong_thrift = thriftpy.load("pingpong.thrift", module_name="pingpong_thrift")
 
     class Dispatcher(object):
         def ping(self):
             return "pong"
 
-    server = make_server(pingpong_thrift.PingPong, Dispatcher(), '127.0.0.1', 6000)
+    server = make_server(pingpong_thrift.PingPong, Dispatcher(), "127.0.0.1", 6000)
     server.serve()
 
-And a client:
+Client:
 
 .. code:: python
 
     import thriftpy
-    pingpong_thrift = thriftpy.load("pingpong.thrift", module_name="pingpong_thrift")
-
     from thriftpy.rpc import make_client
 
-    client = make_client(pingpong_thrift.PingPong, '127.0.0.1', 6000)
+    pingpong_thrift = thriftpy.load("pingpong.thrift", module_name="pingpong_thrift")
+
+    client = make_client(pingpong_thrift.PingPong, "127.0.0.1", 6000)
     print(client.ping())
-
-See, it's that easy!
-
-You can refer to 'examples' and 'tests' directory in source code for more
-usage examples.
-
-
-
-Features
-========
-
-Currently ThriftPy have these features (also advantages over the upstream
-python lib):
-
-- Supports Python 2.7, Python 3.4+, PyPy and PyPy3.
-
-- Pure python implementation. No longer need to compile & install the 'thrift'
-  package. All you need is thriftpy and thrift file.
-
-- Compatible with Apache Thrift. You can use ThriftPy together with the
-  official implementation servers and clients, such as a upstream server with
-  a thriftpy client or the opposite.
-
-  Currently implemented protocols and transports:
-
-  * binary protocol (python and cython)
-
-  * compact protocol (python and cython)
-
-  * json protocol
-
-  * buffered transport (python & cython)
-
-  * framed transport
-
-  * tornado server and client (with tornado 4.0)
-
-  * http server and client
-
-- Can directly load thrift file as module, the sdk code will be generated on
-  the fly.
-
-  For example, ``pingpong_thrift = thriftpy.load("pingpong.thrift", module_name="pingpong_thrift")``
-  will load 'pingpong.thrift' as 'pingpong_thrift' module.
-
-  Or, when import hook enabled by ``thriftpy.install_import_hook()``, you can
-  directly use ``import pingpong_thrift`` to import the 'pingpong.thrift' file
-  as module, you may also use ``from pingpong_thrift import PingService`` to
-  import specific object from the thrift module.
-
-- Easy RPC server/client setup.
-
-
-
-Contribute
-==========
-
-1. Fork the repo and make changes.
-
-2. Write a test which shows a bug was fixed or the feature works as expected.
-
-3. Make sure ``travis-ci`` or ``tox`` tests succeed.
-
-4. Send pull request.
-
-
-Contributors
-============
-
-https://github.com/eleme/thriftpy/graphs/contributors
-
-
-Changelog
-=========
-
-https://github.com/eleme/thriftpy/blob/master/CHANGES.rst
