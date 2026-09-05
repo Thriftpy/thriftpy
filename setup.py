@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 # Keep this in lockstep with the pinned thriftpy2 dependency below, thriftpy is
 # a thin compatibility shim and every release tracks the thriftpy2 it wraps.
-version = "0.7.0"
+version = "0.7.1"
 
 install_requires = [
     "thriftpy2==%s" % version,
