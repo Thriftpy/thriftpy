@@ -21,6 +21,7 @@ setup(name="thriftpy",
       license="MIT",
       zip_safe=False,
       long_description=open("README.rst").read(),
+      long_description_content_type="text/x-rst",
       install_requires=install_requires,
       python_requires='>=3.7',
       classifiers=[
