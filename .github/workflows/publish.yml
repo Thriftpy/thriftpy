@@ -18,7 +18,7 @@ jobs:
       - name: Check tag matches package version
         run: |
           tag="${GITHUB_REF_NAME#v}"
-          version="$(python setup.py --version)"
+          version="$(sed -n 's/^version = "\(.*\)"$/\1/p' setup.py)"
           if [ "$tag" != "$version" ]; then
             echo "Tag v$tag does not match setup.py version $version" >&2
             exit 1
